@@ -7,7 +7,7 @@ from .base import ActiveLearner
 class SVMBase(ActiveLearner):
     def __init__(self, C=1000, kernel='rbf', degree=3, gamma='auto'):
         super().__init__()
-        self.clf = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, decision_function_shape='ovr')
+        self.clf = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, decision_function_shape='ovr', max_iter=100000)
 
 
 class SVMClosest(SVMBase):

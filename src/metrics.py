@@ -3,58 +3,28 @@ from sklearn.metrics.classification import precision_score, recall_score, accura
 supported_metrics = {
     'precision': lambda y_pred, y_true: precision_score(y_pred=y_pred, y_true=y_true, labels=[-1, 1]),
     'recall': lambda y_pred, y_true: recall_score(y_pred=y_pred, y_true=y_true, labels=[-1, 1]),
-    'f1': lambda y_pred, y_true: accuracy_score(y_pred=y_pred, y_true=y_true),
-    'accuracy': lambda y_pred, y_true: f1_score(y_pred=y_pred, y_true=y_true, labels=[-1, 1])
+    'accuracy': lambda y_pred, y_true: accuracy_score(y_pred=y_pred, y_true=y_true),
+    'f1': lambda y_pred, y_true: f1_score(y_pred=y_pred, y_true=y_true, labels=[-1, 1])
 }
 
 
-class MetricTracker(object):
-
-    def __init__(self, metrics_list=None, skip=0):
-        if not set(metrics_list) <= supported_metrics.keys():
-            raise KeyError("Unsupported metric found. Only {0} are available.".format(supported_metrics.keys()))
-
-        self.skip = skip
-        self.metrics_list = metrics_list
-        self.metrics = []
+class MetricStorage(object):
+    def __init__(self):
         self.storage = []
 
-    @property
-    def size(self):
-        return len(self.metrics)
-
-    @property
-    def storage_size(self):
+    def __len__(self):
         return len(self.storage)
 
-    def clear(self):
+    def clean(self):
         self.storage = []
-        self.metrics = []
 
-    def persist(self):
-        """ Put all metrics into storage """
-        if len(self.metrics) > 0:
-            from pandas import DataFrame
-
-            # append current metrics to storage
-            self.storage.append(
-                DataFrame(
-                    data=self.metrics,
-                    columns=self.metrics_list,
-                    index=range(self.skip + 1, self.size + self.skip + 1)
-                )
-            )
-
-            # reset metrics and size
-            self.metrics = []
-
-    def add_measurement(self, y_true, y_pred):
-        """ Compute and append new scores """
-        self.metrics.append([supported_metrics[name](y_pred=y_pred, y_true=y_true) for name in self.metrics_list])
+    def persist(self, tracker):
+        """ Append tracker to storage """
+        self.storage.append(tracker.to_dataframe())
 
     def average_performance(self):
         """ Average all metrics in storage """
-        if self.storage_size > 0:
+        if len(self) > 0:
             from pandas import concat
 
             # concatenate all stored metrics
@@ -74,3 +44,30 @@ class MetricTracker(object):
                 axis=1,
                 keys=['mean', 'std', 'min', 'max']
             )
+
+
+class MetricTracker(object):
+
+    def __init__(self, metrics_list, skip=0):
+        if not set(metrics_list) <= supported_metrics.keys():
+            raise KeyError("Unsupported metric found. Only {0} are available.".format(supported_metrics.keys()))
+
+        self.skip = skip
+        self.metrics_list = metrics_list
+        self.metrics = []
+
+    def __len__(self):
+        return len(self.metrics)
+
+    def to_dataframe(self):
+        from pandas import DataFrame
+
+        return DataFrame(
+            data=self.metrics,
+            columns=self.metrics_list,
+            index=range(self.skip + 1, len(self) + self.skip + 1)
+        )
+
+    def add_measurement(self, y_true, y_pred):
+        """ Compute and append new scores """
+        self.metrics.append([supported_metrics[name](y_pred=y_pred, y_true=y_true) for name in self.metrics_list])

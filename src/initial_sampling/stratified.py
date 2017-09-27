@@ -2,11 +2,7 @@ import numpy as np
 from math import ceil
 from .base import InitialSampler, FixedSize
 from ..datapool import Point
-
-
-def label_all(data, user):
-    points = Point(index=range(len(data)), data=data)
-    return user.get_label(points)
+from ..utils import label_all
 
 
 def sample_index(mask, size):

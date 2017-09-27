@@ -29,7 +29,7 @@ class User(object):
         """
         return self.labeled_samples < self.max_iter
 
-    def get_label(self, points, update_counter=False):
+    def get_label(self, points, update_counter=True):
         """ 
             Labels user provided points
             :param points: collection of points to label
