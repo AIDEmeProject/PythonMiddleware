@@ -12,14 +12,14 @@ class ActiveLearner(object):
     def __init__(self):
         self.clf = None
 
-    def clear(self):
-        pass
-
     def predict(self, X):
         return self.clf.predict(X)
 
     def fit_classifier(self, X, y):
         self.clf.fit(X, y)
+
+    def clear(self):
+        pass
 
     def initialize(self, data):
         pass
@@ -36,6 +36,8 @@ def train(data, user, active_learner, initial_sampler):
     data = check_array(np.atleast_2d(data), dtype=np.float64)
 
     # initialize
+    user.clear()
+    active_learner.clear()
     active_learner.initialize(data)
     points_init, labels_init = initial_sampler(data, user)
 
@@ -49,8 +51,10 @@ def train(data, user, active_learner, initial_sampler):
     active_learner.update(points_init.data, labels_init)
 
     # initialize tracker
-    tracker = MetricTracker(metrics_list=['f1', 'accuracy'], skip=len(y_train))
-    tracker.add_measurement(y_true=label_all(data, user), y_pred=active_learner.predict(data))
+    tracker = MetricTracker(skip=len(y_train))
+    y_true = label_all(data, user)
+    y_pred = active_learner.predict(data)
+    tracker.add_measurement(y_true, y_pred)
 
     while user.is_willing() and (not pool.has_labeled_all()):
         # get next point
@@ -68,6 +72,7 @@ def train(data, user, active_learner, initial_sampler):
         active_learner.update(points.data, labels)
 
         # append new metrics
-        tracker.add_measurement(y_true=label_all(data, user), y_pred=active_learner.predict(data))
+        y_pred = active_learner.predict(data)
+        tracker.add_measurement(y_true, y_pred)
 
     return tracker

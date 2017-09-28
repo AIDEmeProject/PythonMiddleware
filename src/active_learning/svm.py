@@ -10,7 +10,7 @@ class SVMBase(ActiveLearner):
         self.clf = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, decision_function_shape='ovr', max_iter=100000)
 
 
-class SVMClosest(SVMBase):
+class SimpleMargin(SVMBase):
     def get_next(self, pool):
         return pool.find_minimizer(lambda x: np.abs(self.clf.decision_function(x)))
 
