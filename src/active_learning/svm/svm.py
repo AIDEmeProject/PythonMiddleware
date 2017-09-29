@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
 from sklearn.svm import SVC
-from .base import ActiveLearner
+from src.active_learning.base import ActiveLearner
 
 
 class SVMBase(ActiveLearner):
