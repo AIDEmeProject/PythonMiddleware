@@ -1,19 +1,6 @@
-from sklearn.metrics.classification import precision_score, recall_score, accuracy_score, f1_score
-
-
-def get_scorer(scorer):
-    return lambda y_pred, y_true: scorer(y_pred=y_pred, y_true=y_true, labels=[-1, 1])
-
 class MetricTracker(object):
 
-    metrics_list = ['precision', 'recall', 'accuracy', 'f1']
-
-    supported_metrics = {
-        'precision': get_scorer(precision_score),
-        'recall': get_scorer(recall_score),
-        'accuracy': lambda y_pred, y_true: accuracy_score(y_pred=y_pred, y_true=y_true),
-        'f1': get_scorer(f1_score)
-    }
+    metrics_list = ['precision', 'recall', 'accuracy', 'fscore', 'version_space_volume', 'version_space_ratio', 'version_space_ratio_estimate']
 
     def __init__(self,  skip=0):
         self.skip = skip
@@ -31,13 +18,11 @@ class MetricTracker(object):
             index=range(self.skip + 1, len(self) + self.skip + 1)
         )
 
-    def add_measurement(self, y_true, y_pred):
+    def add_measurement(self, measurement):
         """ Compute and append new scores """
-        values = {}
-        for metric, scorer in self.supported_metrics.items():
-            values[metric] = scorer(y_pred, y_true)
-
-        self.metrics.append(values)
+        if not measurement.keys() <= set(self.metrics_list):
+            raise ValueError("Invalid keys in measurement.")
+        self.metrics.append(measurement)
 
 
 class MetricStorage(object):

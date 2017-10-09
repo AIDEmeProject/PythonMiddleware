@@ -1,4 +1,5 @@
 import math
+from random import uniform
 from .base import VersionSpace
 
 
@@ -35,8 +36,13 @@ class Point(object):
     @classmethod
     def from_iterable(cls, obj):
         if len(obj) != 2:
-            raise ValueError("Object has length != 2 !")
+            pass
+            #raise ValueError("Object has length != 2.")
         return cls(obj[0], obj[1])
+
+    @classmethod
+    def from_angle(cls, theta):
+        return cls(math.cos(theta), math.sin(theta))
 
     def __str__(self):
         return "({x:.3f}, {y:.3f})".format(x=self.x, y=self.y)
@@ -114,14 +120,15 @@ class Point(object):
 
 class Circle(VersionSpace):
     def __init__(self):
-        self.__left_limit = Point(1,0)
-        self.__right_limit = Point(1,0)
+        super().__init__(n_samples=0)
+        self.__left_limit = Point(1, 0)
+        self.__right_limit = Point(1, 0)
         self.__was_cut = False
 
     def __repr__(self):
         return "Limits: left = {left}, right = {right}, Size: {size:.5f}".format(left=self.left_limit,
-                                                                             right=self.right_limit,
-                                                                             size=self.volume)
+                                                                                 right=self.right_limit,
+                                                                                 size=self.volume)
 
     @property
     def left_limit(self):
@@ -131,18 +138,21 @@ class Circle(VersionSpace):
     def right_limit(self):
         return self.__right_limit
 
+    def clear(self):
+        super().clear()
+        self.__init__()
+
     @property
     def volume(self):
         if self.__was_cut:
             scalar_prod = self.__left_limit * self.__right_limit
             clipped_prod = max(-1, min(1, scalar_prod))
-            return Angle(math.acos(clipped_prod), unit='rad').rad
+            return math.acos(clipped_prod) % TWO_PI
         return TWO_PI
 
     def __first_cut(self, point):
         self.__left_limit = point.orthogonal(clockwise=True)
         self.__right_limit = point.orthogonal(clockwise=False)
-        self.__size = PI
 
     def __posterior_cut(self, point):
         left_limit_correctly_classified = self.left_limit * point >= 0
@@ -167,6 +177,25 @@ class Circle(VersionSpace):
             self.__posterior_cut(point)
 
     def update(self, point, label):
-        if label not in {-1,1}:
-            raise ValueError("Expected -1 or 1 for label, obtained {0}".format(label))
-        self.cut(Point.from_iterable(label * point))
+            self.cut(Point.from_iterable(label * point))
+
+    def angle_limits(self):
+        theta_left = self.left_limit.angle.rad
+
+        theta_right = self.right_limit.angle.rad
+        if theta_right <= theta_left:
+            theta_right += TWO_PI
+
+        return theta_left, theta_right
+
+    def sample(self, n_samples):
+        theta_left, theta_right = self.angle_limits()
+        thetas = [uniform(theta_left, theta_right) for _ in range(n_samples)]
+        return [Point.from_angle(theta) for theta in thetas]
+
+    def is_inside(self, points):
+        theta_left, theta_right = self.angle_limits()
+        if isinstance(points, Point):
+            return theta_left <= points.angle.rad <= theta_right
+        return [theta_left <= point.angle.rad <= theta_right for point in points]
+

@@ -13,13 +13,12 @@ def plot_showdown(output, times, metrics_list=None):
     if len(data_tags) == 1:
         axs = [axs]
 
-
-    fig.set_size_inches(16, 8)
+    fig.set_size_inches(8*len(metrics_list), 6*len(data_tags))
 
     for i, ds in enumerate(data_tags):
         for j, name in enumerate(metrics_list):
             ax = axs[i][j]
-            ax.set_title("Dataset:  " + ds.upper() + "     -     " +  "Metric:  " + name.upper())
+            ax.set_title(name.upper())
             ax.set_xlabel("# of labeled samples")
             ax.set_ylabel("Score evolution")
 

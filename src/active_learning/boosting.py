@@ -1,8 +1,9 @@
 import numpy as np
+
+from ..version_space.actboost import ActboostPolytope
+from ..convexbody.sampling.markov_samplers import HitAndRunSampler
 from .base import ActiveLearner
 from ..utils import Adaboost
-from ..convexbody.markov_samplers import HitAndRunSampler
-from ..convexbody.polytope import ActBoostPolytope
 
 
 class BaseBoosting(ActiveLearner):
@@ -20,28 +21,22 @@ class ActBoost(BaseBoosting):
     def __init__(self, sample_size, chain_length, n_iterations=300):
         super().__init__(n_iterations)
         self.sample_size = sample_size
-        self.chain_length = chain_length
-        self.search_space = None
-        self.hit_and_run = None
+        self.hit_and_run = HitAndRunSampler(chain_length)
+        self.version_space = None
 
     def initialize(self, data):
-        self.search_space = ActBoostPolytope(data.shape[1])
-        self.hit_and_run = HitAndRunSampler(self.chain_length, self.search_space)
-
-    def clear(self):
-        self.search_space.clear()
+        self.version_space = ActboostPolytope(data.shape[1])
 
     def get_next(self, pool):
-        q0 = self.search_space.get_point()
-        samples = self.hit_and_run.uniform(q0, self.sample_size)
-        return pool.find_minimizer(lambda x: np.abs(np.sum(np.sign(np.dot(x, samples.T)), axis=-1)))
+        # find point inside current version space
+        initial_point = self.version_space.get_point()
 
-    def update(self, X, y):
-        try:
-            self.search_space.append(X, float(y))
-        except:
-            for point, label in zip(X, y):
-                self.search_space.append(point, label)
+        # sample uniformly over the current version space
+        samples = self.hit_and_run.uniform(self.version_space, initial_point, self.sample_size)
 
+        # find minimizer of current unlabeled pool
+        def f(X, samples):
+            prediction = 2 * (np.dot(X, samples.T) >= 0) - 1
+            return np.abs(np.sum(prediction, axis=-1))
 
-
+        return pool.find_minimizer(lambda x, s=samples: f(x, s))

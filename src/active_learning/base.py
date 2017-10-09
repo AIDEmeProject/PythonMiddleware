@@ -1,8 +1,11 @@
 import numpy as np
 from sklearn.utils import check_array
-from ..utils import label_all
+from sklearn.metrics.classification import precision_score, recall_score, accuracy_score, f1_score
+
+from ..utils import label_all, check_points_and_labels
 from ..datapool import DataPool
 from ..metrics import MetricTracker
+from ..version_space.base import VersionSpace
 
 
 class ActiveLearner(object):
@@ -11,6 +14,7 @@ class ActiveLearner(object):
     """
     def __init__(self):
         self.clf = None
+        self.version_space = VersionSpace()
 
     def predict(self, X):
         return self.clf.predict(X)
@@ -18,14 +22,33 @@ class ActiveLearner(object):
     def fit_classifier(self, X, y):
         self.clf.fit(X, y)
 
+    def score(self, X, y_true):
+        y_pred = self.predict(X)
+        scores = {
+            'precision': precision_score(y_true, y_pred, labels=[-1,1]),
+            'recall': recall_score(y_true, y_pred, labels=[-1, 1]),
+            'accuracy': accuracy_score(y_true, y_pred),
+            'fscore': f1_score(y_true, y_pred, labels=[-1, 1])
+        }
+
+        try:
+            scores.update(self.version_space.score())
+        except NotImplementedError:
+            pass
+
+        return scores
+
     def clear(self):
-        pass
+        if self.version_space is not None:
+            self.version_space.clear()
 
     def initialize(self, data):
         pass
 
     def update(self, X, y):
-        pass
+        points, labels = check_points_and_labels(X, y)
+        for point, label in zip(points, labels):
+            self.version_space.update(point, label)
 
     def get_next(self, pool):
         raise NotImplementedError
@@ -53,8 +76,7 @@ def train(data, user, active_learner, initial_sampler):
     # initialize tracker
     tracker = MetricTracker(skip=len(y_train))
     y_true = label_all(data, user)
-    y_pred = active_learner.predict(data)
-    tracker.add_measurement(y_true, y_pred)
+    tracker.add_measurement(active_learner.score(data, y_true))
 
     while user.is_willing() and (not pool.has_labeled_all()):
         # get next point
@@ -72,7 +94,6 @@ def train(data, user, active_learner, initial_sampler):
         active_learner.update(points.data, labels)
 
         # append new metrics
-        y_pred = active_learner.predict(data)
-        tracker.add_measurement(y_true, y_pred)
+        tracker.add_measurement(active_learner.score(data, y_true))
 
     return tracker

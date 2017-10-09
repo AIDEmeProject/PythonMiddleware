@@ -1,4 +1,4 @@
-class ConvergenceDetection(object):
+class ScoreEstimator(object):
     def estimate_score(self):
         return {}
 

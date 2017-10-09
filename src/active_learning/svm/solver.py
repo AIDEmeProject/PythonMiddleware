@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import minimize
-from .svm import SVMBase
+from .base import SVMBase
+
 
 class BoundingPool(object):
     def __init__(self, pool_size):
@@ -12,9 +13,6 @@ class BoundingPool(object):
 
     def __getitem__(self, item):
         return self.pool[item]
-
-    def is_empty(self):
-        return self.pool is None
 
     def build_pool(self, data):
         """ Generate random sampling on bounding box of data """
@@ -37,11 +35,12 @@ class BoundingPool(object):
 
 class SolverMethod(SVMBase):
 
-    def __init__(self, pool_size=20, C=1000, degree=3, kernel='rbf', gamma='auto'):
-        super().__init__(C=C, degree=degree, kernel=kernel, gamma=gamma)
+    def __init__(self, kind='kernel', pool_size=20, C=1000, kernel='rbf', degree=3, gamma='auto', max_iter=None, fit_intercept=True):
+        super().__init__(kind, C, kernel, degree, gamma, max_iter, fit_intercept)
         self.bounding_pool = BoundingPool(pool_size=pool_size)
 
     def initialize(self, X):
+        super().initialize(X)
         self.bounding_pool.build_pool(X)
 
     def get_fake_point(self, positive_sample, negative_sample):

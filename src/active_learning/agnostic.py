@@ -4,8 +4,11 @@ from ..datapool import Point
 
 
 class RandomLearner(ActiveLearner):
-    def __init__(self, clf):
+    def __init__(self, clf, vs=None):
+        super().__init__()
         self.clf = clf
+        if vs is not None:
+            self.version_space = vs
 
     def get_next(self, pool):
         n = len(pool)
