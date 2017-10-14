@@ -5,7 +5,7 @@ from sklearn.metrics.classification import precision_score, recall_score, accura
 from ..utils import label_all, check_points_and_labels
 from ..datapool import DataPool
 from ..metrics import MetricTracker
-from ..version_space.base import VersionSpace
+from ..version_space.base import VersionSpaceMixin
 
 
 class ActiveLearner(object):
@@ -14,7 +14,7 @@ class ActiveLearner(object):
     """
     def __init__(self):
         self.clf = None
-        self.version_space = VersionSpace()
+        self.version_space = VersionSpaceMixin()
 
     def predict(self, X):
         return self.clf.predict(X)
@@ -23,6 +23,7 @@ class ActiveLearner(object):
         self.clf.fit(X, y)
 
     def score(self, X, y_true):
+        # classification scores
         y_pred = self.predict(X)
         scores = {
             'precision': precision_score(y_true, y_pred, labels=[-1,1]),
@@ -31,10 +32,8 @@ class ActiveLearner(object):
             'fscore': f1_score(y_true, y_pred, labels=[-1, 1])
         }
 
-        try:
-            scores.update(self.version_space.score())
-        except NotImplementedError:
-            pass
+        # version space scores
+        scores.update(self.version_space.score())
 
         return scores
 

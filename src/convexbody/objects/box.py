@@ -54,7 +54,8 @@ class Box(ConvexBody):
         centered_points = np.abs(points - self.center)
         return np.all(centered_points <= 0.5 * self.side_length, axis=-1)
 
-    def _compute_volume(self):
+    @property
+    def volume(self):
         return np.prod(self.side_length)
 
     def sample(self, n_samples):
@@ -102,7 +103,8 @@ class Cube(Box):
     def high(self):
         return self.center + 0.5 * self.side_length
 
-    def _compute_volume(self):
+    @property
+    def volume(self):
         return self.side_length ** self.dim
 
 

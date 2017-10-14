@@ -1,4 +1,4 @@
-from .base import SimpleMargin
+from .base import SimpleMargin, OptimalMargin
 from .solver import SolverMethod
 
-__all__ = ['SimpleMargin', 'SolverMethod']
+__all__ = ['SimpleMargin', 'SolverMethod', 'OptimalMargin']

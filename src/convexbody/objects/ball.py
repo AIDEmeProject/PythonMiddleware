@@ -42,7 +42,8 @@ class Ellipsoid(ConvexBody):
     def half_axis_length(self):
         return self._half_axis_length
 
-    def _compute_volume(self):
+    @property
+    def volume(self):
         factor = np.prod(self.half_axis_length)
         return factor * pow(np.pi, self._dim / 2.0)/ gamma(1 + self._dim / 2.0)
 

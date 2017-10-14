@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..version_space.actboost import ActboostPolytope
+from ..version_space.boosting import ActboostPolytope
 from ..convexbody.sampling.markov_samplers import HitAndRunSampler
 from .base import ActiveLearner
 from ..utils import Adaboost

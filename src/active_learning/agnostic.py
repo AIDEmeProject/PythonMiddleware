@@ -1,14 +1,19 @@
 from random import randint
 from .base import ActiveLearner
 from ..datapool import Point
+from ..version_space.svm import SVMVersionSpace
 
 
 class RandomLearner(ActiveLearner):
-    def __init__(self, clf, vs=None):
+    def __init__(self, clf):
         super().__init__()
         self.clf = clf
-        if vs is not None:
-            self.version_space = vs
+
+    def clear(self):
+        pass
+
+    def initialize(self, data):
+        self.version_space = SVMVersionSpace(data.shape[1])
 
     def get_next(self, pool):
         n = len(pool)

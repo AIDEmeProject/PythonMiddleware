@@ -1,53 +1,69 @@
-class VersionSpace(object):
+from ..convexbody.sampling import HitAndRunSampler
+from .minimizer import Minimizer
+from .appendable_constrain import AppendableInequalityConstrain
+
+
+class VersionSpaceMixin:
+    def __init__(self):
+        pass
+
+    def clear(self):
+        pass
+
+    def update(self, point, label):
+        pass
+
+    def score(self):
+        return {}
+
+class VersionSpace(VersionSpaceMixin):
     """
         Version space of an Active Learning algorithm.
 
         SVM case: for linear kernel, an unit ball in higher-dimensional space
         Actboost: a polytope
     """
-    def __init__(self, n_samples=1000):
-        self.__cache = {}
-        self.__scorer = VersionSpaceMetricTracker(n_samples)
+    def __init__(self, minimizer: Minimizer):
+        self.minimizer = minimizer
+
+        self.inequality_constrain = AppendableInequalityConstrain()
+        self.cut_estimator = VersionSpaceCutEstimator(1000)
 
     def clear(self):
-       self.__scorer.clear()
+        self.minimizer.clear()
+        self.inequality_constrain.clear()
+        self.cut_estimator.clear()
 
     def update(self, point, label):
         """ Updates internal state given a new labeled point """
-        pass
+        self.cut_estimator.update_sample(self)
+
+        constrain_vector = -label * point
+        self.inequality_constrain.append(constrain_vector, 0.0)
+        self.minimizer.append(constrain_vector)
 
     def score(self):
-        return self.__scorer.score(self)
+        return self.cut_estimator.estimate_cut(self)
 
 
-class VersionSpaceMetricTracker:
-    def __init__(self, n_samples):
-        self.n_samples = int(n_samples)
-        self.__cache = {}
+class VersionSpaceCutEstimator:
+    def __init__(self, chain_length):
+        self.__sampler = HitAndRunSampler(chain_length)
+        self.__sample_cache = None
 
     def clear(self):
-        self.__cache = {}
+        self.__sample_cache = None
 
-    def score(self, version_space):
-        scores = {}
+    def update_sample(self, version_space):
+        if hasattr(version_space, 'get_point'):
+            self.__sample_cache = self.__sampler.sample_chain(version_space, version_space.get_point())
 
-        if hasattr(version_space, 'volume'):
-            volume = version_space.volume
-            scores['version_space_volume'] = volume
+    def estimate_cut(self, version_space):
+        if not hasattr(version_space, 'is_inside'):
+            return {}
 
-            if 'previous_volume' in self.__cache:
-                previous_volume = self.__cache['previous_volume']
-                scores["version_space_ratio"] = 100 * (1 - volume / previous_volume)
-
-            self.__cache['previous_volume'] = volume
-
-        if hasattr(version_space, 'sample') and hasattr(version_space, 'is_inside'):
-            if 'samples' in self.__cache:
-                samples = self.__cache['samples']
-                number_points_inside = sum(version_space.is_inside(samples))
-                scores['version_space_ratio_estimate'] = 100 * (1 - number_points_inside / len(samples))
-
-            self.__cache['samples'] = version_space.sample(1000)
-
-        return scores
-
+        old_sample = self.__sample_cache
+        number_of_samples_inside = version_space.is_inside(old_sample).sum()
+        return {
+            'version_space_ratio_estimate': 100 * (1. - number_of_samples_inside / len(old_sample))
+        }

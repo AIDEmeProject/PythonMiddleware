@@ -1,6 +1,6 @@
 import math
 from random import uniform
-from .base import VersionSpace
+from .base import VersionSpaceMixin
 
 
 PI = math.pi
@@ -118,9 +118,9 @@ class Point(object):
         return self.__div__(self.norm)
 
 
-class Circle(VersionSpace):
+class Circle(VersionSpaceMixin):
     def __init__(self):
-        super().__init__(n_samples=0)
+        super().__init__()
         self.__left_limit = Point(1, 0)
         self.__right_limit = Point(1, 0)
         self.__was_cut = False

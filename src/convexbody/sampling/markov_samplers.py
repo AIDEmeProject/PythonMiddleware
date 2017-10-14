@@ -5,6 +5,8 @@ from .line import Line
 
 class MarkovSampler(object):
     def __init__(self, chain_length):
+        if int(chain_length) <= 0:
+            raise ValueError("Chain length must be positive.")
         self.chain_length = chain_length
 
     def _check_initial_point(self, convexbody, initial_point):

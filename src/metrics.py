@@ -1,7 +1,5 @@
 class MetricTracker(object):
 
-    metrics_list = ['precision', 'recall', 'accuracy', 'fscore', 'version_space_volume', 'version_space_ratio', 'version_space_ratio_estimate']
-
     def __init__(self,  skip=0):
         self.skip = skip
         self.metrics = []
@@ -14,18 +12,16 @@ class MetricTracker(object):
 
         return DataFrame(
             data=self.metrics,
-            columns=self.metrics_list,
             index=range(self.skip + 1, len(self) + self.skip + 1)
         )
 
     def add_measurement(self, measurement):
         """ Compute and append new scores """
-        if not measurement.keys() <= set(self.metrics_list):
-            raise ValueError("Invalid keys in measurement.")
         self.metrics.append(measurement)
 
 
 class MetricStorage(object):
+
     def __init__(self):
         self.storage = []
 
@@ -61,3 +57,4 @@ class MetricStorage(object):
                 axis=1,
                 keys=['mean', 'std', 'min', 'max']
             )
+

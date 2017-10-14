@@ -24,24 +24,10 @@ class ConvexBody(object):
             self.__projection_matrix = self._compute_projection_matrix()
         return self.__projection_matrix
 
-    def _compute_volume(self):
-        raise NotImplementedError
-
-    @property
-    def volume(self):
-        # returns the volume of K
-        if self._volume is None:
-            self._volume = self._compute_volume()
-        return self._volume
-
     def is_inside(self, points):
         """
         Tells if a point (or an array of points) x is inside or not the convex body
         """
-        raise NotImplementedError
-
-    def sample(self, n):
-        # samples n points uniformly (or at least approximately) from K
         raise NotImplementedError
 
     def intersection(self, line):
@@ -66,3 +52,5 @@ class ConvexBody(object):
                 l2 = mid2
 
         return line.get_segment(r1, l2)
+
+
