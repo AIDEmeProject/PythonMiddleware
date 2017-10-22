@@ -28,8 +28,8 @@ class DataPool(object):
     def get_labeled_data(self):
         return self.__labeled.to_array()
 
-    def find_minimizer(self, ranker):
-        return self.__unlabeled.find_minimizer(ranker)
+    def find_minimizer(self, ranker, threshold=None):
+        return self.__unlabeled.find_minimizer(ranker, threshold)
 
     def update(self, points, labels):
         self.__labeled.append(points.data, labels)

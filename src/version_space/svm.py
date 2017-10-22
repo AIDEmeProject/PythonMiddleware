@@ -9,9 +9,9 @@ class SVMMinimizer(Minimizer):
     def get_initial_constrains(self):
         return [
             {
-                'type': 'ineq',
-                'fun': lambda x: 0.25 - np.sum(x[1:] ** 2),  # do not use 1 because of floating point inaccuracy
-                'jac': lambda x: np.hstack([[0], -2 * x[1:]])
+                'type': 'eq',
+                'fun': lambda x: 1.0 + x[0] - np.sum(x[1:] ** 2),
+                'jac': lambda x: np.hstack([[1], -2 * x[1:]])
             }
         ]
 
@@ -52,7 +52,7 @@ class SVMVersionSpace(ConvexBody, VersionSpace):
         if self.inequality_constrain.is_empty():
             return q0
 
-        x0 = np.hstack([1., q0])
+        x0 = np.hstack([-1., q0])
 
         point = self.minimizer(x0)
 
@@ -64,6 +64,7 @@ class SVMVersionSpace(ConvexBody, VersionSpace):
                 .format(self.inequality_constrain.check(point),
                         self.__ball.is_inside(point))
             )
+
         return point
 
 

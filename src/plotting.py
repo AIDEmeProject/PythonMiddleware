@@ -31,5 +31,7 @@ def plot_showdown(output, times, metrics_list=None):
 
                 ax.fill_between(x, y - error, y + error, alpha=0.1)
 
+            ax.legend(loc='best')
+
     plt.legend()
     plt.show()

@@ -36,7 +36,12 @@ class Minimizer:
         )
 
         if result.x[0] >= 0:
-            raise RuntimeError("Optimization failed! Result = {0}".format(result.x))
+            raise RuntimeError(
+                "Optimization failed! Success = {0}, Message = {1}, Result = {2}".format(
+                    result.success,
+                    result.message,
+                    result.x)
+                )
         return result.x[1:]
 
     @property
@@ -63,4 +68,3 @@ class Minimizer:
                 'jac': lambda s: np.hstack([1.0, -vector])
             }
         )
-

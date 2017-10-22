@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.utils import check_array
 from sklearn.metrics.classification import precision_score, recall_score, accuracy_score, f1_score
+from time import time
 
 from ..utils import label_all, check_points_and_labels
 from ..datapool import DataPool

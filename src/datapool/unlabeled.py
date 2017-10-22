@@ -27,12 +27,15 @@ class UnlabeledSet(object):
     def remove(self, index):
         self.__retrieved.extend(index)
 
-    def find_minimizer(self, ranker):
+    def find_minimizer(self, ranker, threshold=None):
         """ 
             Retrieves an unlabeled point that minimizes the ranker function 
             :param: ranker: 
         """
-        sorted_idx = np.argsort(ranker(self.__data))
+        values = ranker(self.__data)
+        known_labels = self.__data[threshold(values)] if threshold is not None and any(threshold(values)) else None
+
+        sorted_idx = np.argsort(values)
         for idx in sorted_idx:
             if idx not in self.__retrieved:
-                return Point(index=[idx], data=self.__data[idx, :])
+                return known_labels, Point(index=[idx], data=self.__data[idx, :])

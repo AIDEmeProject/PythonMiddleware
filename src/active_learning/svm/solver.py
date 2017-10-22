@@ -64,4 +64,4 @@ class SolverMethod(SVMBase):
         Xfake = self.get_fake_point(positive_sample, negative_sample)
 
         # find closest unlabeled point to boundary
-        return pool.find_minimizer(lambda x: np.linalg.norm(x - Xfake, axis=-1))
+        return pool.find_minimizer(lambda x: np.linalg.norm(x - Xfake, axis=-1))[1]
