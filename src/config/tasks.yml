@@ -1,0 +1,47 @@
+cars:
+  dataset:
+    name: cars
+    columns: "*"
+  user:
+    true_predicate: "height < 1.5 AND length < 5.0"
+    max_iter: 100
+
+housing:
+  dataset:
+    name: housing
+    columns:
+      - long
+      - price
+      - beds
+      - pricesqrf
+      - crime
+      - population
+      - income
+  user:
+    true_predicate: "long + price < 100000"
+    max_iter: 100
+  preprocessing:
+    - "one hot encoding"
+    - "standardize"
+
+iris:
+  dataset:
+    name: iris
+    columns:
+      - sepal_length
+      - sepal_width
+  user:
+    true_class: "Iris-setosa"
+    max_iter: 50
+  preprocessing:
+    - "standardize"
+
+mushroom:
+  dataset:
+    name: mushroom
+    columns: "*"
+  user:
+    max_iter: 100
+  preprocessing:
+    - "one hot encoding"
+    - "from binary to sign"

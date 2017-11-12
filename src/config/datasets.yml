@@ -1,0 +1,18 @@
+cars:
+  connection: postgres
+  database: user_study
+  name: cars_raw
+  key: id
+
+dermatology:
+  connection: datafolder
+
+housing:
+  connection: datafolder
+  key: id
+
+iris:
+  connection: datafolder
+
+mushroom:
+  connection: datafolder
