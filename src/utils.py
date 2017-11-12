@@ -1,11 +1,9 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
-from .datapool import Point
 
 
 def label_all(data, user):
-    points = Point(index=range(len(data)), data=data)
-    return user.get_label(points, update_counter=False)
+    return user.get_label(data, update_counter=False)
 
 def check_labels(labels):
     labels = np.array(labels, dtype=np.float64).ravel()

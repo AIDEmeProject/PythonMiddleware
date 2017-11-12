@@ -1,4 +1,4 @@
-from sklearn.utils import column_or_1d
+from numpy import array, atleast_1d
 
 
 class User(object):
@@ -57,24 +57,22 @@ class DummyUser(User):
         """
         :param y_true:   true labeling of points (must be -1, 1 format)
         """
-        super().__init__(max_iter=max_iter)
-        self.y_true = column_or_1d(y_true)
+        super().__init__(max_iter)
+        self.__y_true = atleast_1d(y_true).ravel()
+
+        self._check_labels()
 
     def _get_label(self, points):
-        return self.y_true[points.index]
+        return self.__y_true[points.index]
 
+    def _check_labels(self):
+        if not set(self.__y_true) <= {-1, 1}:
+            raise ValueError("Only {-1,1} labels are supported.")
 
-class OracleUser(User):
-    """ 
-        An OracleUser is represented by an "oracle function" that given a point returns its labeling.
-    """
-
-    def __init__(self, oracle, max_iter):
-        """
-            :param oracle:   function that receives a point x and returns its label (-1 or 1)
-        """
-        super().__init__(max_iter=max_iter)
-        self.oracle = oracle
+class IndexUser(User):
+    def __init__(self, index, max_iter):
+        super().__init__(max_iter)
+        self.__index = set(index)
 
     def _get_label(self, points):
-        return self.oracle(points.data)
+        return array([1 if idx in self.__index else -1 for idx in points.index])

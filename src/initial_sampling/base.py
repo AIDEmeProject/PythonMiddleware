@@ -1,12 +1,9 @@
-from src.datapool import Point
-
-
 class InitialSampler(object):
     def __call__(self, pool, user):
         return self.sample(pool, user)
 
     def sample(self, data, user):
-        return Point(index=[], data=[]), []
+        raise NotImplementedError
 
 
 class FixedSize(object):
@@ -26,4 +23,3 @@ class DeterministicSampler(InitialSampler):
     def sample(self, data, user):
         points = Point(index=self.indices, data=data[self.indices])
         return points, user.get_label(points)
-

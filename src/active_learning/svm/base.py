@@ -20,36 +20,35 @@ class SVMBase(ActiveLearner):
         self.kind = kind
 
     def initialize(self, data):
-        #if self.kind == 'linear':
-        #    self.version_space = SVMVersionSpace(data.shape[1])
-        #    self.version_space.clear()
-        pass
+        if self.kind == 'linear':
+            self.version_space = SVMVersionSpace(data.shape[1])
+
 
 class SimpleMargin(SVMBase):
     """
         Picks the closest point to the decision boundary to feed the user. After Tong-and-Koller, this approximately
         cuts the version space in half at every iteration
     """
-    def get_next(self, pool):
-        return pool.find_minimizer(lambda x: np.abs(self.clf.decision_function(x)))[1]
+    def ranker(self, data):
+        return np.abs(self.clf.decision_function(data))
 
 
 class OptimalMargin(SVMBase):
     """
         Picks the point that cuts the version space approximately in half.
-        Currently limited to linear kernel
+        Currently limited to linear kernel.
     """
-    def __init__(self, C=1000, fit_intercept=False, chain_length=1000, known_labels=False):
+    def __init__(self, C=1000, fit_intercept=True, chain_length=1000):
         super().__init__(kind='linear', C=C, fit_intercept=fit_intercept)
         self.sampler = HitAndRunSampler(chain_length)
-        self.known_labels = bool(known_labels)
 
-    def get_next(self, pool):
-        samples = self.sampler.sample_chain(self.version_space, self.version_space.get_point())
-        known_labels, minimizer = pool.find_minimizer(
-            ranker = lambda x: np.abs(np.sum(np.sign(x.dot(samples.T)), axis=-1)),
-            threshold = lambda val: val == 0
-        )
-        if self.known_labels and known_labels is not None:
-            pool.update(known_labels, self.predict(known_labels))
-        return minimizer
+    def sample_direction(self):
+        initial_point = self.version_space.get_point()
+        return self.sampler.sample_chain(self.version_space, initial_point)
+
+    def ranker(self, data):
+        samples = self.sample_direction()
+        prediction = np.sign(data.dot(samples.T))
+        #print(np.abs(np.sum(prediction, axis=-1)))
+        return np.abs(np.sum(prediction, axis=-1))
+

@@ -1,7 +1,6 @@
 import numpy as np
 from math import ceil
 from .base import InitialSampler, FixedSize
-from ..datapool import Point
 from ..utils import label_all
 
 
@@ -48,14 +47,13 @@ class StratifiedSamplerBase(InitialSampler, FixedSize):
             raise AttributeError("Training set size is smaller than sample size.")
 
         mask = self.__get_mask(data, user)
-
         pos, neg = self.__get_sample_size(mask)
 
         pos_index = sample_index(mask, pos)
         neg_index = sample_index(~mask, neg)
 
         index = list(pos_index) + list(neg_index)
-        return Point(index=index, data=data[index]), [1]*pos + [-1]*neg
+        return data.loc[index], [1]*pos + [-1]*neg
 
 
 class StratifiedSampler(StratifiedSamplerBase):
@@ -63,7 +61,7 @@ class StratifiedSampler(StratifiedSamplerBase):
         Returns "size" points proportionally divided between positive and negative samples
     """
     def _fraction_of_positive_samples(self, mask):
-        return 1.0 * np.sum(mask) / len(mask)
+        return np.mean(mask)
 
 
 class FixedSizeStratifiedSampler(StratifiedSamplerBase):

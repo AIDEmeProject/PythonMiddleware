@@ -25,7 +25,6 @@ class VersionSpace(VersionSpaceMixin):
     """
     def __init__(self, minimizer: Minimizer):
         self.minimizer = minimizer
-
         self.inequality_constrain = AppendableInequalityConstrain()
         self.cut_estimator = VersionSpaceCutEstimator(1000)
 

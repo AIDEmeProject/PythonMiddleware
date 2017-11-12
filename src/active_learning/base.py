@@ -1,11 +1,5 @@
 import numpy as np
-from sklearn.utils import check_array
 from sklearn.metrics.classification import precision_score, recall_score, accuracy_score, f1_score
-from time import time
-
-from ..utils import label_all, check_points_and_labels
-from ..datapool import DataPool
-from ..metrics import MetricTracker
 from ..version_space.base import VersionSpaceMixin
 
 
@@ -45,55 +39,14 @@ class ActiveLearner(object):
     def initialize(self, data):
         pass
 
-    def update(self, X, y):
-        points, labels = check_points_and_labels(X, y)
+    def update(self, points, labels):
+        points, labels = np.atleast_2d(points), np.atleast_1d(labels).ravel()
         for point, label in zip(points, labels):
             self.version_space.update(point, label)
 
+
     def get_next(self, pool):
+        return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1)
+
+    def ranker(self, data):
         raise NotImplementedError
-
-
-def train(data, user, active_learner, initial_sampler):
-    # check data
-    data = check_array(np.atleast_2d(data), dtype=np.float64)
-
-    # initialize
-    user.clear()
-    active_learner.clear()
-    active_learner.initialize(data)
-    points_init, labels_init = initial_sampler(data, user)
-
-    # create data pool
-    pool = DataPool(data)
-    pool.update(points_init, labels_init)
-
-    # train active_learner
-    X_train, y_train = pool.get_labeled_data()
-    active_learner.fit_classifier(X_train, y_train)
-    active_learner.update(points_init.data, labels_init)
-
-    # initialize tracker
-    tracker = MetricTracker(skip=len(y_train))
-    y_true = label_all(data, user)
-    tracker.add_measurement(active_learner.score(data, y_true))
-
-    while user.is_willing() and (not pool.has_labeled_all()):
-        # get next point
-        points = active_learner.get_next(pool)
-
-        # label point
-        labels = user.get_label(points)
-
-        # update labeled/unlabeled sets
-        pool.update(points, labels)
-
-        # retrain active learner
-        X_train, y_train = pool.get_labeled_data()
-        active_learner.fit_classifier(X_train, y_train)
-        active_learner.update(points.data, labels)
-
-        # append new metrics
-        tracker.add_measurement(active_learner.score(data, y_true))
-
-    return tracker

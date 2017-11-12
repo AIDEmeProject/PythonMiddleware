@@ -1,7 +1,6 @@
 import numpy as np
 
 from .base import InitialSampler, FixedSize
-from ..datapool import Point
 
 
 class RandomSampler(InitialSampler):
@@ -12,14 +11,15 @@ class RandomSampler(InitialSampler):
         indices = []
         labels = []
 
-        for idx in np.random.permutation(np.arange(len(data))):
-            point = Point(index=[idx], data=data[idx])
+        for i in np.random.permutation(np.arange(len(data))):
+            idx = point.index[i]
+            point = point.loc[idx]
 
             indices.append(idx)
             labels.append(int(user.get_label(point)))
 
             if len(set(labels)) == 2:
-                return Point(index=indices, data=data[indices]), labels
+                return data.loc[indices], labels
 
         raise RuntimeError("All points have the same label!")
 
@@ -34,8 +34,9 @@ class FixedSizeRandomSampler(InitialSampler, FixedSize):
         while True:
             user.clear()
 
-            idx = np.random.choice(range(n), replace=False, size=self.sample_size)
-            points = Point(index=idx, data=data[idx])
+            i = np.random.choice(range(n), replace=False, size=self.sample_size)
+            idx = data.index[i]
+            points = data.loc[idx]
             labels = user.get_label(points)
 
             if len(set(labels)) == 2:

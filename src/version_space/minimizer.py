@@ -11,7 +11,7 @@ class Minimizer:
             minimize s, subject to Ax <= s
 
        As we can see, we are looking for a point x satisfying Ax <= 0. We hope that after optimization, a solution (s,x)
-       with s <= 0 will be found.
+       with s < 0 will be found.
     """
 
     def __init__(self, dim):
@@ -32,7 +32,8 @@ class Minimizer:
             fun=lambda x: x[0],
             jac=lambda x: np.array([1.0] + [0.0] * self.dim),
             constraints=self.__constrains_list,
-            method="SLSQP"
+            method="SLSQP",
+            bounds=[(None, None)] + [(-1,1)]*self.dim
         )
 
         if result.x[0] >= 0:

@@ -1,41 +1,57 @@
-from collections import namedtuple
-import numpy as np
+from numpy import argsort
+from random import randint
 
 
-Point = namedtuple('Point', ['index', 'data'])
-
-
-class UnlabeledSet(object):
+class UnlabeledSet:
     """
-        In-memory or In-disk dataset for storing the remaining unlabeled points. It provides data access methods and
+        In-memory or In-disk config for storing the remaining unlabeled points. It provides data access methods and
         utility functions.
     """
     def __init__(self, data):
         self.__data = data
-        self.__retrieved = []
+        self.__labeled_rows = set()
 
-    def __getitem__(self, item):
-        return self.__data[item]
+    def __len__(self):
+        return len(self.__data) - len(self.__labeled_rows)
 
     @property
-    def retrieved(self):
-        return self.__retrieved
+    def labeled_rows(self):
+        return self.__labeled_rows
 
-    def has_removed_all(self):
-        return len(self.__retrieved) == len(self.__data)
+    def is_empty(self):
+        return len(self) == 0
 
-    def remove(self, index):
-        self.__retrieved.extend(index)
+    def update_labeled_rows(self, index):
+        if hasattr(index, '__iter__'):
+            self.__labeled_rows.update(index)
+        else:
+            self.__labeled_rows.add(index)
 
-    def find_minimizer(self, ranker, threshold=None):
-        """ 
-            Retrieves an unlabeled point that minimizes the ranker function 
-            :param: ranker: 
+    def sample(self):
+        if self.is_empty():
+            raise RuntimeError("Cannot sample from empty set!")
+
+        n = len(self) - 1
+        while True:
+            idx = self.__data.index[randint(0, n)]
+            if idx not in self.__labeled_rows:
+                return self.__data.loc[[idx]]
+
+    def get_minimizer(self, ranker, size=1):
         """
-        values = ranker(self.__data)
-        known_labels = self.__data[threshold(values)] if threshold is not None and any(threshold(values)) else None
+            Retrieves 'size' unlabeled point minimizing the ranker function
+            :param: ranker:
+        """
+        if not (isinstance(size, int) and size > 0):
+            raise ValueError("Size must be a positive integer!")
 
-        sorted_idx = np.argsort(values)
-        for idx in sorted_idx:
-            if idx not in self.__retrieved:
-                return known_labels, Point(index=[idx], data=self.__data[idx, :])
+        to_retrieve = []
+        thresholds = ranker(self.__data.values)
+        sorted_index = argsort(thresholds)
+
+        for idx in sorted_index:
+            if idx not in self.__labeled_rows:
+                to_retrieve.append(idx)
+
+            if len(to_retrieve) == size:
+                return self.__data.loc[to_retrieve]

@@ -39,4 +39,4 @@ class ActBoost(BaseBoosting):
             prediction = 2 * (np.dot(X, samples.T) >= 0) - 1
             return np.abs(np.sum(prediction, axis=-1))
 
-        return pool.find_minimizer(lambda x, s=samples: f(x, s))
+        return pool.get_minimizer_over_unlabeled_data(lambda x, s=samples: f(x, s))

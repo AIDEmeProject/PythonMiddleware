@@ -5,14 +5,9 @@ from .base import SVMBase
 
 class BoundingPool(object):
     def __init__(self, pool_size):
-        self.pool = None
-        self.size = pool_size
-
-    def __len__(self):
-        return self.size
-
-    def __getitem__(self, item):
-        return self.pool[item]
+        self.__pool = None
+        self.__size = pool_size
+        self.__count = -1
 
     def build_pool(self, data):
         """ Generate random sampling on bounding box of data """
@@ -25,12 +20,16 @@ class BoundingPool(object):
         self.pool = np.random.uniform(low=min_vec, high=max_vec, size=(self.size, N))
 
         # sample from faces
-        for j in range(self.size):
+        for j in range(self.__size):
             k = (j // 2) % N  # current dimension
             if j % 2 == 0:
                 self.pool[j, k] = min_vec[k]
             else:
                 self.pool[j, k] = max_vec[k]
+
+    def get_next_negative_point(self):
+        self.__count = (self.__count + 1) % len(self.__size)
+        return self.pool[self.__count]
 
 
 class SolverMethod(SVMBase):
@@ -39,29 +38,27 @@ class SolverMethod(SVMBase):
         super().__init__(kind, C, kernel, degree, gamma, max_iter, fit_intercept)
         self.bounding_pool = BoundingPool(pool_size=pool_size)
 
-    def initialize(self, X):
-        super().initialize(X)
-        self.bounding_pool.build_pool(X)
+    def initialize(self, data):
+        super().initialize(data)
+        self.bounding_pool.build_pool(data)
 
     def get_fake_point(self, positive_sample, negative_sample):
+        positive_sample, negative_sample = np.atleast_2d(positive_sample, negative_sample)
+
         func = lambda t: abs(float(
-            self.clf.decision_function(t * positive_sample.reshape(1, -1) + (1 - t) * negative_sample.reshape(1, -1))))
+            self.clf.decision_function(t * positive_sample + (1 - t) * negative_sample)
+        ))
 
         # find fake point on boundary (or at least the closest)
         res = minimize(func, 0.5, bounds=[(0, 1)])
         return res.x * positive_sample + (1 - res.x) * negative_sample
 
     def get_next(self, pool):
-        """ Get next point to label """
-        points, labels = pool.get_labeled_data()
+        """ Get closest point to SVM's boundary given current  """
+        positive_sample = pool.get_positive_points()[-1]
+        negative_sample = self.bounding_pool.get_next_negative_point()
+        fake_point = self.get_fake_point(positive_sample, negative_sample)
 
-        # decision function
-        pos = [x for x, y in zip(points, labels) if y == 1]
-
-        negative_sample = self.bounding_pool[len(points) % len(self.bounding_pool)]
-        positive_sample = pos[-1]
-
-        Xfake = self.get_fake_point(positive_sample, negative_sample)
-
-        # find closest unlabeled point to boundary
-        return pool.find_minimizer(lambda x: np.linalg.norm(x - Xfake, axis=-1))[1]
+        # find closest unlabeled point to fake point
+        ranker = lambda data: np.linalg.norm(data - fake_point, axis=-1)
+        return pool.get_minimizer_over_unlabeled_data(ranker)

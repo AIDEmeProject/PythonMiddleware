@@ -3,17 +3,18 @@ import numpy as np
 from .base import VersionSpace
 from .minimizer import Minimizer
 from ..convexbody.objects import ConvexBody, UnitBall
-
+import scipy.optimize
 
 class SVMMinimizer(Minimizer):
     def get_initial_constrains(self):
-        return [
-            {
-                'type': 'eq',
-                'fun': lambda x: 1.0 + x[0] - np.sum(x[1:] ** 2),
-                'jac': lambda x: np.hstack([[1], -2 * x[1:]])
-            }
-        ]
+        return []
+        #return [
+        #    {
+        #        'type': 'eq',
+        #        'fun': lambda x: 1 + x[0] - np.sum(x[1:] ** 2),
+        #        'jac': lambda x: np.hstack([[1], -2 * x[1:]])
+        #    }
+        #]
 
 
 class SVMVersionSpace(ConvexBody, VersionSpace):
@@ -23,7 +24,6 @@ class SVMVersionSpace(ConvexBody, VersionSpace):
 
         self._dim = int(dim)
         self.__ball = UnitBall(self._dim)
-
 
     def is_inside(self, points):
         return np.logical_and(self.inequality_constrain.check(points), self.__ball.is_inside(points))
@@ -52,11 +52,21 @@ class SVMVersionSpace(ConvexBody, VersionSpace):
         if self.inequality_constrain.is_empty():
             return q0
 
-        x0 = np.hstack([-1., q0])
+        #x0 = np.hstack([-1., q0])
+        #point = self.minimizer(x0)
+        m = self.inequality_constrain.matrix.shape[0]
+        res = scipy.optimize.linprog(
+            c=np.array([1.0] + [0.0] * self.dim),
+            A_ub=np.hstack([-np.ones(m).reshape(-1,1), self.inequality_constrain.matrix]),
+            b_ub=np.zeros(m),
+            bounds=[(-1, 1)] + [(-1, 1)]*self.dim,
+            options={"disp": False}
+        )
 
-        point = self.minimizer(x0)
-
+        point = res.x[1:]
+        point = 0.5*point/np.linalg.norm(point)
         if not self.is_inside(point):
+            # print(res)
             raise RuntimeError(
                 'Point outside search space!\n'
                 'Inequality constrain: {0}\n'
@@ -65,6 +75,6 @@ class SVMVersionSpace(ConvexBody, VersionSpace):
                         self.__ball.is_inside(point))
             )
 
-        return point
+        return 0.5*point/np.linalg.norm(point)
 
 

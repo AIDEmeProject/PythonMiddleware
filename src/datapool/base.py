@@ -6,31 +6,30 @@ class DataPool(object):
     def __init__(self, data):
         self.__labeled = LabeledSet()
         self.__unlabeled = UnlabeledSet(data)
-        self.__size = len(data)
-
-    def __len__(self):
-        return self.__size
-
-    def __getitem__(self, item):
-        return self.__unlabeled[item]
 
     @property
-    def labeled_size(self):
-        return len(self.__labeled)
+    def size(self):
+        return (len(self.__labeled), len(self.__unlabeled))
 
     @property
-    def retrieved(self):
-        return self.__unlabeled.retrieved
+    def labeled_rows(self):
+        return self.__unlabeled.labeled_rows
 
     def has_labeled_all(self):
-        return self.__unlabeled.has_removed_all()
+        return len(self.__unlabeled) <= 0
 
-    def get_labeled_data(self):
+    def get_labeled_set(self):
         return self.__labeled.to_array()
 
-    def find_minimizer(self, ranker, threshold=None):
-        return self.__unlabeled.find_minimizer(ranker, threshold)
+    def get_minimizer_over_unlabeled_data(self, ranker, size=1):
+        return self.__unlabeled.get_minimizer(ranker, size)
 
     def update(self, points, labels):
-        self.__labeled.append(points.data, labels)
-        self.__unlabeled.remove(points.index)
+        self.__labeled.append(points.values, labels)
+        self.__unlabeled.update_labeled_rows(points.index)
+
+    def sample_from_unlabeled(self):
+        return self.__unlabeled.sample()
+
+    def get_positive_points(self):
+        return self.__labeled.get_positive_points()
