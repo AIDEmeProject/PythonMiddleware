@@ -1,11 +1,14 @@
 import numpy as np
+from scipy.optimize import linprog
 from ..convexbody.objects.constrain import InequalityConstrain
+from ..convexbody.objects import ConvexBody
 
 
 class AppendableInequalityConstrain(InequalityConstrain):
-    def __init__(self):
+    def __init__(self, dim):
         self._vector = []
         self._matrix = []
+        self._dim = int(dim)
 
     def __len__(self):
         return len(self._vector)
@@ -21,13 +24,13 @@ class AppendableInequalityConstrain(InequalityConstrain):
     @property
     def shape(self):
         if self.is_empty():
-            return (0,)
+            return (0, self._dim)
         else:
-            return (len(self._matrix), len(self._matrix[0]))
+            return (len(self._matrix), self._dim)
 
     def _check_sizes(self, point):
-        if not self.is_empty() and point.shape != (self.shape[1], ):
-            raise ValueError("Bad point dimension: obtained {0}, expected {1}".format(point.shape, self.shape))
+        if point.shape != (self._dim, ):
+            raise ValueError("Bad point dimension: obtained {0}, expected {1}".format(point.shape, self.shape[1]))
 
     def clear(self):
         self._vector = []
@@ -43,3 +46,30 @@ class AppendableInequalityConstrain(InequalityConstrain):
 
     def check(self, points):
         return True if self.is_empty() else super().check(points)
+
+    def get_point(self):
+        """
+            Finds an interior point to the current search space through an optimization routine.
+            :return: point inside search space
+        """
+        n_constrains, dim = self.shape
+
+        if self.is_empty():
+            return np.zeros(dim)
+
+        res = linprog(
+            c=np.array([1.0] + [0.0] * dim),
+            A_ub=np.hstack([-np.ones((n_constrains, 1)), self.matrix]),
+            b_ub=np.zeros(n_constrains),
+            bounds=[(None, None)] + [(-1, 1)] * dim
+        )
+
+        point = res.x[1:].ravel()
+
+        if not self.check(point):
+            raise RuntimeError("Linear Program optimization failed: {0} does not satisfy constrains.".format(point))
+
+        if np.allclose(point, 0):
+            raise RuntimeError("Found zero vector. Check constrains for degeneracy of Version Space.")
+
+        return 0.99 * point / np.linalg.norm(point)

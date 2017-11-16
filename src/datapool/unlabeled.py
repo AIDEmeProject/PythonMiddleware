@@ -9,7 +9,7 @@ class UnlabeledSet:
     """
     def __init__(self, data):
         self.__data = data
-        self.__labeled_rows = set()
+        self.__labeled_rows = []
 
     def __len__(self):
         return len(self.__data) - len(self.__labeled_rows)
@@ -23,9 +23,9 @@ class UnlabeledSet:
 
     def update_labeled_rows(self, index):
         if hasattr(index, '__iter__'):
-            self.__labeled_rows.update(index)
+            self.__labeled_rows.extend(index)
         else:
-            self.__labeled_rows.add(index)
+            self.__labeled_rows.append(index)
 
     def sample(self):
         if self.is_empty():

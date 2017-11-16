@@ -7,9 +7,10 @@ class ActiveLearner(object):
     """ 
         Class responsible for fitting a classifier and retrieving the next point from the data pool. 
     """
-    def __init__(self):
+    def __init__(self, estimate_cut=False):
         self.clf = None
         self.version_space = VersionSpaceMixin()
+        self.estimate_cut = estimate_cut
 
     def predict(self, X):
         return self.clf.predict(X)
@@ -28,7 +29,8 @@ class ActiveLearner(object):
         }
 
         # version space scores
-        scores.update(self.version_space.score())
+        if self.estimate_cut:
+            scores.update(self.version_space.score())
 
         return scores
 
@@ -40,10 +42,9 @@ class ActiveLearner(object):
         pass
 
     def update(self, points, labels):
-        points, labels = np.atleast_2d(points), np.atleast_1d(labels).ravel()
+        points, labels = np.atleast_2d(points.values), np.atleast_1d(labels).ravel()
         for point, label in zip(points, labels):
             self.version_space.update(point, label)
-
 
     def get_next(self, pool):
         return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1)

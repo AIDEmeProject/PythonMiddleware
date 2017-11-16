@@ -23,13 +23,11 @@ class VersionSpace(VersionSpaceMixin):
         SVM case: for linear kernel, an unit ball in higher-dimensional space
         Actboost: a polytope
     """
-    def __init__(self, minimizer: Minimizer):
-        self.minimizer = minimizer
-        self.inequality_constrain = AppendableInequalityConstrain()
+    def __init__(self):
+
         self.cut_estimator = VersionSpaceCutEstimator(1000)
 
     def clear(self):
-        self.minimizer.clear()
         self.inequality_constrain.clear()
         self.cut_estimator.clear()
 
@@ -39,7 +37,6 @@ class VersionSpace(VersionSpaceMixin):
 
         constrain_vector = -label * point
         self.inequality_constrain.append(constrain_vector, 0.0)
-        self.minimizer.append(constrain_vector)
 
     def score(self):
         return self.cut_estimator.estimate_cut(self)

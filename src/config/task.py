@@ -29,17 +29,16 @@ class Task:
 
         # train active_learner
         self.__learner.fit_classifier(points_init.values, labels_init)
-        self.__learner.update(points_init.values, labels_init)
-
+        self.__learner.update(points_init, labels_init)
 
     def get_score(self, y_true):
         return self.__learner.score(self.__data, y_true)
 
     def update_learner(self):
         X_train, y_train = self.pool.get_labeled_set()
+        #print('update: ', X_train, y_train)
         self.__learner.fit_classifier(X_train, y_train)
-        #print('update: ', X_train[-1], y_train[-1])
-        self.__learner.update(X_train[-1], y_train[-1])
+        self.__learner.update(X_train.iloc[[-1]], y_train[-1])
 
 
     def main_loop(self):

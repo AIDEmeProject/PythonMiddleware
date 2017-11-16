@@ -1,5 +1,6 @@
 from .unlabeled import UnlabeledSet
 from .labeled import LabeledSet
+from pandas import DataFrame
 
 
 class DataPool(object):
@@ -19,7 +20,8 @@ class DataPool(object):
         return len(self.__unlabeled) <= 0
 
     def get_labeled_set(self):
-        return self.__labeled.to_array()
+        X, y = self.__labeled.to_array()
+        return DataFrame(X, index=self.__unlabeled.labeled_rows), y
 
     def get_minimizer_over_unlabeled_data(self, ranker, size=1):
         return self.__unlabeled.get_minimizer(ranker, size)

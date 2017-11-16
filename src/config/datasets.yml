@@ -16,3 +16,9 @@ iris:
 
 mushroom:
   connection: datafolder
+
+sdss_random_sample:
+  connection: postgres
+  database: sdss
+  name: sdss_random_sample
+  key: objid
