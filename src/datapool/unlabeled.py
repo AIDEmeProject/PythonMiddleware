@@ -37,7 +37,7 @@ class UnlabeledSet:
             if idx not in self.__labeled_rows:
                 return self.__data.loc[[idx]]
 
-    def get_minimizer(self, ranker, size=1):
+    def get_minimizer(self, ranker, size=1, sample_size=-1):
         """
             Retrieves 'size' unlabeled point minimizing the ranker function
             :param: ranker:
@@ -46,10 +46,12 @@ class UnlabeledSet:
             raise ValueError("Size must be a positive integer!")
 
         to_retrieve = []
-        thresholds = ranker(self.__data.values)
+        data = self.__data if sample_size <= 0 else self.__data.sample(sample_size)
+        thresholds = ranker(data.values)
         sorted_index = argsort(thresholds)
 
-        for idx in sorted_index:
+        for i in sorted_index:
+            idx = data.index[i]
             if idx not in self.__labeled_rows:
                 to_retrieve.append(idx)
 

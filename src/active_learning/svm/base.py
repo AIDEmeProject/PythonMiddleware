@@ -46,58 +46,34 @@ class OptimalMargin(SVMBase):
         Picks the point that cuts the version space approximately in half.
         Currently limited to linear kernel.
     """
-    def __init__(self, chain_length=100, kind='linear', C=1000, kernel='linear', fit_intercept=True, top=None, estimate_cut=False):
+    def __init__(self, chain_length=100, sample_size=-1, kind='linear', C=1000, kernel='linear', fit_intercept=True, top=None,
+                 estimate_cut=False, threshold=-1, factorization_type=''):
         super().__init__(kind=kind, kernel=kernel, C=C, fit_intercept=fit_intercept, top=top, estimate_cut=estimate_cut)
         self.sampler = HitAndRunSampler(chain_length)
+        self.threshold = threshold
+        self.factorization_type = factorization_type
+        self.sample_size = sample_size
+
+    def get_factorization(self, data):
+        if not self.factorization_type or self.kind == 'linear':
+            return data.values
+        if self.factorization_type == 'cholesky':
+            K = rbf_kernel(data) + 1e-8 * np.eye(len(data))
+            return np.linalg.cholesky(K)
+        elif self.factorization_type == 'diagonalize':
+            K = rbf_kernel(data) + 1e-8 * np.eye(len(data))
+            lamb, P = np.linalg.eigh(K)
+            L = P.dot(np.sqrt(np.diag(lamb)))
+            threshold = -np.argmax(np.cumsum(lamb[::-1])/np.sum(lamb) > self.threshold)
+            return L[:, threshold:]
+        raise ValueError("Unknown factorization method")
 
     def initialize(self, data):
-        n = data.shape[1]
-        if self.kind == 'kernel':
-            K = rbf_kernel(data)
-            self.L = np.linalg.cholesky(K + 1e-5 * np.eye(len(K)))
-            n = len(self.L)
-
-        self.version_space = SVMVersionSpace(n)
-
-    def update(self, points, labels):
-        index = points.index
-        points, labels = np.atleast_2d(points.values), np.atleast_1d(labels).ravel()
-        for ind, point, label in zip(index, points, labels):
-            if self.kind == 'kernel':
-                point = self.L[ind]
-            self.version_space.update(point, label)
-
-    def sample_direction(self):
-        initial_point = self.version_space.get_point()
-        return self.sampler.sample_chain(self.version_space, initial_point)
-
-    def get_sample(self, data):
-        if self.kind == 'kernel':
-            samples = super().get_sample(self.L)
-        else:
-            samples = super().get_sample(data)
-        return np.hstack([np.ones((len(samples), 1)), samples])
-
-    def ranker(self, data):
-        data = self.get_sample(data)
-        samples = self.sample_direction()
-        prediction = np.sign(data.dot(samples.T))
-        return np.abs(np.sum(prediction, axis=-1))
-
-
-class IncrementalOptimalMargin(SVMBase):
-    """
-        Picks the point that cuts the version space approximately in half.
-        Currently limited to linear kernel.
-    """
-    def __init__(self, chain_length=100, C=1000, kernel='linear', top=None, estimate_cut=False):
-        super().__init__(kind='kernel', kernel=kernel, C=C, top=top, estimate_cut=estimate_cut)
-        self.sampler = HitAndRunSampler(chain_length)
-
-    def initialize(self, data):
-        K = rbf_kernel(data)
-        self.L = np.linalg.cholesky(K + 1e-5 * np.eye(len(K)))
-        self.version_space = SVMVersionSpace(len(self.L))
+        self.L = self.get_factorization(data)
+        print(self.L.shape)
+        #self.L = np.hstack([np.ones((len(self.L), 1)), self.L])
+        self.version_space = SVMVersionSpace(self.L.shape[1])
+        #print(self.L.shape)
 
     def update(self, points, labels):
         index = points.index
@@ -108,14 +84,12 @@ class IncrementalOptimalMargin(SVMBase):
 
     def sample_direction(self):
         initial_point = self.version_space.get_point()
+        if self.sample_size > 0:
+            return self.sampler.uniform(self.version_space, initial_point, self.sample_size)
         return self.sampler.sample_chain(self.version_space, initial_point)
 
-    def get_sample(self, data):
-        samples = super().get_sample(self.L)
-        return np.hstack([np.ones((len(samples), 1)), samples])
-
     def ranker(self, data):
-        data = self.get_sample(data)
         samples = self.sample_direction()
+        data = np.hstack([np.ones((len(self.L), 1)), self.L])
         prediction = np.sign(data.dot(samples.T))
         return np.abs(np.sum(prediction, axis=-1))

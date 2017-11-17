@@ -23,8 +23,8 @@ class DataPool(object):
         X, y = self.__labeled.to_array()
         return DataFrame(X, index=self.__unlabeled.labeled_rows), y
 
-    def get_minimizer_over_unlabeled_data(self, ranker, size=1):
-        return self.__unlabeled.get_minimizer(ranker, size)
+    def get_minimizer_over_unlabeled_data(self, ranker, size=1, sample_size=-1):
+        return self.__unlabeled.get_minimizer(ranker, size, sample_size)
 
     def update(self, points, labels):
         self.__labeled.append(points.values, labels)

@@ -47,7 +47,7 @@ class ActiveLearner(object):
             self.version_space.update(point, label)
 
     def get_next(self, pool):
-        return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1)
+        return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1, sample_size=-1)
 
     def ranker(self, data):
         raise NotImplementedError
