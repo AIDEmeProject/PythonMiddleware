@@ -1,6 +1,6 @@
 from time import time
 
-from src.datapool.base import DataPool
+from src.datapool import DataPool
 from src.initial_sampling import StratifiedSampler
 from src.metrics import MetricTracker, MetricStorage
 from src.utils import label_all
@@ -39,7 +39,7 @@ class Task:
     def update_learner(self):
         X, y = self.pool.get_labeled_set()
         self.__learner.fit_classifier(X, y)
-        self.__learner.update(X.iloc[[-1]], y.iloc[-1])
+        self.__learner.update(X.iloc[[-1]], y.iloc[[-1]])
 
     def main_loop(self):
         # get next point

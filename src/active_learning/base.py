@@ -35,15 +35,13 @@ class ActiveLearner(object):
         return scores
 
     def clear(self):
-        if self.version_space is not None:
-            self.version_space.clear()
+        self.version_space.clear()
 
     def initialize(self, data):
         pass
 
     def update(self, points, labels):
-        points, labels = np.atleast_2d(points.values), np.atleast_1d(labels).ravel()
-        for point, label in zip(points, labels):
+        for point, label in zip(points.values, labels):
             self.version_space.update(point, label)
 
     def get_next(self, pool):
