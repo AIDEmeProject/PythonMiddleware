@@ -3,19 +3,14 @@ from .tags import list_to_tag
 from ..config.task import Task
 
 class Showdown(object):
-    def __init__(self, times, initial_sampler):
-        self.times = times
-        self.initial_sampler = initial_sampler
-
-
-    def run(self, datasets_list, active_learners_list):
+    def run(self, datasets_list, active_learners_list, times):
         datasets, active_learners = list_to_tag(datasets_list, active_learners_list)
 
         return pd.concat(
             [
                 pd.concat(
                     [
-                        Task(data, user, al, self.initial_sampler, self.times).get_average_performance() for al in active_learners.learners
+                        Task(data, user, al).get_average_performance(times) for al in active_learners.learners
                     ],
                     axis=1,
                     keys=active_learners.tags

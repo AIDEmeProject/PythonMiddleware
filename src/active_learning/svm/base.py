@@ -71,9 +71,7 @@ class OptimalMargin(SVMBase):
     def initialize(self, data):
         self.L = self.get_factorization(data)
         print(self.L.shape)
-        #self.L = np.hstack([np.ones((len(self.L), 1)), self.L])
         self.version_space = SVMVersionSpace(self.L.shape[1])
-        #print(self.L.shape)
 
     def update(self, points, labels):
         index = points.index

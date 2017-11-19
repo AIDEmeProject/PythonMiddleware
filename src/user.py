@@ -1,4 +1,4 @@
-from numpy import array, atleast_1d
+from pandas import Series
 
 
 class User(object):
@@ -13,7 +13,7 @@ class User(object):
         """
             :param max_iter: max number of points the user is willing to classify
         """
-        self.max_iter = max_iter
+        self.max_iter = int(max_iter)
         self.labeled_samples = 0
 
     def clear(self):
@@ -35,8 +35,12 @@ class User(object):
             :param points: collection of points to label
             :param update_counter: whether to update internal counter of labeled points
         """
+        if not self.is_willing():
+            raise RuntimeError("User has already stopped labeling.")
+
         if update_counter:
             self.labeled_samples += len(points.index)
+
         return self._get_label(points)
 
     def _get_label(self, points):
@@ -58,21 +62,29 @@ class DummyUser(User):
         :param y_true:   true labeling of points (must be -1, 1 format)
         """
         super().__init__(max_iter)
-        self.__y_true = atleast_1d(y_true).ravel()
-
+        self.__y_true = Series(y_true, dtype='float64')
         self._check_labels()
 
     def _get_label(self, points):
-        return self.__y_true[points.index]
+        return self.__y_true.loc[points.index]
 
     def _check_labels(self):
-        if not set(self.__y_true) <= {-1, 1}:
+        if not set(self.__y_true.values) <= {-1, 1}:
             raise ValueError("Only {-1,1} labels are supported.")
 
+
 class IndexUser(User):
+    """
+        This also represent a 'fake user', who labels each point based on its index. It consumes less memory than the
+        DummyUser, and it is more adapted to data coming from databases.
+    """
     def __init__(self, index, max_iter):
         super().__init__(max_iter)
         self.__index = set(index)
 
+    def _bool_to_sign(self, labels):
+        return 2.*labels - 1.
+
     def _get_label(self, points):
-        return array([1 if idx in self.__index else -1 for idx in points.index])
+        labels = points.index.isin(self.__index)
+        return Series(data=self._bool_to_sign(labels), index=points.index)
