@@ -34,8 +34,8 @@ class BoundingPool(object):
 
 class SolverMethod(SVMBase):
 
-    def __init__(self, kind='kernel', pool_size=20, C=1000, kernel='rbf', degree=3, gamma='auto', max_iter=None, fit_intercept=True):
-        super().__init__(kind, C, kernel, degree, gamma, max_iter, fit_intercept)
+    def __init__(self, pool_size=20, top=None, kind='kernel', C=1000, kernel='rbf', fit_intercept=True):
+        super().__init__(kind, C, kernel, fit_intercept, top)
         self.bounding_pool = BoundingPool(pool_size=pool_size)
 
     def initialize(self, data):

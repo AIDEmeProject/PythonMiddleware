@@ -7,10 +7,10 @@ class ActiveLearner(object):
     """ 
         Class responsible for fitting a classifier and retrieving the next point from the data pool. 
     """
-    def __init__(self, estimate_cut=False):
+    def __init__(self, top=-1):
         self.clf = None
         self.version_space = VersionSpaceMixin()
-        self.estimate_cut = estimate_cut
+        self.top = int(top)
 
     def predict(self, X):
         return self.clf.predict(X)
@@ -28,10 +28,6 @@ class ActiveLearner(object):
             'fscore': f1_score(y_true, y_pred, labels=[-1, 1])
         }
 
-        # version space scores
-        if self.estimate_cut:
-            scores.update(self.version_space.score())
-
         return scores
 
     def clear(self):
@@ -41,11 +37,12 @@ class ActiveLearner(object):
         pass
 
     def update(self, points, labels):
-        for point, label in zip(points.values, labels):
+        points, labels = np.atleast_2d(points), np.atleast_1d(labels)
+        for point, label in zip(points, labels):
             self.version_space.update(point, label)
 
     def get_next(self, pool):
-        return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1, sample_size=-1)
+        return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1, sample_size=self.top)
 
     def ranker(self, data):
         raise NotImplementedError

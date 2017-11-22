@@ -1,5 +1,5 @@
 from .boosting import ActboostPolytope
-from .svm import SVMVersionSpace
+from .linear import LinearVersionSpace
 from .two_dimensional import Circle
 
-__all__ = ['ActboostPolytope', 'SVMVersionSpace', 'Circle']
+__all__ = ['ActboostPolytope', 'LinearVersionSpace', 'Circle']

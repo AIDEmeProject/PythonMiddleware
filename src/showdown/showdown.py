@@ -10,7 +10,7 @@ class Showdown(object):
             [
                 pd.concat(
                     [
-                        Task(data, user, al).get_average_performance(times) for al in active_learners.learners
+                        Task(data, user, al, initial_sampler).get_average_performance(times) for al, initial_sampler in zip(active_learners.learners, active_learners.samplers)
                     ],
                     axis=1,
                     keys=active_learners.tags

@@ -2,14 +2,14 @@ import numpy as np
 from sklearn.svm import SVC, LinearSVC
 from sklearn.metrics.pairwise import rbf_kernel
 
-from src.version_space import SVMVersionSpace
+from src.version_space import LinearVersionSpace
 from src.convexbody.sampling import HitAndRunSampler
 from ..base import ActiveLearner
 
 
 class SVMBase(ActiveLearner):
-    def __init__(self, kind='linear', C=1000, kernel='linear', fit_intercept=True, top=None, estimate_cut=False):
-        super().__init__(estimate_cut)
+    def __init__(self, top=-1, kind='linear', C=1000, kernel='linear', fit_intercept=True):
+        super().__init__(top)
 
         if kind == 'kernel':
             self.clf = SVC(C=C, kernel=kernel, decision_function_shape='ovr')
@@ -18,17 +18,7 @@ class SVMBase(ActiveLearner):
         else:
             raise ValueError("Non supported kind. Only 'linear' and 'kernel' options available.")
 
-        self.top = top
         self.kind = kind
-
-    def initialize(self, data):
-        self.version_space = SVMVersionSpace(data.shape[1])
-
-    def get_sample(self, data):
-        if not self.top:
-            return data
-        idx = np.random.choice(np.arange(len(data)), size=self.top, replace=False)
-        return data[idx]
 
 
 class SimpleMargin(SVMBase):
@@ -37,7 +27,6 @@ class SimpleMargin(SVMBase):
         cuts the version space in half at every iteration
     """
     def ranker(self, data):
-        data = self.get_sample(data)
         return np.abs(self.clf.decision_function(data))
 
 
@@ -46,12 +35,12 @@ class OptimalMargin(SVMBase):
         Picks the point that cuts the version space approximately in half.
         Currently limited to linear kernel.
     """
-    def __init__(self, chain_length=100, sample_size=-1, kind='linear', C=1000, kernel='linear', fit_intercept=True, top=None,
-                 estimate_cut=False, threshold=-1, factorization_type=''):
-        super().__init__(kind=kind, kernel=kernel, C=C, fit_intercept=fit_intercept, top=top, estimate_cut=estimate_cut)
-        self.sampler = HitAndRunSampler(chain_length)
+    def __init__(self, threshold=-1, factorization_type='', chain_length=100, sample_size=-1, top=-1,
+                 kind='linear', C=1000, kernel='linear', fit_intercept=True):
+        super().__init__(kind=kind, kernel=kernel, C=C, fit_intercept=fit_intercept, top=top)
         self.threshold = threshold
         self.factorization_type = factorization_type
+        self.chain_length = chain_length
         self.sample_size = sample_size
 
     def get_factorization(self, data):
@@ -71,23 +60,16 @@ class OptimalMargin(SVMBase):
     def initialize(self, data):
         self.L = self.get_factorization(data)
         print(self.L.shape)
-        self.version_space = SVMVersionSpace(self.L.shape[1])
+        self.version_space = LinearVersionSpace(self.L.shape[1])
 
     def update(self, points, labels):
-        index = points.index
-        points, labels = np.atleast_2d(points.values), np.atleast_1d(labels).ravel()
-        for ind, point, label in zip(index, points, labels):
-            point = self.L[ind]
-            self.version_space.update(point, label)
-
-    def sample_direction(self):
-        initial_point = self.version_space.get_point()
-        if self.sample_size > 0:
-            return self.sampler.uniform(self.version_space, initial_point, self.sample_size)
-        return self.sampler.sample_chain(self.version_space, initial_point)
+        super().update(self.L[points.index], labels)
 
     def ranker(self, data):
-        samples = self.sample_direction()
-        data = np.hstack([np.ones((len(self.L), 1)), self.L])
-        prediction = np.sign(data.dot(samples.T))
+        samples = self.version_space.sample(self.chain_length, self.sample_size)
+        bias, weight = samples[:, [0]], samples[:, 1:]
+        prediction = np.sign(bias + np.dot(weight, self.L.T))
         return np.abs(np.sum(prediction, axis=-1))
+
+
+

@@ -1,9 +1,10 @@
 import numpy as np
 from .appendable_constrain import AppendableInequalityConstrain
 from ..convexbody.objects import ConvexBody, UnitBall
+from ..convexbody.sampling import HitAndRunSampler
 
 
-class SVMVersionSpace(ConvexBody):
+class LinearVersionSpace(ConvexBody):
     def __init__(self, dim):
         ConvexBody.__init__(self)
         self.__inequality_constrain = AppendableInequalityConstrain(dim+1)  # add one to account for bias
@@ -38,3 +39,8 @@ class SVMVersionSpace(ConvexBody):
         constrain_vector = -label * point  # constrain = -y_i (1, x_i)
         self.__inequality_constrain.append(constrain_vector, 0)
 
+    def sample(self, chain_length, sample_size=-1):
+        initial_point = self.get_point()
+        if sample_size > 0:
+            return HitAndRunSampler.uniform(self, initial_point, chain_length, sample_size)
+        return HitAndRunSampler.sample_chain(self, initial_point, chain_length)
