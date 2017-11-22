@@ -44,3 +44,7 @@ class LinearVersionSpace(ConvexBody):
         if sample_size > 0:
             return HitAndRunSampler.uniform(self, initial_point, chain_length, sample_size)
         return HitAndRunSampler.sample_chain(self, initial_point, chain_length)
+
+
+
+

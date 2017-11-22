@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.optimize import linprog
 from ..convexbody.objects.constrain import InequalityConstrain
-from ..convexbody.objects import ConvexBody
 
 
 class AppendableInequalityConstrain(InequalityConstrain):
@@ -30,7 +29,7 @@ class AppendableInequalityConstrain(InequalityConstrain):
 
     def _check_sizes(self, point):
         if point.shape != (self._dim, ):
-            raise ValueError("Bad point dimension: obtained {0}, expected {1}".format(point.shape, self.shape[1]))
+            raise ValueError("Bad point dimension: obtained {0}, expected {1}".format(point.shape, self.shape))
 
     def clear(self):
         self._vector = []

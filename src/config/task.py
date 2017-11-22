@@ -1,19 +1,16 @@
 from time import time
 import logging
 from src.datapool import DataPool
-from src.initial_sampling import StratifiedSampler
-from src.metrics import MetricTracker, MetricStorage
+from src.metrics import MetricTracker
 from src.utils import label_all
 from src.config.utils import setup_logging
 
 
 class Task:
-    def __init__(self, data, user, learner, sampler):
+    def __init__(self, data, user, learner):
         self.__data = data
         self.__user = user
         self.__learner = learner
-        self.__initial_sampler = sampler
-
         self.pool = DataPool(self.__data)
 
         # logging config
@@ -31,12 +28,7 @@ class Task:
         self.logger.info(log_string)
 
     def initialize(self):
-        # create data pool
         self.__learner.initialize(self.__data)
-
-        # initialize
-        _, sample = self.__initial_sampler(self.__data, self.__user)
-        self.pool.update(sample)
 
         # train active_learner
         X, y = self.pool.get_labeled_set()
@@ -55,9 +47,11 @@ class Task:
         self.__learner.fit_classifier(X, y)
         self.__learner.update(X.iloc[[-1]], y.iloc[[-1]])
 
-    def train(self):
+    def train(self, initial_sample):
         # clear any previous state
         self.clear()
+
+        self.pool.update(initial_sample)
         self.initialize()
 
         # initialize tracker
@@ -101,17 +95,6 @@ class Task:
             i += 1
 
         return tracker
-
-    def get_average_performance(self, repeat):
-        storage = MetricStorage()
-
-        # train learner for several iterations
-        for _ in range(repeat):
-            storage.persist(self.train())
-
-        # compute average performance
-        return storage.average_performance()
-
 
 
 class Task2:

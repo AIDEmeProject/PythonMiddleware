@@ -11,7 +11,6 @@ class LinearMajorityVote(ActiveLearner):
         self.sample_size = sample_size
         self.chain_length = chain_length
         self.samples = None
-        self.__majority_vote = None
 
     def initialize(self, data):
         self.version_space = LinearVersionSpace(data.shape[1])
@@ -44,37 +43,33 @@ class KernelMajorityVote(ActiveLearner):
         self.sample_size = sample_size
         self.chain_length = chain_length
         self.__data = None
-        self.__K = None
-        self.__labeled_indexes = []
-        self.__labels = []
-        self.clf = SVC(C=1000, kernel='rbf')
-
-    def clear(self):
-        self.__data = None
-        self.__K = None
-        self.__majority_vote = None
         self.__labeled_indexes = []
         self.__labels = []
         self.clf = SVC(C=100000, kernel='rbf')
+
+    def clear(self):
+        self.__data = None
+        self.__labeled_indexes = []
+        self.__labels = []
 
     def initialize(self, data):
         self.__data = data.values
 
     def update(self, points, labels):
         # udpate labels and indexes
-        indexes = points.index
         self.__labels.extend(labels.values)
-        self.__labeled_indexes.extend(indexes)
+        self.__labeled_indexes.extend(points.index)
 
         # create new version space
-        self.__K = rbf_kernel(self.__data[self.__labeled_indexes])
+        K = rbf_kernel(self.__data[self.__labeled_indexes])
         self.version_space = LinearVersionSpace(len(self.__labeled_indexes))
-        for point, label in zip(self.__K, self.__labels):
+        for point, label in zip(K, self.__labels):
             self.version_space.update(point, label)
 
     def ranker(self, data):
         samples = self.version_space.sample(self.chain_length, self.sample_size)
         bias, weight = samples[:, 0].reshape(-1, 1), samples[:, 1:]
-        predictions = np.sign(bias + weight.dot(rbf_kernel(data[self.__labeled_indexes], data)))
-        return np.abs(np.sum(predictions, axis=0))
 
+        K = rbf_kernel(data[self.__labeled_indexes], data)
+        predictions = np.sign(bias + weight.dot(K))
+        return np.abs(np.sum(predictions, axis=0))
