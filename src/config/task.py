@@ -1,4 +1,4 @@
-from time import time
+import timeit
 import logging
 from src.datapool import DataPool
 from src.metrics import MetricTracker
@@ -62,23 +62,23 @@ class Task:
         i = 1
         while self.__user.is_willing() and (not self.pool.has_labeled_all()):
             # get next point
-            t0 = time()
+            t0 = timeit.default_timer()
             points = self.__learner.get_next(self.pool)
-            get_next_time = time() - t0
+            get_next_time = timeit.default_timer() - t0
 
             # label point
             labels = self.__user.get_label(points)
             # update labeled/unlabeled sets
-            t1 = time()
+            t1 = timeit.default_timer()
             self.pool.update(labels)
-            update_time = time() - t1
+            update_time = timeit.default_timer() - t1
 
             # retrain active learner
-            t2 = time()
+            t2 = timeit.default_timer()
             self.update_learner()
-            retrain_time = time() - t2
+            retrain_time = timeit.default_timer() - t2
 
-            iteration_time = time() - t0
+            iteration_time = timeit.default_timer() - t0
             # append new metrics
 
             for x, y in zip(points.values, labels.values):
@@ -109,7 +109,7 @@ class Task2:
         setup_logging("/Users/luciano/Projects/explore_by_example/src/config/logging.yml")
         self.logger = logging.getLogger("task")
 
-    def train(self):
+    def train(self, initial_sample):
         # clear any previous state
         self.clear()
 
@@ -117,8 +117,8 @@ class Task2:
         self.__learner.initialize(self.__data)
 
         # initial sampling
-        points, labels = self.__initial_sampler(self.__data, self.__user)
-        self.update_state(points, labels, 0, 'IS')
+        initial_points = self.__data.loc[initial_sample.index]
+        self.update_state(initial_points, initial_sample, 0, 'IS')
 
         i = 1
         while self.__user.is_willing() and (not self.__pool.has_labeled_all()):
