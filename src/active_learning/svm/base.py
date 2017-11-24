@@ -67,9 +67,9 @@ class OptimalMargin(SVMBase):
         samples = self.version_space.sample(self.chain_length, self.sample_size)
         bias, weight = samples[:, 0].reshape(-1, 1), samples[:, 1:]
 
-        K = self.get_kernel_matrix(data, data[self.__labeled_indexes])
+        K = self.get_kernel_matrix(data, self.__data[self.__labeled_indexes])
         predictions = np.sign(bias + weight.dot(K.T))
-        return np.abs(np.mean(predictions, axis=0))
+        return np.abs(np.sum(predictions, axis=0))
 
 
 class OptimalMarginCholesky(SVMBase):
@@ -113,6 +113,6 @@ class OptimalMarginCholesky(SVMBase):
         samples = self.version_space.sample(self.chain_length, self.sample_size)
         bias, weight = samples[:, [0]], samples[:, 1:]
         weight = weight.dot(np.linalg.inv(self.L))
-        K = self.get_kernel_matrix(data, data[self.__labeled_indexes])
-        predictions = np.mean(np.sign(bias + weight.dot(K.T)), axis=0)
-        return np.abs(predictions)
+        K = self.get_kernel_matrix(data, self.__data[self.__labeled_indexes])
+        predictions = np.sign(bias + weight.dot(K.T))
+        return np.abs(np.sum(predictions, axis=0))
