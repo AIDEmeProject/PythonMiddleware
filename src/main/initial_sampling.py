@@ -24,3 +24,7 @@ class StratifiedSampler:
         labels = pos_samples.append(neg_samples)
         return data.loc[labels.index], labels
 
+
+class EmptySampler:
+    def __call__(self, data, user):
+        return [],[]

@@ -1,6 +1,8 @@
 import unittest
-from src.datapool import DataPool
+
 from pandas import DataFrame, Series
+
+from src.main.datapool import DataPool
 
 
 class TestDataPool(unittest.TestCase):

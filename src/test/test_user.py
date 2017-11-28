@@ -1,6 +1,8 @@
 import unittest
+
 from pandas import Series, DataFrame
-from src.user import DummyUser, IndexUser
+
+from src.main.user import DummyUser, IndexUser
 
 
 class TestUser(unittest.TestCase):

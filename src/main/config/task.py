@@ -1,10 +1,13 @@
-import timeit
 import logging
-from src.datapool import DataPool
-from src.metrics import MetricTracker
-from src.utils import label_all
-from src.config.utils import setup_logging
+import timeit
 
+from src.config.utils import setup_logging
+from src.datapool import DataPool
+from src.utils import label_all
+
+from src.main.metrics import MetricTracker
+
+setup_logging("/Users/luciano/Projects/explore_by_example/src/config/logging.yml")
 
 class Task:
     def __init__(self, data, user, learner):
@@ -14,7 +17,6 @@ class Task:
         self.pool = DataPool(self.__data)
 
         # logging config
-        setup_logging("/Users/luciano/Projects/explore_by_example/src/config/logging.yml")
         self.logger = logging.getLogger("task")
 
 
@@ -51,8 +53,23 @@ class Task:
         # clear any previous state
         self.clear()
 
-        self.pool.update(initial_sample)
-        self.initialize()
+        if initial_sample is not None:
+            self.pool.update(initial_sample)
+            self.initialize()
+
+        else:
+            self.__learner.initialize(self.__data)
+
+            points = self.pool.sample_from_unlabeled()
+
+            # label point
+            labels = self.__user.get_label(points)
+
+            # update labeled/unlabeled sets
+            self.pool.update(labels)
+
+            # retrain active learner
+            self.update_learner()
 
         # initialize tracker
         tracker = MetricTracker(skip=self.pool.labeled_set_shape[0] - 1)

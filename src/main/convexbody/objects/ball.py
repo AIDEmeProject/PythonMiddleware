@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.special import gamma
 
+from src.main.utils import check_sizes
 from .base import ConvexBody
-from src.utils import check_sizes
 
 
 def solve_second_degree_equation(a, b, c):

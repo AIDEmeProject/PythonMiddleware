@@ -1,4 +1,4 @@
-from .markov_samplers import HitAndRunSampler
+from .markov import HitAndRunSampler
 from .line import Line
 
 __all__ = ['Line', 'HitAndRunSampler']

@@ -2,3 +2,4 @@ data/
 notebooks/
 *.pyc
 __pycache__/
+.idea/

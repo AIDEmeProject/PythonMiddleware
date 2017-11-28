@@ -1,6 +1,7 @@
 from random import randint
-from numpy import argsort, array
+from numpy import argsort
 from pandas import Series
+
 
 class DataPool:
     def __init__(self, data):

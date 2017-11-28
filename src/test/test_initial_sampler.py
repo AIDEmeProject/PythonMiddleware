@@ -1,9 +1,9 @@
 import unittest
 
 from pandas import DataFrame, Series
-
-from src.initial_sampling import StratifiedSampler
 from src.user import DummyUser
+
+from src.main.initial_sampling import StratifiedSampler
 
 
 class TestInitialSampler(unittest.TestCase):

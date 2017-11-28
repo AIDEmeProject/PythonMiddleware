@@ -1,7 +1,8 @@
 from collections import defaultdict
+
 import pandas as pd
 
-from src.config.task import Task
+from src.main.config.task import Task
 
 
 class Showdown(object):

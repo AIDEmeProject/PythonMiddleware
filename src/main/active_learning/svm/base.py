@@ -1,9 +1,9 @@
 import numpy as np
-from sklearn.svm import SVC, LinearSVC
 from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.svm import SVC, LinearSVC
 
+from src.main.version_space import LinearVersionSpace
 from ..base import ActiveLearner
-from src.version_space.linear import LinearVersionSpace
 
 
 class SVMBase(ActiveLearner):
