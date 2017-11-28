@@ -1,7 +1,7 @@
 import unittest
 
 from pandas import DataFrame, Series
-from src.user import DummyUser
+from src.main.user import DummyUser
 
 from src.main.initial_sampling import StratifiedSampler
 

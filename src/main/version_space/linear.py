@@ -1,46 +1,30 @@
 import numpy as np
 from .appendable_constrain import AppendableInequalityConstrain
-from ..convexbody.objects import ConvexBody, UnitBall
+from .base import VersionSpace
+from ..convexbody.objects import Polytope
 from ..convexbody.sampling import HitAndRunSampler
 
 
-class LinearVersionSpace(ConvexBody):
+class LinearVersionSpace(Polytope, VersionSpace):
     def __init__(self, dim):
-        ConvexBody.__init__(self)
-        self.__inequality_constrain = AppendableInequalityConstrain(dim+1)  # add one to account for bias
-        self.__ball = UnitBall(dim+1)
-
-    def is_inside(self, points):
-        return np.logical_and(self.__inequality_constrain.check(points), self.__ball.is_inside(points))
-
-    def intersection(self, line):
-        r1, r2 = [], []
-        if not self.__inequality_constrain.is_empty():
-            matrix = self.__inequality_constrain.matrix
-            den = matrix.dot(line.direction)
-            r = (self.__inequality_constrain.vector - matrix.dot(line.center)) / den
-            r1.append(r[den < 0])
-            r2.append(r[den > 0])
-
-        segment = self.__ball.intersection(line)
-        r1.append(segment.left_limit)
-        r2.append(segment.right_limit)
-
-        return line.get_segment(np.max(np.hstack(r1)), np.min(np.hstack(r2)))
-
-    def get_point(self):
-        return self.__inequality_constrain.get_point()
+        Polytope.__init__(self, l=[-1]*(dim+1), h=[1]*(dim+1))
+        VersionSpace.__init__(self)
+        self.inequality_constrain = AppendableInequalityConstrain(dim+1)  # add one to account for bias
 
     def clear(self):
-        self.__inequality_constrain.clear()
+        self.inequality_constrain.clear()
 
-    def update(self, point, label):
-        point = np.hstack([1, point.ravel()])  # add bias component
+    def _update_single(self, point, label):
+        point = np.hstack([1, point])  # add bias component
         constrain_vector = -label * point  # constrain = -y_i (1, x_i)
-        self.__inequality_constrain.append(constrain_vector, 0)
+        self.inequality_constrain.append(constrain_vector, 0)
 
     def sample(self, chain_length, sample_size=-1):
         initial_point = self.get_point()
         if sample_size > 0:
             return HitAndRunSampler.uniform(self, initial_point, chain_length, sample_size)
         return HitAndRunSampler.sample_chain(self, initial_point, chain_length)
+
+    def get_point(self):
+        return self.inequality_constrain.get_point()
+

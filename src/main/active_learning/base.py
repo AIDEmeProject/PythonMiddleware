@@ -1,15 +1,16 @@
-import numpy as np
 from sklearn.metrics.classification import precision_score, recall_score, accuracy_score, f1_score
-from ..version_space.base import VersionSpaceMixin
+from ..version_space.base import VersionSpace
 
 
-class ActiveLearner(object):
+class ActiveLearner:
     """ 
-        Class responsible for fitting a classifier and retrieving the next point from the data pool. 
+        Class responsible for two major points:
+            - define which point to retrieve at every iteration
+            - predicting the labels for other points of the data pool
     """
     def __init__(self, top=-1):
         self.clf = None
-        self.version_space = VersionSpaceMixin()
+        self.version_space = VersionSpace()
         self.top = int(top)
 
     def predict(self, X):
@@ -37,12 +38,10 @@ class ActiveLearner(object):
         pass
 
     def update(self, points, labels):
-        points, labels = np.atleast_2d(points), np.atleast_1d(labels)
-        for point, label in zip(points, labels):
-            self.version_space.update(point, label)
+        self.version_space.update(points, labels)
 
     def get_next(self, pool):
-        return pool.get_minimizer_over_unlabeled_data(self.ranker, size=1, sample_size=self.top)
+        return pool.get_minimizer_over_unlabeled_data(self.ranker, sample_size=self.top)
 
     def ranker(self, data):
         raise NotImplementedError

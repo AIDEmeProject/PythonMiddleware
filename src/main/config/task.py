@@ -1,13 +1,13 @@
 import logging
 import timeit
 
-from src.config.utils import setup_logging
-from src.datapool import DataPool
-from src.utils import label_all
+from src.main.config.utils import setup_logging
+from src.main.datapool import DataPool
+from src.main.utils import label_all
 
 from src.main.metrics import MetricTracker
 
-setup_logging("/Users/luciano/Projects/explore_by_example/src/config/logging.yml")
+setup_logging("/Users/luciano/Projects/explore_by_example/src/main/config/logging.yml")
 
 class Task:
     def __init__(self, data, user, learner):

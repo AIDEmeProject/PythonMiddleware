@@ -33,14 +33,6 @@ class Polytope(ConvexBody):
 
         self._dim = self.__get_dimension()
 
-    def __get_all_constrains(self):
-        return [
-            self.equality_constrain,
-            self.inequality_constrain,
-            self.lower_constrain,
-            self.upper_constrain
-        ]
-
     def __get_dimension(self):
         all_constrains = self.__get_all_constrains()
 
@@ -54,6 +46,14 @@ class Polytope(ConvexBody):
             return int(dimension_list[0])  # return dimension
         else:
             return 0  # all constrains are empty
+
+    def __get_all_constrains(self):
+        return [
+            self.equality_constrain,
+            self.inequality_constrain,
+            self.lower_constrain,
+            self.upper_constrain
+        ]
 
     def _compute_projection_matrix(self):
         if self.equality_constrain.is_empty():
@@ -126,3 +126,4 @@ class Polytope(ConvexBody):
             raise RuntimeError("Line does not intersect polytope.")
 
         return line.get_segment(t1, t2)
+

@@ -33,6 +33,10 @@ class DataPool:
         return self.unlabeled_set_shape[0] <= 0
 
     def get_labeled_set(self):
+        """
+        Get all labeled points so far
+        :return: pair (X,y) where X = labeled points and y = labels
+        """
         return self.__data.loc[self.__labeled_rows], self.labels
 
     def get_positive_points(self):
@@ -40,6 +44,11 @@ class DataPool:
         return self.__data.loc[idx]
 
     def update(self, labels):
+        """
+        Update labeled/unlabeled sets.
+        :param labels: pandas Dataframe/Series of new labels. Its index should match the labeled point's index.
+        :return:
+        """
         if len(labels.index.intersection(self.__labeled_rows)) > 0:
             raise RuntimeError("Trying to label the same point twice!")
 
@@ -47,6 +56,9 @@ class DataPool:
         self.__labels.extend(labels)
 
     def sample_from_unlabeled(self):
+        """
+        Sample a single point uniformly from the unlabeled set through rejection sampling.
+        """
         if self.has_labeled_all():
             raise RuntimeError("Cannot sample from empty set!")
 
@@ -56,23 +68,27 @@ class DataPool:
             if idx not in self.__labeled_rows:
                 return self.__data.loc[[idx]]
 
-    def get_minimizer_over_unlabeled_data(self, ranker, size=1, sample_size=-1):
-        if not (isinstance(size, int) and size > 0):
-            raise ValueError("Size must be a positive integer!")
+    def get_minimizer_over_unlabeled_data(self, ranker, sample_size=-1):
+        """
+        Computes the minimum of ranker function over the unlabeled set.
 
-        if len(self.__data) - len(self.__labeled_rows) < size:
-            raise ValueError("Size larger than unlabeled set size!")
+        :param ranker: function receiving a numpy matrix and returning the rank of each line
+        :param sample_size: whether to restrict unlabeled set to a smaller sample
+        """
+        if self.has_labeled_all():
+            raise RuntimeError("Empty unlabeled set!")
 
-        to_retrieve = []
+        # if unlabeled pool is too large, restrict search to sample
         data = self.__data if sample_size <= 0 else self.__data.sample(sample_size)
+
         thresholds = ranker(data.values)
         sorted_index = argsort(thresholds)
 
         for i in sorted_index:
             idx = data.index[i]
             if idx not in self.__labeled_rows:
-                to_retrieve.append(idx)
+                return self.__data.loc[[idx]]
 
-            if len(to_retrieve) == size:
-                return self.__data.loc[to_retrieve]
+
+
 

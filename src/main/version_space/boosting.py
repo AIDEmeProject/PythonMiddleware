@@ -1,35 +1,13 @@
 import numpy as np
 
 from .base import VersionSpace
-from .minimizer import Minimizer
 from ..convexbody.objects import Polytope
-
-
-class BoostingMinimizer(Minimizer):
-    def get_initial_constrains(self):
-        constrains = [
-            {
-                'type': 'ineq',
-                'fun': lambda x, a=i: x[0] + x[a + 1],
-                'jac': lambda x, a=i: np.hstack([1.0, np.eye(self.dim)[a]])
-            } for i in range(self.dim)
-        ]
-
-        constrains.append(
-            {
-                'type': 'eq',
-                'fun': lambda x: np.sum(x[1:]) - 1.0,
-                'jac': lambda x: np.array([0] + [1] * self.dim)
-            }
-        )
-
-        return constrains
 
 
 class ActboostPolytope(Polytope, VersionSpace):
     def __init__(self, dim):
         self._dim = int(dim)
-        VersionSpace.__init__(self, BoostingMinimizer(self._dim))
+        VersionSpace.__init__(self)
         Polytope.__init__(self, A=[1] * self._dim, b=1, l=[0] * self._dim)
 
     def get_point(self):

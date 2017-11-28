@@ -1,8 +1,7 @@
 import numpy as np
-from sklearn.metrics.pairwise import rbf_kernel
 from sklearn.svm import SVC, LinearSVC
 
-from src.main.version_space import LinearVersionSpace
+from .sampling import SamplingBase
 from ..base import ActiveLearner
 
 
@@ -29,90 +28,8 @@ class SimpleMargin(SVMBase):
         return np.abs(self.clf.decision_function(data))
 
 
-class OptimalMargin(SVMBase):
-    def __init__(self, chain_length=50, sample_size=8,
-                 top=-1, kind='linear', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
-        super().__init__(top, kind, C, kernel, fit_intercept, class_weight)
-        self.sample_size = sample_size
-        self.chain_length = chain_length
-        self.__data = None
-        self.__labeled_indexes = []
-        self.__labels = []
-
-    def clear(self):
-        self.__data = None
-        self.__labeled_indexes = []
-        self.__labels = []
-
-    def initialize(self, data):
-        self.__data = data.values
-
-    def get_kernel_matrix(self, X, Y=None):
-        if self.kind == 'linear':
-            return X
-        return rbf_kernel(X, Y)
-
-    def update(self, points, labels):
-        # update labels and indexes
-        self.__labels.extend(labels.values)
-        self.__labeled_indexes.extend(points.index)
-
-        # create new version space
-        K = self.get_kernel_matrix(self.__data[self.__labeled_indexes])
-        self.version_space = LinearVersionSpace(K.shape[1])
-        for point, label in zip(K, self.__labels):
-            self.version_space.update(point, label)
-
-    def ranker(self, data):
-        samples = self.version_space.sample(self.chain_length, self.sample_size)
-        bias, weight = samples[:, 0].reshape(-1, 1), samples[:, 1:]
-
-        K = self.get_kernel_matrix(data, self.__data[self.__labeled_indexes])
-        predictions = np.sign(bias + weight.dot(K.T))
-        return np.abs(np.sum(predictions, axis=0))
-
-
-class OptimalMarginCholesky(SVMBase):
-    def __init__(self, chain_length=50, sample_size=8,
-                 top=-1, kind='linear', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
-        super().__init__(top, kind, C, kernel, fit_intercept, class_weight)
-        self.sample_size = sample_size
-        self.chain_length = chain_length
-        self.__data = None
-        self.__labeled_indexes = []
-        self.__labels = []
-        self.L = None
-
-    def clear(self):
-        self.__data = None
-        self.__labeled_indexes = []
-        self.__labels = []
-        self.L = None
-
-    def initialize(self, data):
-        self.__data = data.values
-
-    def get_kernel_matrix(self, X, Y=None):
-        if self.kind == 'linear':
-            return X
-        return rbf_kernel(X, Y)
-
-    def update(self, points, labels):
-        # update labels and indexes
-        self.__labels.extend(labels.values)
-        self.__labeled_indexes.extend(points.index)
-
-        # create new version space
-        K = self.get_kernel_matrix(self.__data[self.__labeled_indexes])
-        self.L = np.linalg.cholesky(K + 1e-8*np.eye(len(K)))
-        self.version_space = LinearVersionSpace(self.L.shape[1])
-        for point, label in zip(self.L, self.__labels):
-            self.version_space.update(point, label)
-
-    def ranker(self, data):
-        samples = self.version_space.sample(self.chain_length, self.sample_size)
-        bias, weight = samples[:, [0]], samples[:, 1:]
-        weight = weight.dot(np.linalg.inv(self.L))
-        K = self.get_kernel_matrix(data, self.__data[self.__labeled_indexes])
-        predictions = np.sign(bias + weight.dot(K.T))
-        return np.abs(np.sum(predictions, axis=0))
+class OptimalMargin(SamplingBase, SVMBase):
+    def __init__(self, chain_length=50, sample_size=8, top=-1, cholesky=False,
+                 kind='linear', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
+        SamplingBase.__init__(self, chain_length, sample_size, top, cholesky)
+        SVMBase.__init__(self, top, kind, C, kernel, fit_intercept, class_weight)
