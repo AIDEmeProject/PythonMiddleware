@@ -1,14 +1,14 @@
 import logging.config
-import os
 import yaml
-
-path = os.path.dirname(os.path.realpath(__file__))
-path_to_file = path + '/{0}'
+from pathlib import Path
+from os.path import realpath
 
 
 def get_config_from_file(filename, section=None):
     """ Read a section from YAML configuration file """
-    with open(path_to_file.format(filename), 'r') as yamlfile:
+    path = Path(realpath(__file__)).resolve().parents[3] / 'resources'
+
+    with open(path / filename, 'r') as yamlfile:
         cfg = yaml.load(yamlfile)
         if section is None:
             return cfg

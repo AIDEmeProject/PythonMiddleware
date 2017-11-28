@@ -4,7 +4,6 @@ from .utils import get_config_from_file
 from .preprocessor import Preprocessor
 from .task import Task
 from ..active_learning import learner_configs
-from ..initial_sampling import *
 from ..user import IndexUser, DummyUser
 
 datafolder_connection_string = '{base}/{name}/{name}.{ext}'
@@ -100,21 +99,21 @@ class UserConfigurationParser(ConfigurationParser):
         if 'path' not in self._config:
             self._config['path'] = extra[:-4] + 'labels'
 
-    def __get_user(self, data, max_iter, path=None, true_predicate='', true_class=None):
+    def __get_user(self, data, max_iter, path='', true_predicate='', true_class=None):
         if true_predicate:
             predicate = true_predicate.replace('AND', '&').replace('OR', '|').replace('=', '==')
-            pos_index = data.query(predicate).index
-            return IndexUser(pos_index, max_iter)
+            true_index = data.query(predicate).index
+            return IndexUser(true_index, max_iter)
 
         elif path:
             labels = pd.read_csv(path).values.ravel()
-            if true_class:
+            if true_class is not None:
                 labels = 2. * (labels == true_class) - 1.
             return DummyUser(labels, max_iter)
 
         raise RuntimeError(
             "User configuration must contain either 'true_predicate' or 'path' parameters, "
-            "or provide an in-disk labels file by setting 'read_labels' to True."
+            "or provide an in-disk .labels file by setting 'read_labels' to True."
         )
 
     def get(self, data):
@@ -131,51 +130,28 @@ class ActiveLearnerConfigurationParser(ConfigurationParser):
         return self.__get_learner(**self._config)
 
 
-class InitialSamplerConfigurationParser(ConfigurationParser):
-    def __get_sampler(self, mode='stratified', size=2, fixed_size=True):
-        if mode == 'stratified':
-            if fixed_size:
-                return FixedSizeStratifiedSampler(size)
-            else:
-                return StratifiedSampler(size)
-
-        elif mode == 'random':
-            if fixed_size:
-                return FixedSizeRandomSampler(size)
-            else:
-                return RandomSampler()
-
-        raise ValueError("Unrecognized initial sampling mode '{0}', only 'stratified' or 'random' are supported.")
-
-    def get(self):
-        return self.__get_sampler(**self._config)
-
-
 class TaskConfigurationParser(ConfigurationParser):
     def __init__(self):
         super().__init__()
-        self.__initial_sampling_config_parser = InitialSamplerConfigurationParser()
         self.__dataset_config_parser = DatasetConfigurationParser()
         self.__user_config_parser = UserConfigurationParser()
         self.__learner_config_parser = ActiveLearnerConfigurationParser()
         self.__preprocessor = Preprocessor()
 
     def _parse_new_config(self, extra=None):
-        self.__initial_sampling_config_parser.set(self._config['initial_sampling'], copy=False)
         self.__dataset_config_parser.set(self._config['dataset'], copy=False)
         self.__user_config_parser.set(self._config['user'], self.__dataset_config_parser['connection_string'], copy=False)
         self.__learner_config_parser.set(self._config['learner'], copy=False)
         self.__preprocessor.set(self._config['preprocessing'])
 
     def get(self):
-        initial_sampler = self.__initial_sampling_config_parser.get()
         data = self.__dataset_config_parser.get()
         user = self.__user_config_parser.get(data)
         learner = self.__learner_config_parser.get()
-        return Task(self.__preprocessor.transform(data), user, learner, initial_sampler, self._config['repeat'])
+        return Task(self.__preprocessor.transform(data), user, learner)
 
 
-def get_dataset_and_user(name, columns=None, true_predicate=None, preprocessing_list=None):
+def get_dataset_and_user(name, columns=None, true_predicate='', preprocessing_list=None):
     config = get_config_from_file('tasks.yml', name)
 
     if columns:
