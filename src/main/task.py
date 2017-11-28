@@ -7,7 +7,7 @@ from src.main.utils import label_all
 
 from src.main.metrics import MetricTracker
 
-setup_logging("/Users/luciano/Projects/explore_by_example/resources/logging.yml")
+setup_logging()
 
 class Task:
     def __init__(self, data, user, learner):

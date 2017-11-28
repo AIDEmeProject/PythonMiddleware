@@ -1,10 +1,10 @@
 from copy import deepcopy
+
 import pandas as pd
+
 from .utils import get_config_from_file
-from .preprocessor import Preprocessor
-from .task import Task
-from ..active_learning import learner_configs
 from ..user import IndexUser, DummyUser
+
 
 datafolder_connection_string = '{base}/{name}/{name}.{ext}'
 postgres_connection_string = '{base}/{database}'
@@ -118,61 +118,3 @@ class UserConfigurationParser(ConfigurationParser):
 
     def get(self, data):
         return self.__get_user(data, **self._config)
-
-
-class ActiveLearnerConfigurationParser(ConfigurationParser):
-    def __get_learner(self, name, params):
-        name = name.strip().replace(" ", "").lower()
-        learner = learner_configs[name](**params)
-        return learner
-
-    def get(self):
-        return self.__get_learner(**self._config)
-
-
-class TaskConfigurationParser(ConfigurationParser):
-    def __init__(self):
-        super().__init__()
-        self.__dataset_config_parser = DatasetConfigurationParser()
-        self.__user_config_parser = UserConfigurationParser()
-        self.__learner_config_parser = ActiveLearnerConfigurationParser()
-        self.__preprocessor = Preprocessor()
-
-    def _parse_new_config(self, extra=None):
-        self.__dataset_config_parser.set(self._config['dataset'], copy=False)
-        self.__user_config_parser.set(self._config['user'], self.__dataset_config_parser['connection_string'], copy=False)
-        self.__learner_config_parser.set(self._config['learner'], copy=False)
-        self.__preprocessor.set(self._config['preprocessing'])
-
-    def get(self):
-        data = self.__dataset_config_parser.get()
-        user = self.__user_config_parser.get(data)
-        learner = self.__learner_config_parser.get()
-        return Task(self.__preprocessor.transform(data), user, learner)
-
-
-def get_dataset_and_user(name, columns=None, true_predicate='', preprocessing_list=None):
-    config = get_config_from_file('tasks.yml', name)
-
-    if columns:
-        config['dataset']['columns'] = columns
-
-    if true_predicate:
-        config['user']['true_predicate'] = true_predicate
-
-    if preprocessing_list is not None:
-        config['preprocessing'] = preprocessing_list
-
-    dataset_config = DatasetConfigurationParser()
-    dataset_config.set(config['dataset'])
-    data = dataset_config.get()
-
-    user_config = UserConfigurationParser()
-    user_config.set(config['user'], dataset_config['connection_string'])
-    user = user_config.get(data)
-
-    preprocessor = Preprocessor()
-    preprocessor.set(config.get('preprocessing', []))
-    data = preprocessor.transform(data)
-
-    return data, user

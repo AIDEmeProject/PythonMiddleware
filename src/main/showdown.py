@@ -2,7 +2,7 @@ from collections import defaultdict
 
 import pandas as pd
 
-from src.main.config.task import Task
+from .task import Task
 
 
 class Showdown(object):
