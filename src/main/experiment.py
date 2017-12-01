@@ -1,150 +1,166 @@
-from collections import defaultdict
+import os
+import logging
+from datetime import datetime
 
-import pandas as pd
-
+from definitions import ROOT_DIR
 from .task import Task
 
 
-class Experiment:
-    def run(self, datasets_list, active_learners_list, times, sampler):
-        results = defaultdict(list)
-
-        for data_tag, data, user in datasets_list:
-            for i in range(times):
-                user.clear()
-                sample = sampler(data, user)
-
-                for al_tag, al in active_learners_list:
-                    task = Task(data, user, al)
-                    results[(data_tag, al_tag)].append(task.train(sample))
-
-        for k, v in results.items():
-            results[k] = self.average_results(v)
-
-        keys = results.keys()
-        final = pd.concat([results[k] for k in keys], axis=1, keys=keys)
-        return final.swaplevel(2, 3, axis=1).swaplevel(1, 2, axis=1).sort_index(level=0, axis=1)
-
-    def average_results(self, metrics_list):
-        storage = metrics_list #[metric.to_dataframe() for metric in metrics_list]
-
-        # concatenate all stored metrics
-        concat_metrics = pd.concat(storage, axis=0)
-
-        # group metrics by index
-        grouped_metrics = concat_metrics.groupby(level=0)
-
-        # return mean and standard deviation
-        return pd.concat(
-            [
-                grouped_metrics.mean(),
-                grouped_metrics.std().fillna(0),
-                grouped_metrics.min(),
-                grouped_metrics.max()
-            ],
-            axis=1,
-            keys=['mean', 'std', 'min', 'max']
-        )
-
-
-from numpy.random import RandomState
-import os
-from datetime import datetime
-from definitions import ROOT_DIR
-from src.main.task import Task
-import logging
-
 EXPERIMENTS_DIR = os.path.join(ROOT_DIR, 'experiments')
-logger = logging.getLogger('experiment')
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 
-class Exp:
-    def __init__(self, times, sampler):
-        self.times = times
-        self.sampler = sampler
+class ExperimentLogger:
+    def __init__(self):
+        self.logger = logging.getLogger('experiment')
+        self.logger.setLevel(logging.INFO)
+        self.formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-        self.skip_list = []
         self.total = 0
-        self.skipped = 0
+        self.skips = 0
         self.errors = 0
 
-    def get_root_folder(self):
-        # get current datetime
-        now = datetime.now()
+    def remove_handlers(self):
+        for handler in self.logger.handlers[:]:  # loop through a copy to avoid simultaneously looping and deleting
+            self.logger.removeHandler(handler)
 
-        # create new folder for current experiments
-        folder_path = os.path.join(EXPERIMENTS_DIR, 'tmp', str(now))
-        os.makedirs(folder_path)
+    def set_folder(self, folder_path):
+        self.remove_handlers()
 
-        return folder_path
-
-    def add_folder(self, path, name):
-        new_folder = os.path.join(path, name)
-        os.makedirs(new_folder)
-        return new_folder
-
-    def set_logger(self, folder_path):
         handler = logging.FileHandler(os.path.join(folder_path, 'experiment.log'))
-        handler.setFormatter(formatter)
-        for hdlr in logger.handlers[:]:  # remove all old handlers
-            logger.removeHandler(hdlr)
-        logger.addHandler(handler)
+        handler.setFormatter(self.formatter)
+        self.logger.addHandler(handler)
 
+    def begin(self, data_tag, learner_tag, run_id, sample_index):
+        self.total += 1
+
+        self.logger.info("Starting experiment #{0}: TASK = {1}, LEARNER = {2}, RUN = {3}, SAMPLE = {4}".format(
+            self.total,
+            data_tag,
+            learner_tag,
+            run_id,
+            list(sample_index)
+        ))
+
+    def skip(self):
+        self.skips += 1
+        self.total += 1
+        self.logger.info("Skipping experiment #{0}".format(self.total))
+
+    def error(self, exception):
+        self.errors += 1
+
+        self.logger.error(exception, exc_info=1)
+
+    def end(self):
+        self.logger.info("Finished all experiments! Total: {0}, Success: {1}, Fail: {2}, Skipped: {3}".format(
+            self.total,
+            self.total - self.errors - self.skips,
+            self.errors,
+            self.skips
+        ))
+
+
+class ExperimentDirManager:
+    def __init__(self):
+        self.root_folder = os.path.join(ROOT_DIR, 'experiments')
+        self.experiment_folder = None
+
+    def add_experiment_folder(self):
+        now = datetime.now()
+        self.experiment_folder = os.path.join(self.root_folder, 'tmp', str(now))
+        self.create_dir(self.experiment_folder)
+
+    def add_data_folder(self, data_tag):
+        path = os.path.join(self.experiment_folder, data_tag)
+        self.create_dir(path)
+
+    def add_learner_folder(self, data_tag, learner_tag):
+        path = self.get_learner_folder_path(data_tag, learner_tag)
+        self.create_dir(path)
+
+    def get_learner_folder_path(self, data_tag, learner_tag):
+        return os.path.join(self.experiment_folder, data_tag, learner_tag)
+
+    def create_dir(self, path):
+        os.makedirs(path)
+
+    def persist_results(self, results, data_tag, learner_tag, run_id):
+        filename = "run{0}.tsv".format(run_id)
+        folder = self.get_learner_folder_path(data_tag, learner_tag)
+        result_path = os.path.join(folder, filename)
+
+        results.to_csv(result_path, sep='\t', header=True, index=True, index_label='iter', float_format='%.6f')
+
+
+class Experiment:
+    def __init__(self, times, sampler):
+        self.times = times
+        self.initial_sampler = sampler
+
+        self.skip_list = []
+
+        self.logger = ExperimentLogger()
+        self.dir_manager = ExperimentDirManager()
+
+    def __check_tags(self, ls):
+        tags = [x[0] for x in ls]
+        if len(tags) != len(set(tags)):
+            raise ValueError("All tags must be distinct!")
 
     def run(self, datasets, learners):
-        folder_path = self.get_root_folder()
-        self.set_logger(folder_path)
+        # check tags
+        self.__check_tags(datasets)
+        self.__check_tags(learners)
+
+        # add new experiments folder
+        self.dir_manager.add_experiment_folder()
+
+        # set logging path
+        self.logger.set_folder(self.dir_manager.experiment_folder)
 
         for data_tag, data, user in datasets:
-            self.sampler.new_random_state()
+            # create dataset folder
+            self.dir_manager.add_data_folder(data_tag)
 
-            dataset_folder = self.add_folder(folder_path, data_tag)
+            # get new random state
+            self.initial_sampler.new_random_state()
 
             for learner_tag, learner in learners:
-                # if AL has failed before, skip it
+                # if learners failed previously, skip it
                 if learner_tag in self.skip_list:
-                    self.skipped += 1
-                    self.total += 1
-                    logger.info("Skipping experiment #{0}".format(self.total))
+                    self.logger.skip()
                     continue
 
-                learner_folder = self.add_folder(dataset_folder, learner_tag)
+                # add learner folder
+                self.dir_manager.add_learner_folder(data_tag, learner_tag)
+
+                # create new task and try to run it
                 task = Task(data, user, learner)
 
-                # get average results
                 try:
                     for i in range(self.times):
                         # get initial sample
-                        sample = self.sampler(data, user)
+                        sample = self.initial_sampler(data, user)
 
-                        # train
-                        self.total += 1
-                        logger.info("Starting experiment #{4}: TASK = {0}, LEARNER = {1}, RUN = {2}, SAMPLE = {3}".format(
-                            data_tag,
-                            learner_tag,
-                            i + 1,
-                            list(sample.index),
-                            self.total
-                        ))
+                        # log task begin
+                        self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
+
+                        # run task
                         result = task.train(sample)
 
-                        filename = "run{0}.tsv".format(i + 1)
-                        result_path = os.path.join(learner_folder, filename)
-                        result.to_csv(result_path, sep='\t', header=True, index=True, index_label='iter', float_format='%.6f')
+                        # persist results
+                        self.dir_manager.persist_results(result, data_tag, learner_tag, i+1)
+
                 except Exception as e:
-                    logger.error(e, exc_info=1)
-                    self.skip_list.append(learner_tag)  # avoid rerunning failed algorithm
-                    self.errors += 1
+                    # if error occurred, log error and add learner to skip list
+                    self.logger.error(e)
+                    self.skip_list.append(learner_tag)
                 finally:
-                    pass  # continue to next tasks
+                    # continue to next tasks
+                    pass
 
-                self.sampler.reset_random_state()
+                # reset random state, so all learners are run over the set of initial samples
+                self.initial_sampler.reset_random_state()
 
-        logger.info("Finished all experiments! Total: {0}, Success: {1}, Fail: {2}, Skipped: {3}".format(self.total,
-                                                                                                    self.total - self.errors - self.skipped,
-                                                                                                    self.errors,
-                                                                                                    self.skipped))
-
-
+        # log experiment end
+        self.logger.end()
