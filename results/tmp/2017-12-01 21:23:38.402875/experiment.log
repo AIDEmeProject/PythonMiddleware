@@ -1,9 +1,0 @@
-2017-12-01 21:23:38,409 - INFO - Starting experiment #1: TASK = query 11, LEARNER = Simple Margin C=1024, RUN = 1, SAMPLE = [3977, 1061]
-2017-12-01 21:23:39,711 - INFO - Starting experiment #2: TASK = query 11, LEARNER = Simple Margin C=1024, RUN = 2, SAMPLE = [2120, 307]
-2017-12-01 21:23:40,914 - INFO - Starting experiment #3: TASK = query 11, LEARNER = Simple Margin C=100000, RUN = 1, SAMPLE = [3977, 1061]
-2017-12-01 21:23:42,024 - INFO - Starting experiment #4: TASK = query 11, LEARNER = Simple Margin C=100000, RUN = 2, SAMPLE = [2120, 307]
-2017-12-01 21:23:43,129 - INFO - Starting experiment #5: TASK = query 12, LEARNER = Simple Margin C=1024, RUN = 1, SAMPLE = [3212, 4157]
-2017-12-01 21:23:44,521 - INFO - Starting experiment #6: TASK = query 12, LEARNER = Simple Margin C=1024, RUN = 2, SAMPLE = [1555, 273]
-2017-12-01 21:23:46,109 - INFO - Starting experiment #7: TASK = query 12, LEARNER = Simple Margin C=100000, RUN = 1, SAMPLE = [3212, 4157]
-2017-12-01 21:23:47,343 - INFO - Starting experiment #8: TASK = query 12, LEARNER = Simple Margin C=100000, RUN = 2, SAMPLE = [1555, 273]
-2017-12-01 21:23:48,733 - INFO - Finished all experiments! Total: 8, Success: 8, Fail: 0, Skipped: 0
