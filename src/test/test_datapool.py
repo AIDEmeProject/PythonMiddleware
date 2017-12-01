@@ -47,7 +47,7 @@ class TestDataPool(unittest.TestCase):
 
 
     def test_clear(self):
-        # update then clear results
+        # update then clear experiments
         self.pool.update(self.y_true)
         self.assertTrue(self.pool.labels.equals(self.y_true))
         self.assertListEqual(self.pool.labeled_rows, [0,1,2,3,4])
@@ -58,7 +58,7 @@ class TestDataPool(unittest.TestCase):
         self.assertListEqual(self.pool.labeled_rows, [])
 
     def test_get_positive_points(self):
-        # add data to it and then clear results
+        # add data to it and then clear experiments
         self.pool.update(Series([-1,1,-1,1,-1]))
 
         # get positive points

@@ -23,7 +23,7 @@ class Experiment:
         self.__check_tags(datasets)
         self.__check_tags(learners)
 
-        # add new results folder
+        # add new experiments folder
         self.dir_manager.new_experiment_folder()
 
         # set logging path
@@ -58,7 +58,7 @@ class Experiment:
                         # run task
                         metrics = task.train(sample)
 
-                        # persist results
+                        # persist experiments
                         filename = "run{0}.tsv".format(i+1)
                         self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
 

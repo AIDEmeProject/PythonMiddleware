@@ -1,6 +1,6 @@
 data/
 notebooks/
-results/
+/experiments/
 *.pyc
 __pycache__/
 .idea/

@@ -10,7 +10,7 @@ from definitions import ROOT_DIR
 
 class ExperimentDirManager:
     def __init__(self):
-        self.root = os.path.join(ROOT_DIR, 'results')
+        self.root = os.path.join(ROOT_DIR, 'experiments')
         self.experiment_folder = None
 
     def new_experiment_folder(self):
