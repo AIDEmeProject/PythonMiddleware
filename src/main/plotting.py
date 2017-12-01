@@ -23,6 +23,8 @@ def plot_showdown(output, metrics_list=None):
             ax.set_title(ds.upper())
             ax.set_xlabel("# of labeled samples")
             ax.set_ylabel(name.upper())
+            if name.lower() in ['fscore', 'accuracy', 'precision', 'recall']:
+                ax.set_ylim([0,1])
 
             for al in als:
                 df = output[ds][name][al]
@@ -32,6 +34,7 @@ def plot_showdown(output, metrics_list=None):
                     ax.plot(x, y, label=al)
 
             ax.legend(loc='best')
+
 
     plt.legend()
     plt.show()

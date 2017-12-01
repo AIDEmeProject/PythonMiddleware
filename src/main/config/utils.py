@@ -1,11 +1,11 @@
-import logging.config
 import yaml
-from pathlib import Path
-from os.path import realpath
+from os.path import join
+import logging.config
 
+from definitions import ROOT_DIR
 
 def get_path_to_config(filename):
-    return Path(realpath(__file__)).resolve().parents[3] / 'resources' / filename
+    return join(ROOT_DIR, 'resources', filename)
 
 def get_config_from_file(filename, section=None):
     """ Read a section from YAML configuration file """

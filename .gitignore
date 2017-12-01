@@ -1,5 +1,6 @@
 data/
 notebooks/
+experiments/
 *.pyc
 __pycache__/
 .idea/

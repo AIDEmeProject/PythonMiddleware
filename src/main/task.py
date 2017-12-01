@@ -1,13 +1,9 @@
-import logging
 import timeit
 
-from src.main.config.utils import setup_logging
 from src.main.datapool import DataPool
 from src.main.utils import label_all
 
 from src.main.metrics import MetricTracker
-
-setup_logging()
 
 class Task:
     def __init__(self, data, user, learner):
@@ -16,18 +12,11 @@ class Task:
         self.__learner = learner
         self.pool = DataPool(self.__data)
 
-        # logging config
-        self.logger = logging.getLogger("task")
-
 
     def clear(self):
         self.__user.clear()
         self.__learner.clear()
         self.pool.clear()
-
-    def log_point(self, x, y, iter, name):
-        log_string = "{0}\t{1}\t{2}\t{3}".format(name, iter, x, y)
-        self.logger.info(log_string)
 
     def initialize(self):
         self.__learner.initialize(self.__data)
@@ -36,10 +25,6 @@ class Task:
         X, y = self.pool.get_labeled_set()
         self.__learner.fit_classifier(X, y)
         self.__learner.update(X, y)
-
-        # log data
-        for x, y in zip(X.values, y.values):
-            self.log_point(x, y, 0, 'IS')
 
     def get_score(self, y_true):
         return self.__learner.score(self.__data, y_true)
@@ -72,7 +57,7 @@ class Task:
             self.update_learner()
 
         # initialize tracker
-        tracker = MetricTracker(skip=self.pool.labeled_set_shape[0] - 1)
+        tracker = MetricTracker()
         y_true = label_all(self.__data, self.__user)
         tracker.add_measurement(self.get_score(y_true))
 
@@ -98,9 +83,6 @@ class Task:
             iteration_time = timeit.default_timer() - t0
             # append new metrics
 
-            for x, y in zip(points.values, labels.values):
-                self.log_point(x, y, i, 'AL')
-
             scores = {
                 'get_next_time': get_next_time,
                 'update_time': update_time,
@@ -111,57 +93,4 @@ class Task:
             tracker.add_measurement(scores)
             i += 1
 
-        return tracker
-
-
-class Task2:
-    def __init__(self, data, user, learner, initial_sampler):
-        self.__data = data
-        self.__user = user
-        self.__learner = learner
-        self.__initial_sampler = initial_sampler
-        self.__pool = DataPool(self.__data)
-
-        # logging config
-        setup_logging("/Users/luciano/Projects/explore_by_example/src/config/logging.yml")
-        self.logger = logging.getLogger("task")
-
-    def train(self, initial_sample):
-        # clear any previous state
-        self.clear()
-
-        # create data pool
-        self.__learner.initialize(self.__data)
-
-        # initial sampling
-        initial_points = self.__data.loc[initial_sample.index]
-        self.update_state(initial_points, initial_sample, 0, 'IS')
-
-        i = 1
-        while self.__user.is_willing() and (not self.__pool.has_labeled_all()):
-            # get next point
-            points = self.__learner.get_next(self.__pool)
-            labels = self.__user.get_label(points)
-            self.update_state(points, labels, i, 'AL')
-
-            i += 1
-
-    def clear(self):
-        self.__pool.clear()
-        self.__user.clear()
-        self.__learner.clear()
-
-    def update_state(self, points, labels, iteration, id):
-        # update labeled/unlabeled sets
-        self.__pool.update(labels)
-
-        # update version space
-        self.__learner.version_space.update(points, labels)
-
-        # log labeled points
-        for x, y in zip(points.values, labels.values):
-            self.log_point(x, y, iteration, id)
-
-    def log_point(self, x, y, iter, name):
-        log_string = "{0}\t{1}\t{2}\t{3}".format(name, iter, x, y)
-        self.logger.info(log_string)
+        return tracker.to_dataframe()

@@ -9,12 +9,18 @@ class MarkovSampler:
             raise ValueError("Initial point x must be inside convexbody.")
 
     @staticmethod
+    def _check_parameters(chain_length, n_samples=1):
+        if chain_length <= 0 or n_samples <= 0:
+            raise ValueError("chain_length and n_samples must be positive!")
+
+    @staticmethod
     def _step(convexbody, point):
         raise NotImplementedError
 
     @classmethod
     def sample_chain(cls, convexbody, initial_point, chain_length):
         cls._check_initial_point(convexbody, initial_point)
+        cls._check_parameters(chain_length)
 
         samples = np.empty((chain_length+1, len(initial_point)))
         samples[0] = initial_point
@@ -27,6 +33,7 @@ class MarkovSampler:
     @classmethod
     def sample(cls, convexbody, initial_point, chain_length):
         cls._check_initial_point(convexbody, initial_point)
+        cls._check_parameters(chain_length)
 
         sample = np.array(initial_point)
 
@@ -38,6 +45,7 @@ class MarkovSampler:
     @classmethod
     def uniform(cls, convexbody, initial_point, chain_length, n_samples):
         cls._check_initial_point(convexbody, initial_point)
+        cls._check_parameters(chain_length, n_samples)
 
         samples = np.empty((n_samples, len(initial_point)))
 
