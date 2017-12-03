@@ -1,7 +1,7 @@
 from .directory_manager import ExperimentDirManager
 from .logger import ExperimentLogger
 from .task import Task
-
+from src.main.config import get_dataset_and_user
 
 class Experiment:
     def __init__(self, times, sampler):
@@ -29,7 +29,10 @@ class Experiment:
         # set logging path
         self.logger.set_folder(self.dir_manager.experiment_folder)
 
-        for data_tag, data, user in datasets:
+        for data_tag, task_tag in datasets:
+            # get data and user
+            data, user = get_dataset_and_user(task_tag)
+
             # get new random state
             self.initial_sampler.new_random_state()
 

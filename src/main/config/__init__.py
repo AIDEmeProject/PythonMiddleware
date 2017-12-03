@@ -30,3 +30,24 @@ def get_dataset_and_user(name, columns=None, true_predicate='', preprocessing_li
     data = preprocessor.transform(data)
 
     return data, user
+
+
+def get_dataset(name, columns=None, preprocessing_list=None):
+    config = get_config_from_file('tasks.yml', name)
+
+    if columns:
+        config['dataset']['columns'] = columns
+
+    if preprocessing_list is not None:
+        config['preprocessing'] = preprocessing_list
+
+    dataset_config = DatasetConfigurationParser()
+    dataset_config.set(config['dataset'])
+    data = dataset_config.get()
+
+    preprocessor = Preprocessor()
+    preprocessor.set(config.get('preprocessing', []))
+    data = preprocessor.transform(data)
+
+    return data
+
