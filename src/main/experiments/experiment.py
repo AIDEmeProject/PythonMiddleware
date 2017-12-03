@@ -24,15 +24,12 @@ class Experiment:
         self.__check_tags(learners)
 
         # add new experiments folder
-        self.dir_manager.new_experiment_folder()
+        self.dir_manager.set_experiment_folder()
 
         # set logging path
         self.logger.set_folder(self.dir_manager.experiment_folder)
 
         for data_tag, data, user in datasets:
-            # create dataset folder
-            self.dir_manager.add_data_folder(data_tag)
-
             # get new random state
             self.initial_sampler.new_random_state()
 
@@ -43,7 +40,7 @@ class Experiment:
                     continue
 
                 # add learner folder
-                self.dir_manager.add_learner_folder(data_tag, learner_tag)
+                self.dir_manager.add_folder(data_tag, learner_tag)
 
                 # create new task and try to run it
                 try:

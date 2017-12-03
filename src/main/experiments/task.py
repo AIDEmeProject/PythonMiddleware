@@ -38,23 +38,8 @@ class Task:
         # clear any previous state
         self.clear()
 
-        if initial_sample is not None:
-            self.pool.update(initial_sample)
-            self.initialize()
-
-        else:
-            self.__learner.initialize(self.__data)
-
-            points = self.pool.sample_from_unlabeled()
-
-            # label point
-            labels = self.__user.get_label(points)
-
-            # update labeled/unlabeled sets
-            self.pool.update(labels)
-
-            # retrain active learner
-            self.update_learner()
+        self.pool.update(initial_sample)
+        self.initialize()
 
         # initialize tracker
         tracker = MetricTracker()
@@ -84,10 +69,10 @@ class Task:
             # append new metrics
 
             scores = {
-                'get_next_time': get_next_time,
-                'update_time': update_time,
-                'retrain_time': retrain_time,
-                'iteration_time': iteration_time
+                'Get Next Time': get_next_time,
+                'Update Time': update_time,
+                'Retrain Time': retrain_time,
+                'Iteration Time': iteration_time
             }
             scores.update(self.get_score(y_true))
             tracker.add_measurement(scores)

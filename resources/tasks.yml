@@ -46,7 +46,7 @@ sdss_Q1.1:
       - colc
   user:
     true_predicate: "rowc > 662.5 AND rowc < 702.5 AND colc > 991.5 AND colc < 1053.5"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -58,7 +58,7 @@ sdss_Q1.2:
       - colc
   user:
     true_predicate: "rowc > 617.5 AND rowc < 747.5 AND colc > 925 AND colc < 1120"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -70,7 +70,7 @@ sdss_Q1.3:
       - colc
   user:
     true_predicate: "rowc > 480 AND rowc < 885 AND colc > 719 AND colc < 1326"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -82,7 +82,7 @@ sdss_Q2.1:
       - colc
   user:
     true_predicate: "(rowc - 682.5) * (rowc - 682.5) + (colc - 1022.5) * (colc - 1022.5) < 29 * 29"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -94,7 +94,7 @@ sdss_Q2.2:
       - colc
   user:
     true_predicate: "(rowc - 682.5) * (rowc - 682.5) + (colc - 1022.5) * (colc - 1022.5) < 90 * 90"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -106,7 +106,7 @@ sdss_Q2.3:
       - colc
   user:
     true_predicate: "(rowc - 682.5) * (rowc - 682.5) + (colc - 1022.5) * (colc - 1022.5) < 280 * 280"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -118,7 +118,7 @@ sdss_Q3.1:
       - dec
   user:
     true_predicate: "ra > 190 AND ra < 200 AND dec > 53 AND dec < 57"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -130,7 +130,7 @@ sdss_Q3.2:
       - dec
   user:
     true_predicate: "ra > 180 AND ra < 210 AND dec > 50 AND dec < 60"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
@@ -142,7 +142,7 @@ sdss_Q3.3:
       - dec
   user:
     true_predicate: "ra > 150 AND ra < 240 AND dec > 40 AND dec < 70"
-    max_iter: 50
+    max_iter: 100
   preprocessing:
     - "standardize"
 
