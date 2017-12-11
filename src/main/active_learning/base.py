@@ -23,10 +23,10 @@ class ActiveLearner:
         # classification scores
         y_pred = self.predict(X)
         scores = {
-            'Precision': precision_score(y_true, y_pred, labels=[-1,1]),
-            'Recall': recall_score(y_true, y_pred, labels=[-1, 1]),
+            'Precision': precision_score(y_true, y_pred, pos_label=1, average='binary'),
+            'Recall': recall_score(y_true, y_pred, pos_label=1, average='binary'),
             'Accuracy': accuracy_score(y_true, y_pred),
-            'F-Score': f1_score(y_true, y_pred, labels=[-1, 1])
+            'F-Score': f1_score(y_true, y_pred, pos_label=1, average='binary')
         }
 
         return scores

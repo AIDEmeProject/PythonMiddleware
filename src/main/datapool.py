@@ -89,6 +89,3 @@ class DataPool:
             if idx not in self.__labeled_rows:
                 return self.__data.loc[[idx]]
 
-
-
-

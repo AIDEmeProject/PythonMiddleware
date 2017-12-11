@@ -6,7 +6,7 @@ from src.main.version_space import LinearVersionSpace
 
 
 class SamplingBase(ActiveLearner):
-    def __init__(self, chain_length=50, sample_size=8, top=-1, cholesky=False):
+    def __init__(self, top=-1, chain_length=50, sample_size=8, cholesky=False):
         super().__init__(top)
 
         self.sample_size = sample_size

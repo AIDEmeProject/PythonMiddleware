@@ -1,7 +1,7 @@
 data/
 notebooks/
 /experiments/
-/venv/
+/.env/
 *.pyc
 __pycache__/
 .idea/

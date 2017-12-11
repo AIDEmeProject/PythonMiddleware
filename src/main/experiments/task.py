@@ -27,7 +27,14 @@ class Task:
         self.__learner.update(X, y)
 
     def get_score(self, y_true):
-        return self.__learner.score(self.__data, y_true)
+        scores = self.__learner.score(self.__data, y_true)
+
+        X,y = self.pool.get_labeled_set()
+        scores_labeled = self.__learner.score(X, y)
+
+        scores['Labeled Set F-Score'] = scores_labeled['F-Score']
+
+        return scores
 
     def update_learner(self):
         X, y = self.pool.get_labeled_set()

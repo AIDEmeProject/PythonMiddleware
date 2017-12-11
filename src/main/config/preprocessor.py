@@ -3,7 +3,7 @@ from pandas import get_dummies
 
 class Preprocessor:
     __mapper = {
-        'onehotencoding': partial(get_dummies, drop_first=True),
+        'onehotencoding': partial(get_dummies, drop_first=False),
         'standardize': lambda df: (df - df.mean()) / df.std(),
         'minmax': lambda df: (df - df.min()) / (df.max() - df.min()),
         'frombinarytosign': lambda df: 2.0 * df - 1.0
