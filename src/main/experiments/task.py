@@ -33,6 +33,7 @@ class Task:
         scores_labeled = self.__learner.score(X, y)
 
         scores['Labeled Set F-Score'] = scores_labeled['F-Score']
+        scores['Imbalance'] = 100.0*((y == 1).sum())/len(y)
 
         return scores
 
