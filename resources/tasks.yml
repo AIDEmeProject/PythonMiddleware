@@ -46,7 +46,7 @@ sdss_Q1.1:
       - colc
   user:
     true_predicate: "rowc > 662.5 AND rowc < 702.5 AND colc > 991.5 AND colc < 1053.5"
-    max_iter: 100
+    max_iter: 20
   preprocessing:
     - "standardize"
 
@@ -397,4 +397,28 @@ user_study_query12:
     true_predicate: "year = 2017 AND basic_km > 96559.9 AND base_engine_size > 2.9 AND (body_type = 'suv' OR  body_type = 'sedan') AND price_msrp < 30000"
   preprocessing:
     - one hot encoding
+    - standardize
+
+cars_test1:
+  dataset:
+    name: cars
+    columns:
+      - width
+      - height
+  user:
+    max_iter: 100
+    true_predicate: "height < 1.953260000001 AND height > 1.86181999999 AND width > 2.00405999999999 AND width < 2.02946000001"
+  preprocessing:
+    - standardize
+
+cars_test2:
+  dataset:
+    name: cars
+    columns:
+      - width
+      - height
+  user:
+    max_iter: 100
+    true_predicate: "(height-1.9)*(height-1.9) < 0.055*0.055 + 0.00000001 AND (width-2.01)*(width-2.01) < 0.02*0.02 + 0.00000001"
+  preprocessing:
     - standardize

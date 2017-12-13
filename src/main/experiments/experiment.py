@@ -2,6 +2,9 @@ from .directory_manager import ExperimentDirManager
 from .logger import ExperimentLogger
 from .task import Task
 from src.main.config import get_dataset_and_user
+from numpy import mean, array
+from ..metrics import MetricTracker
+from pandas import DataFrame
 
 class Experiment:
     def __init__(self, times, sampler):
@@ -56,11 +59,17 @@ class Experiment:
                         self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
 
                         # run task
-                        metrics = task.train(sample)
+                        metrics, (X,y) = task.train(sample)
 
-                        # persist experiments
-                        filename = "run{0}.tsv".format(i+1)
+                        # persist metrics
+                        filename = "run{0}_metrics.tsv".format(i+1)
                         self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
+
+                        # persist run
+                        filename = "raw_run{0}.tsv".format(i+1)
+                        X['labels'] = y
+                        X.index = [0,0] + list(metrics.index)
+                        self.dir_manager.persist(X, data_tag, learner_tag, filename)
 
                     self.dir_manager.compute_folder_average(data_tag, learner_tag)
 
@@ -77,3 +86,27 @@ class Experiment:
 
         # log experiment end
         self.logger.end()
+
+    def get_average_fscores(self, datasets, learners):
+        results = {}
+        for data_tag, task_tag in datasets:
+            # get data and user
+            data, user = get_dataset_and_user(task_tag)
+            y_true = user.get_label(data, update_counter=False)
+
+            for learner_tag, learner in learners:
+                runs = self.dir_manager.get_raw_runs(data_tag, learner_tag)
+                final_scores = []
+                for run in runs:
+                    tracker = MetricTracker()
+                    X_run = run.drop('labels', axis=1)
+                    y_run = run['labels']
+                    for i in range(2, len(X_run)):
+                        X, y = X_run.iloc[:i], y_run.iloc[:i]
+                        learner.fit_classifier(X, y)
+                        tracker.add_measurement(learner.score(data, y_true))
+                        print(learner.predict(X))
+
+                    final_scores.append(tracker.to_dataframe())
+                final = sum(final_scores)/len(final_scores)
+                self.dir_manager.persist(final, data_tag, learner_tag, "average_fscore.tsv")

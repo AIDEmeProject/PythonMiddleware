@@ -49,3 +49,11 @@ class ExperimentDirManager:
         if metrics is not None and 'iter' not in metrics:
             metrics.append('iter')
         return read_csv(path, sep='\t', index_col='iter', usecols=metrics)
+
+    def get_raw_run_files(self, data_tag, learner_tag):
+        folder = self.get_folder_path(data_tag, learner_tag)
+        return [os.path.join(folder, f) for f in os.listdir(folder) if 'raw' in f]
+
+    def get_raw_runs(self, data_tag, learner_tag):
+        files = self.get_raw_run_files(data_tag, learner_tag)
+        return (read_csv(file, sep='\t', index_col='iter') for file in files)
