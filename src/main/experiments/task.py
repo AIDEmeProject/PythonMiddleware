@@ -51,10 +51,9 @@ class Task:
 
         # initialize tracker
         tracker = MetricTracker()
-        y_true = label_all(self.__data, self.__user)
-        tracker.add_measurement(self.get_score(y_true))
+        #y_true = label_all(self.__data, self.__user)
+        #tracker.add_measurement(self.get_score(y_true))
 
-        i = 1
         while self.__user.is_willing() and (not self.pool.has_labeled_all()):
             # get next point
             t0 = timeit.default_timer()
@@ -82,8 +81,7 @@ class Task:
                 'Retrain Time': retrain_time,
                 'Iteration Time': iteration_time
             }
-            scores.update(self.get_score(y_true))
+            #scores.update(self.get_score(y_true))
             tracker.add_measurement(scores)
-            i += 1
 
-        return tracker.to_dataframe()
+        return tracker.to_dataframe(), self.pool.get_labeled_set()

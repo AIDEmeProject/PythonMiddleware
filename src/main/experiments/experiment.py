@@ -68,7 +68,7 @@ class Experiment:
                         # persist run
                         filename = "raw_run{0}.tsv".format(i+1)
                         X['labels'] = y
-                        X.index = [0,0] + list(metrics.index)
+                        #X.index = [0,0] + list(metrics.index)
                         self.dir_manager.persist(X, data_tag, learner_tag, filename)
 
                     self.dir_manager.compute_folder_average(data_tag, learner_tag)
@@ -88,24 +88,29 @@ class Experiment:
         self.logger.end()
 
     def get_average_fscores(self, datasets, learners):
-        results = {}
         for data_tag, task_tag in datasets:
             # get data and user
             data, user = get_dataset_and_user(task_tag)
             y_true = user.get_label(data, update_counter=False)
 
             for learner_tag, learner in learners:
-                runs = self.dir_manager.get_raw_runs(data_tag, learner_tag)
                 final_scores = []
-                for run in runs:
+                for run in self.dir_manager.get_raw_runs(data_tag, learner_tag):
                     tracker = MetricTracker()
                     X_run = run.drop('labels', axis=1)
                     y_run = run['labels']
+
+                    learner.clear()
+                    learner.initialize(data)
+
                     for i in range(2, len(X_run)):
                         X, y = X_run.iloc[:i], y_run.iloc[:i]
                         learner.fit_classifier(X, y)
+                        if i == 2:
+                            learner.update(X, y)
+                        else:
+                            learner.update(X.iloc[[-1]], y.iloc[[-1]])
                         tracker.add_measurement(learner.score(data, y_true))
-                        print(learner.predict(X))
 
                     final_scores.append(tracker.to_dataframe())
                 final = sum(final_scores)/len(final_scores)

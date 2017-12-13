@@ -46,7 +46,7 @@ sdss_Q1.1:
       - colc
   user:
     true_predicate: "rowc > 662.5 AND rowc < 702.5 AND colc > 991.5 AND colc < 1053.5"
-    max_iter: 20
+    max_iter: 100
   preprocessing:
     - "standardize"
 

@@ -21,6 +21,7 @@ class SamplingBase(ActiveLearner):
         self._labels = []
 
     def clear(self):
+        super().clear()
         self._data = None
         self._labeled_indexes = []
         self._labels = []
@@ -34,7 +35,6 @@ class SamplingBase(ActiveLearner):
         # update labels and indexes
         self._labels.extend(labels.values)
         self._labeled_indexes.extend(points.index)
-
         # compute kernel matrix
         K = self.get_kernel_matrix(self._data[self._labeled_indexes])
         if self.cholesky:
