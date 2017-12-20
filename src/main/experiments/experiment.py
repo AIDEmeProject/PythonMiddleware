@@ -1,10 +1,8 @@
 from .directory_manager import ExperimentDirManager
 from .logger import ExperimentLogger
 from .task import Task
-from src.main.config import get_dataset_and_user
-from numpy import mean, array
+from ..config import get_dataset_and_user
 from ..metrics import MetricTracker
-from pandas import DataFrame
 
 class Experiment:
     def __init__(self, times, sampler):
