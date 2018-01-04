@@ -19,17 +19,17 @@ class Ellipsoid(ConvexBody):
     """
 
     def __init__(self, center, half_axis_length):
-        super().__init__()
+        check_sizes(center, half_axis_length)
 
-        self._center = np.asarray(center, dtype=np.float64).ravel()
-
-        self._half_axis_length = np.asarray(half_axis_length, dtype=np.float64).ravel()
-        
-        check_sizes(self._center, self.half_axis_length)
-        if not np.all(self.half_axis_length > 0):
+        if not all(map(lambda x: x > 0, half_axis_length)):
             raise ValueError("Negative axis length!")
 
-        self._dim = len(self._center)
+        super().__init__(len(center))
+
+        self._center = np.asarray(center, dtype=np.float64).ravel()
+        self._half_axis_length = np.asarray(half_axis_length, dtype=np.float64).ravel()
+
+
 
     def __repr__(self):
         return "Center: {center}\nHalf-axis length: {length}".format(center=self.center, length=self.half_axis_length)
@@ -55,7 +55,7 @@ class Ellipsoid(ConvexBody):
 
     def is_inside(self, points):
         normalized_points = (points - self.center) / self.half_axis_length
-        return np.sum(normalized_points ** 2, axis=-1) <= 1
+        return np.sum(normalized_points ** 2, axis=-1) < 1
 
     def intersection(self, line):
         normalized_point = (line.center - self.center)/self.half_axis_length

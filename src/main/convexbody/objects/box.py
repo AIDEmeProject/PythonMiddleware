@@ -13,18 +13,16 @@ class Box(ConvexBody):
         :param low: list [a_1, ..., a_n]
         :param high: list [b_1, ..., b_n]
         """
-        super().__init__()
+        super().__init__(len(low))
         
-        self._low = np.asarray(low, dtype=np.float64)
-        self._high = np.asarray(high, dtype=np.float64)
+        self._low = np.array(low, dtype=np.float64)
+        self._high = np.array(high, dtype=np.float64)
 
         if np.any(self._low >= self._high):
             raise ValueError("Non-positive side length!")
 
         self._center = 0.5 * (self._low + self._high)
         self._side_length = self._high - self._low
-
-        self._dim = len(self._low)
 
     def __repr__(self):
         return "Low: {low}\nHigh: {high}\nCenter: {center}\nSide_length: {length}".format(
@@ -52,7 +50,7 @@ class Box(ConvexBody):
 
     def is_inside(self, points):
         centered_points = np.abs(points - self.center)
-        return np.all(centered_points <= 0.5 * self.side_length, axis=-1)
+        return np.all(centered_points < 0.5 * self.side_length, axis=-1)
 
     @property
     def volume(self):

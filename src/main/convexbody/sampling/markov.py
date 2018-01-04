@@ -6,7 +6,7 @@ class MarkovSampler:
     @staticmethod
     def _check_initial_point(convexbody, initial_point):
         if not convexbody.is_inside(initial_point):
-            raise ValueError("Initial point x must be inside convexbody.")
+            raise ValueError("Initial point must be inside convexbody.")
 
     @staticmethod
     def _check_parameters(chain_length, n_samples=1):

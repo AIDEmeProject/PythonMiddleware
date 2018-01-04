@@ -1,4 +1,4 @@
-postgres:
+ postgres:
   connection_string: "postgresql://luciano@localhost:5432"
 
 datafolder:

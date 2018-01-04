@@ -85,17 +85,17 @@ class InequalityConstrain(Constrain):
     _kind = 'inequality'
 
     def check(self, points):
-        return np.all(np.dot(points, self.matrix.T) <= self.vector, axis=-1)
+        return np.all(np.dot(points, self.matrix.T) < self.vector, axis=-1)
 
 class LowerConstrain(Constrain):
     _kind = 'lower'
 
     def check(self, points):
-        return np.all(points >= self._vector, axis=-1)
+        return np.all(points > self._vector, axis=-1)
 
 
 class UpperConstrain(Constrain):
     _kind = 'upper'
 
     def check(self, points):
-        return np.all(points <= self._vector, axis=-1)
+        return np.all(points < self._vector, axis=-1)

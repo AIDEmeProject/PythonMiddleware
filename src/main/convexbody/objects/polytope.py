@@ -24,14 +24,12 @@ class Polytope(ConvexBody):
         :param l: lower-bound on x
         :param h: upper-bound on x
         """
-        super().__init__()
-
         self.equality_constrain = get_constrain('equality', b, A)
         self.inequality_constrain = get_constrain('inequality', q, M)
         self.lower_constrain = get_constrain('lower', l)
         self.upper_constrain = get_constrain('upper', h)
 
-        self._dim = self.__get_dimension()
+        super().__init__(self.__get_dimension())
 
     def __get_dimension(self):
         all_constrains = self.__get_all_constrains()
