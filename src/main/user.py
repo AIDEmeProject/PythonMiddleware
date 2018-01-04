@@ -1,11 +1,16 @@
 from pandas import Series
+from pandasql import sqldf
 
 
-class User(object):
-    """ 
-        This class represents a bridge between the real user and an Active Learning algorithm. 
+def bool_to_sign(labels):
+    return 2. * labels - 1.
 
-        For testing the algorithms, users are represented either by an 'oracle query' that labels data points 
+
+class User:
+    """
+        This class represents a bridge between the real user and an Active Learning algorithm.
+
+        For testing the algorithms, users are represented either by an 'oracle query' that labels data points
         or by directly inputting all true labels. In the future, a real user can be queried for labels.
     """
 
@@ -15,22 +20,23 @@ class User(object):
         """
         self.max_iter = int(max_iter)
         self.labeled_samples = 0
+        self._true_index = None
 
     def clear(self):
-        """ 
-            Resets labeled samples count, so we can utilize the same user multiple times. 
+        """
+            Resets labeled samples count, so we can utilize the same user multiple times.
         """
         self.labeled_samples = 0
 
     def is_willing(self):
         """
-            Returns whether the user is willing to classify more points 
+            Returns whether the user is willing to classify more points
             :return: True or False
         """
         return self.labeled_samples < self.max_iter
 
     def get_label(self, points, update_counter=True):
-        """ 
+        """
             Labels user provided points
             :param points: collection of points to label
             :param update_counter: whether to update internal counter of labeled points
@@ -39,38 +45,50 @@ class User(object):
             raise RuntimeError("User has already stopped labeling.")
 
         if update_counter:
-            self.labeled_samples += len(points.index)
+            self.labeled_samples += len(points)
 
-        return self._get_label(points)
+        labels = points.index.isin(self._true_index)
+        return Series(data=bool_to_sign(labels), index=points.index)
 
-    def _get_label(self, points):
-        """
-        :param points: Point instance 
-        :return: the label for each point
-        """
-        raise NotImplementedError
 
 
 class DummyUser(User):
     """
         The dummy user represents an 'user' who knows the classification to all point in the database.
-        It's just a proxy to the cases where the true labeling is given and no user is actually being queried. 
+        It's just a proxy to the cases where the true labeling is given and no user is actually being queried.
     """
 
-    def __init__(self, y_true, max_iter):
+    def __init__(self, y_true, max_iter, true_class=None):
         """
-        :param y_true:   true labeling of points (must be -1, 1 format)
+        :param y_true:  true labeling of points (must be -1, 1 format)
         """
         super().__init__(max_iter)
-        self.__y_true = Series(y_true, dtype='float64')
-        self._check_labels()
+        if not true_class:
+            true_class = 1.0
 
-    def _get_label(self, points):
-        return self.__y_true.loc[points.index]
+        self._true_index = y_true.loc[y_true == true_class].index
 
-    def _check_labels(self):
-        if not set(self.__y_true.values) <= {-1, 1}:
-            raise ValueError("Only {-1,1} labels are supported.")
+        if len(self._true_index) == len(y_true):
+            raise RuntimeError("All labels are identical!")
+
+
+
+class FakeUser(User):
+    def __init__(self, data, true_predicate, max_iter):
+        super().__init__(max_iter)
+
+        if not true_predicate:
+            raise ValueError("Received empty true predicate!")
+
+        if data.index.name is None:
+            raise RuntimeError("Cannot create FakeUser from unnamed index column.")
+
+        query = "SELECT {0} FROM data WHERE {1}".format(data.index.name, true_predicate)
+        query_result = sqldf(query, {'data': data})
+        self._true_index = set(query_result[data.index.name])
+
+        if len(self._true_index) == len(data):
+            raise RuntimeError("All labels are identical!")
 
 
 class IndexUser(User):
@@ -82,9 +100,6 @@ class IndexUser(User):
         super().__init__(max_iter)
         self.__index = set(index)
 
-    def _bool_to_sign(self, labels):
-        return 2.*labels - 1.
-
     def _get_label(self, points):
         labels = points.index.isin(self.__index)
-        return Series(data=self._bool_to_sign(labels), index=points.index)
+        return Series(data=bool_to_sign(labels), index=points.index)

@@ -31,7 +31,6 @@ iris:
 mushroom:
   dataset:
     name: mushroom
-    columns: "*"
   user:
     max_iter: 100
   preprocessing:
