@@ -2,7 +2,7 @@ from .directory_manager import ExperimentDirManager
 from .logger import ExperimentLogger
 from ..config import get_dataset_and_user
 from .task import explore, compute_fscore
-
+from pandas import concat
 
 class Experiment:
     def __init__(self, times, sampler):
@@ -60,8 +60,8 @@ class Experiment:
                         X, y = explore(data, user, learner, self.initial_sampler)
 
                         # persist metrics
-                        #filename = "run{0}_time.tsv".format(i+1)
-                        #self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
+                        # filename = "run{0}_time.tsv".format(i+1)
+                        # self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
 
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
@@ -69,7 +69,7 @@ class Experiment:
 
                         self.dir_manager.persist(X, data_tag, learner_tag, filename)
 
-                    #self.dir_manager.compute_folder_average(data_tag, learner_tag)
+                    # self.dir_manager.compute_folder_average(data_tag, learner_tag)
 
                 except Exception as e:
                     # if error occurred, log error and add learner to skip list
@@ -92,5 +92,7 @@ class Experiment:
 
             for learner_tag, learner in learners:
                 final_scores = [compute_fscore(data, y_true, learner, run) for run in self.dir_manager.get_raw_runs(data_tag, learner_tag)]
-                final = sum(final_scores)/len(final_scores)
+                avg = sum(final_scores)/len(final_scores)
+                final = concat(final_scores + [avg], axis=1)
+                final.columns = ['run{0}'.format(i) for i in range(len(final_scores))] + ['average']
                 self.dir_manager.persist(final, data_tag, learner_tag, "average_fscore.tsv")
