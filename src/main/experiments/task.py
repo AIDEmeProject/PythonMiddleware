@@ -14,12 +14,12 @@ def get_minimizer_over_unlabeled_data(data, labeled_indexes, ranker, sample_size
             return data.loc[[idx]]
 
 
-def explore(data, user, learner, initial_sampler):
+def explore(data, user, learner, initial_samples):
     user.clear()
     learner.clear()
 
     # initial sampling
-    labels = initial_sampler(data, user)
+    labels = initial_samples
     multi_index = [(0, idx) for idx in labels.index]
 
     # train classifier
@@ -42,6 +42,7 @@ def explore(data, user, learner, initial_sampler):
         learner.update(new_points, new_labels)
 
         iteration += 1
+
     multi_index = MultiIndex.from_tuples(multi_index, names=['iter', 'index'])
     return data.loc[labels.index].set_index(multi_index), Series(data=labels.values, index=multi_index)
 

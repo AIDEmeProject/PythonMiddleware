@@ -5,12 +5,8 @@ from .task import explore, compute_fscore
 from pandas import concat
 
 class Experiment:
-    def __init__(self, times, sampler):
-        self.times = times
-        self.initial_sampler = sampler
-
+    def __init__(self):
         self.skip_list = []
-
         self.logger = ExperimentLogger()
         self.dir_manager = ExperimentDirManager()
 
@@ -20,7 +16,7 @@ class Experiment:
         if len(tags) != len(set(tags)):
             raise ValueError("All tags must be distinct!")
 
-    def run(self, datasets, learners):
+    def run(self, datasets, learners, times, initial_sampler):
         # check tags
         Experiment.__check_tags(datasets)
         Experiment.__check_tags(learners)
@@ -36,7 +32,7 @@ class Experiment:
             data, user = get_dataset_and_user(task_tag)
 
             # get new random state
-            self.initial_sampler.new_random_state()
+            initial_sampler.new_random_state()
 
             for learner_tag, learner in learners:
                 # if learners failed previously, skip it
@@ -49,15 +45,14 @@ class Experiment:
 
                 # create new task and try to run it
                 try:
-                    for i in range(self.times):
-                        # get initial sample
-                        sample = self.initial_sampler(data, user)
+                    for i in range(times):
+                        sample = initial_sampler(data, user)
 
                         # log task begin
                         self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
 
                         # run task
-                        X, y = explore(data, user, learner, self.initial_sampler)
+                        X, y = explore(data, user, learner, sample)
 
                         # persist metrics
                         # filename = "run{0}_time.tsv".format(i+1)
@@ -80,7 +75,7 @@ class Experiment:
                     pass  # continue to next tasks
 
                 # reset random state, so all learners are run over the set of initial samples
-                self.initial_sampler.reset_random_state()
+                initial_sampler.reset_random_state()
 
         # log experiment end
         self.logger.end()

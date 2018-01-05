@@ -31,6 +31,6 @@ active_learners_list = [
 ]
 
 # run experiment
-experiment = Experiment(times=2, sampler=StratifiedSampler(1, 1))
-experiment.run(datasets_list, active_learners_list)
+experiment = Experiment()
+experiment.run(datasets_list, active_learners_list, times=2, initial_sampler=StratifiedSampler(1, 1))
 experiment.get_average_fscores(datasets_list, active_learners_list)
