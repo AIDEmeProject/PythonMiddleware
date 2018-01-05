@@ -3,7 +3,6 @@ from datetime import datetime
 
 from pandas import read_csv
 
-from .utils import get_generator_average
 from definitions import ROOT_DIR
 
 
@@ -12,48 +11,34 @@ class ExperimentDirManager:
         self.root = os.path.join(ROOT_DIR, 'experiments')
         self.experiment_folder = None
 
-    def set_experiment_folder(self):
+    def set_new_experiment_folder(self):
         now = datetime.now()
         self.experiment_folder = os.path.join(self.root, 'tmp', str(now))
         os.makedirs(self.experiment_folder)
 
-    def persist(self, data, data_tag, learner_tag, filename):
-        folder = self.get_folder_path(data_tag, learner_tag)
-        path = os.path.join(folder, filename)
-        data.to_csv(path, sep='\t', header=True, index=True, index_label=data.index.names, float_format='%.6f')
+    def get_data_folder(self, data_tag, learner_tag):
+        return DataFolder(self.experiment_folder, data_tag, learner_tag)
 
-    def compute_folder_average(self, data_tag, learner_tag):
-        run_files = self.get_run_files(data_tag, learner_tag)
 
-        if not run_files:  # if empty, do nothing
-            return
+class DataFolder:
+    def __init__(self, experiment_folder, data_tag, learner_tag):
+        self.path = os.path.join(experiment_folder, data_tag, learner_tag)
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
 
-        runs = (read_csv(f, sep='\t', index_col=['iter', 'index']) for f in run_files)
-        average = get_generator_average(runs)
-        self.persist(average, data_tag, learner_tag, 'average.tsv')
+    def get_full_path(self, file):
+        return os.path.join(self.path, file)
 
-    def get_run_files(self, data_tag, learner_tag):
-        folder = self.get_folder_path(data_tag, learner_tag)
-        return [os.path.join(folder, f) for f in os.listdir(folder) if 'time' in f]
+    def get_files(self, filter_str=''):
+        return map(self.get_full_path,  filter(lambda name: filter_str in name, os.listdir(self.path)))
 
-    def add_folder(self, data_tag, learner_tag):
-        path = self.get_folder_path(data_tag, learner_tag)
-        os.makedirs(path)
+    def get_raw_runs(self):
+        raw_files = self.get_files('raw')
+        return (read_csv(file, sep='\t', index_col=['iter', 'index']) for file in raw_files)
 
-    def get_folder_path(self, data_tag, learner_tag):
-        return os.path.join(self.experiment_folder, data_tag, learner_tag)
+    def read_average(self):
+        return read_csv(self.get_full_path('average_fscore.tsv'), sep='\t')
 
-    def read_average(self, data_tag, learner_tag, metrics=None):
-        folder = self.get_folder_path(data_tag, learner_tag)
-        path = os.path.join(folder, 'average.tsv')
-        if metrics is not None and 'iter' not in metrics:
-            metrics.append('iter')
-        return read_csv(path, sep='\t', index_col='iter', usecols=metrics)
-
-    def get_raw_run_files(self, data_tag, learner_tag):
-        folder = self.get_folder_path(data_tag, learner_tag)
-        return [os.path.join(folder, f) for f in os.listdir(folder) if 'raw' in f]
-
-    def get_raw_runs(self, data_tag, learner_tag):
-        files = self.get_raw_run_files(data_tag, learner_tag)
-        return (read_csv(file, sep='\t', index_col=['iter', 'index']) for file in files)
+    def write(self, data, filename, index=False):
+        path = os.path.join(self.path, filename)
+        data.to_csv(path, sep='\t', header=True, index=index, index_label=data.index.names, float_format='%.6f')

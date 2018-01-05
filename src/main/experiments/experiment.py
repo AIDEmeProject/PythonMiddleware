@@ -1,14 +1,20 @@
-from .directory_manager import ExperimentDirManager
-from .logger import ExperimentLogger
-from ..config import get_dataset_and_user
-from .task import explore, compute_fscore
 from pandas import concat
+
+from .directory_manager import ExperimentDirManager
+from .explore import explore, compute_fscore
+from .logger import ExperimentLogger
+from .plot import ExperimentPlotter
+from .utils import get_generator_average
+
+from ..config import get_dataset_and_user
+
 
 class Experiment:
     def __init__(self):
         self.skip_list = []
         self.logger = ExperimentLogger()
         self.dir_manager = ExperimentDirManager()
+        self.plotter = ExperimentPlotter(self.dir_manager)
 
     @classmethod
     def __check_tags(cls, ls):
@@ -22,7 +28,7 @@ class Experiment:
         Experiment.__check_tags(learners)
 
         # add new experiments folder
-        self.dir_manager.set_experiment_folder()
+        self.dir_manager.set_new_experiment_folder()
 
         # set logging path
         self.logger.set_folder(self.dir_manager.experiment_folder)
@@ -41,7 +47,7 @@ class Experiment:
                     continue
 
                 # add learner folder
-                self.dir_manager.add_folder(data_tag, learner_tag)
+                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
 
                 # create new task and try to run it
                 try:
@@ -62,7 +68,7 @@ class Experiment:
                         filename = "run{0}_raw.tsv".format(i+1)
                         X['labels'] = y
 
-                        self.dir_manager.persist(X, data_tag, learner_tag, filename)
+                        data_folder.write(X, filename, index=True)
 
                     # self.dir_manager.compute_folder_average(data_tag, learner_tag)
 
@@ -86,8 +92,17 @@ class Experiment:
             y_true = user.get_label(data, update_counter=False)
 
             for learner_tag, learner in learners:
-                final_scores = [compute_fscore(data, y_true, learner, run) for run in self.dir_manager.get_raw_runs(data_tag, learner_tag)]
-                avg = sum(final_scores)/len(final_scores)
-                final = concat(final_scores + [avg], axis=1)
-                final.columns = ['run{0}'.format(i) for i in range(len(final_scores))] + ['average']
-                self.dir_manager.persist(final, data_tag, learner_tag, "average_fscore.tsv")
+                # get runs
+                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
+                runs = data_folder.get_raw_runs()
+
+                # compute average
+                scores = [compute_fscore(data, y_true, learner, run) for run in runs]
+                final = concat(scores, axis=1)
+                final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
+                final['average'] = final.mean(axis=1)
+
+                data_folder.write(final, "average_fscore.tsv", index=False)
+
+    def make_plot(self, datasets, learners, iter_lim=None):
+        self.plotter.plot_comparisons(datasets, learners, iter_lim)
