@@ -20,7 +20,7 @@ class ExperimentDirManager:
     def persist(self, data, data_tag, learner_tag, filename):
         folder = self.get_folder_path(data_tag, learner_tag)
         path = os.path.join(folder, filename)
-        data.to_csv(path, sep='\t', header=True, index=True, index_label='iter', float_format='%.6f')
+        data.to_csv(path, sep='\t', header=True, index=True, index_label=data.index.names, float_format='%.6f')
 
     def compute_folder_average(self, data_tag, learner_tag):
         run_files = self.get_run_files(data_tag, learner_tag)
@@ -28,7 +28,7 @@ class ExperimentDirManager:
         if not run_files:  # if empty, do nothing
             return
 
-        runs = (read_csv(f, sep='\t', index_col='iter') for f in run_files)
+        runs = (read_csv(f, sep='\t', index_col=['iter', 'index']) for f in run_files)
         average = get_generator_average(runs)
         self.persist(average, data_tag, learner_tag, 'average.tsv')
 
@@ -56,4 +56,4 @@ class ExperimentDirManager:
 
     def get_raw_runs(self, data_tag, learner_tag):
         files = self.get_raw_run_files(data_tag, learner_tag)
-        return (read_csv(file, sep='\t', index_col='iter') for file in files)
+        return (read_csv(file, sep='\t', index_col=['iter', 'index']) for file in files)

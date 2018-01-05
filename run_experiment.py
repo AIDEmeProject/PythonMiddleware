@@ -17,8 +17,8 @@ def get_sdss():
     query_list = ['1.1', '1.2', '1.3', '2.1', '2.2', '2.3', '3.1', '3.2', '3.3']
     return [('SDSS Query ' + q, 'sdss_Q' + q) for q in query_list]
 
-#datasets_list = get_user_study([11, 12])  # range(1,13)
-datasets_list = get_sdss()
+datasets_list = get_user_study([11, 12])  # range(1,13)
+#datasets_list = get_sdss()
 
 # set learners
 active_learners_list = [
@@ -31,5 +31,6 @@ active_learners_list = [
 ]
 
 # run experiment
-experiment = Experiment(times=1, sampler=StratifiedSampler(1, 1))
+experiment = Experiment(times=5, sampler=StratifiedSampler(1, 1))
 experiment.run(datasets_list, active_learners_list)
+experiment.get_average_fscores(datasets_list, active_learners_list)
