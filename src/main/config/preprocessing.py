@@ -1,5 +1,6 @@
-from pandas import get_dummies
 from functools import partial
+
+from pandas import get_dummies
 
 class PreprocessingList:
     __mapper = {

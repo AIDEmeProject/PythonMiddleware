@@ -1,4 +1,5 @@
 from numpy.random import RandomState
+from pandas import Series
 
 class StratifiedSampler:
     def __init__(self, pos, neg, pos_mask=True, neg_mask=True):
@@ -39,4 +40,4 @@ class StratifiedSampler:
 
 class EmptySampler:
     def __call__(self, data, user):
-        return [],[]
+        return Series()

@@ -29,14 +29,15 @@ class SamplingBase(ActiveLearner):
         self._samples = None
 
     def initialize(self, data):
-        self._data = data.values
+        self._data = data
 
     def update(self, points, labels):
         # update labels and indexes
         self._labels.extend(labels.values)
         self._labeled_indexes.extend(points.index)
+
         # compute kernel matrix
-        K = self.get_kernel_matrix(self._data[self._labeled_indexes])
+        K = self.get_kernel_matrix(self._data.loc[self._labeled_indexes])
         if self.cholesky:
             K = np.linalg.cholesky(K + 1e-8 * np.eye(len(K)))
             self._L = K
@@ -53,7 +54,7 @@ class SamplingBase(ActiveLearner):
     def ranker(self, data):
         bias, weight = self.get_bias_and_weight()
 
-        K = self.get_kernel_matrix(data, self._data[self._labeled_indexes])
+        K = self.get_kernel_matrix(data, self._data.loc[self._labeled_indexes])
         predictions = np.sign(bias + weight.dot(K.T))
         return np.abs(np.sum(predictions, axis=0))
 
@@ -72,6 +73,6 @@ class MajorityVote(SamplingBase):
     def predict(self, X):
         bias, weight = self.get_bias_and_weight()
 
-        K = self.get_kernel_matrix(X, self._data[self._labeled_indexes])
+        K = self.get_kernel_matrix(X, self._data.loc[self._labeled_indexes])
         predictions = np.sign(bias + weight.dot(K.T))
         return 2*(np.sum(predictions, axis=0) > 0) - 1

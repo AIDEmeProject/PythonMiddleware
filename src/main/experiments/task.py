@@ -1,9 +1,8 @@
 import timeit
 
 from src.main.datapool import DataPool
-from src.main.utils import label_all
-
 from src.main.metrics import MetricTracker
+
 
 class Task:
     def __init__(self, data, user, learner):
@@ -11,7 +10,6 @@ class Task:
         self.__user = user
         self.__learner = learner
         self.pool = DataPool(self.__data)
-
 
     def clear(self):
         self.__user.clear()
@@ -85,3 +83,86 @@ class Task:
             tracker.add_measurement(scores)
 
         return tracker.to_dataframe(), self.pool.get_labeled_set()
+
+from numpy import argsort
+def get_minimizer_over_unlabeled_data(data, labeled_indexes, ranker, sample_size=-1):
+    # if unlabeled pool is too large, restrict search to sample
+    data = data if sample_size <= 0 else data.sample(sample_size)
+
+    thresholds = ranker(data.values)
+    sorted_index = argsort(thresholds)
+
+    for i in sorted_index:
+        idx = data.index[i]
+        if idx not in labeled_indexes:
+            return data.loc[[idx]]
+
+def explore(data, user, learner, initial_sampler):
+    user.clear()
+    learner.clear()
+
+    # initial sampling
+    labels = initial_sampler(data, user)
+    multi_index = [(0, idx) for idx in labels.index]
+
+    # train classifier
+    learner.initialize(data)
+    learner.fit_classifier(data.loc[labels.index], labels)
+    learner.update(data.loc[labels.index], labels)
+
+    # main loop
+    iteration = 1
+    while user.is_willing() and len(labels) < len(data):
+        new_points = get_minimizer_over_unlabeled_data(data, labels.index, learner.ranker) # learner.get_next(data)
+        new_labels = user.get_label(new_points)
+
+        # update labeled points
+        labels = labels.append(new_labels)
+        multi_index.extend([(iteration, idx) for idx in new_labels.index])
+
+        # retrain active learner
+        learner.fit_classifier(data.loc[labels.index], labels)
+        learner.update(new_points, new_labels)
+
+        iteration += 1
+    multi_index = MultiIndex.from_tuples(multi_index, names=['iteration', 'index'])
+    return data.loc[labels.index].set_index(multi_index), Series(data=labels.values, index=multi_index)
+
+
+from pandas import Series, MultiIndex
+from sklearn.metrics import f1_score
+def compute_fscore(data, y_true, learner, run):
+    f_scores = []
+    labels = Series()
+    learner.clear()
+
+    for iteration in run.index.levels[0]:
+        # data from run
+        new_labels = run.loc[iteration]
+        new_points = data.loc[new_labels.index]
+
+        labels = labels.append(new_labels)
+
+        learner.fit_classifier(data.loc[labels.index], labels)
+        #learner.update(new_points, new_labels)
+
+        # compute f-score over entire dataset
+        y_pred = learner.predict(data)
+        f_scores.append(f1_score(y_true, y_pred))
+
+    return Series(data=f_scores)
+
+if __name__ == '__main__':
+    from src.main.config.task import get_dataset_and_user
+    from src.main.initial_sampling import StratifiedSampler
+    from src.main.active_learning.svm import SimpleMargin, OptimalMargin
+    task = 'user_study_query12'
+
+    data, user = get_dataset_and_user(task, keep_duplicates=False)  # sdss_Q1.1
+    #learner = SimpleMargin(kind='linear', C=1024)
+    learner = OptimalMargin(kind='kernel', kernel='rbf', C=100000)
+    X, y = explore(data, user, learner, StratifiedSampler(1,1))
+
+    data, user = get_dataset_and_user(task, keep_duplicates=True)
+    y_true = user.get_label(data, update_counter=False)
+    print(compute_fscore(data, y_true, learner, y))

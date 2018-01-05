@@ -1,6 +1,6 @@
-import yaml
 from os.path import join
 import logging.config
+import yaml
 
 from definitions import RESOURCES_DIR
 

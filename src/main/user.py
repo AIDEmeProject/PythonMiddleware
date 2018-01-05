@@ -58,15 +58,12 @@ class DummyUser(User):
         It's just a proxy to the cases where the true labeling is given and no user is actually being queried.
     """
 
-    def __init__(self, y_true, max_iter, true_class=None):
+    def __init__(self, y_true, max_iter, true_class=1.0):
         """
         :param y_true:  true labeling of points (must be -1, 1 format)
         """
         super().__init__(max_iter)
-        if not true_class:
-            true_class = 1.0
-
-        self._true_index = y_true.loc[y_true == true_class].index
+        self._true_index = y_true[y_true == true_class].index
 
         if len(self._true_index) == len(y_true):
             raise RuntimeError("All labels are identical!")

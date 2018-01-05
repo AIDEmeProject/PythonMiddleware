@@ -1,5 +1,7 @@
 from os.path import join
+
 from pandas import read_sql_table, read_csv
+
 from .utils import read_dataset_config, read_connection_config
 
 
@@ -39,11 +41,3 @@ def read_dataset(dataset, columns=None, keep_duplicates=False):
 
     # remove duplicates if needed
     return data if keep_duplicates else data.drop_duplicates()
-
-
-if __name__ == '__main__':
-    data = read_dataset('iris')
-    #data = read_dataset('housing', columns=['town', 'price'], keep_duplicates=False)
-    #data = read_dataset('cars', columns=['make'], keep_duplicates=True)
-    print(data.shape)
-    print(data.head())

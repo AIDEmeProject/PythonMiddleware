@@ -34,7 +34,7 @@ class ExperimentDirManager:
 
     def get_run_files(self, data_tag, learner_tag):
         folder = self.get_folder_path(data_tag, learner_tag)
-        return [os.path.join(folder, f) for f in os.listdir(folder) if f.startswith('run')]
+        return [os.path.join(folder, f) for f in os.listdir(folder) if 'time' in f]
 
     def add_folder(self, data_tag, learner_tag):
         path = self.get_folder_path(data_tag, learner_tag)

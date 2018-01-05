@@ -60,11 +60,11 @@ class Experiment:
                         metrics, (X,y) = task.train(sample)
 
                         # persist metrics
-                        filename = "run{0}_metrics.tsv".format(i+1)
+                        filename = "run{0}_time.tsv".format(i+1)
                         self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
 
                         # persist run
-                        filename = "raw_run{0}.tsv".format(i+1)
+                        filename = "run{0}_raw.tsv".format(i+1)
                         X['labels'] = y
                         #X.index = [0,0] + list(metrics.index)
                         self.dir_manager.persist(X, data_tag, learner_tag, filename)
