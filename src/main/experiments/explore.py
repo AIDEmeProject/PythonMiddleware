@@ -44,7 +44,9 @@ def explore(data, user, learner, initial_samples):
         iteration += 1
 
     multi_index = MultiIndex.from_tuples(multi_index, names=['iter', 'index'])
-    return data.loc[labels.index].set_index(multi_index), Series(data=labels.values, index=multi_index)
+    user.clear()
+    y_true = user.get_label(data.loc[labels.index], update_counter=False, use_noise=False)
+    return data.loc[labels.index].set_index(multi_index), Series(data=labels.values, index=multi_index), Series(data=y_true.values, index=multi_index)
 
 
 def compute_fscore(data, y_true, learner, run):
@@ -53,7 +55,7 @@ def compute_fscore(data, y_true, learner, run):
 
     for iteration in run.index.levels[0]:
         next_iter = run[run.index.get_level_values('iter') <= iteration]
-        X = next_iter.drop('labels', axis=1)
+        X = next_iter.drop('labels', axis=1).drop('true_labels', axis=1)
         y = next_iter['labels']
 
         learner.fit_classifier(X, y)

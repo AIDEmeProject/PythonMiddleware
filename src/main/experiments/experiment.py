@@ -22,7 +22,7 @@ class Experiment:
         if len(tags) != len(set(tags)):
             raise ValueError("All tags must be distinct!")
 
-    def run(self, datasets, learners, times, initial_sampler):
+    def run(self, datasets, learners, times, initial_sampler, noise=0.0):
         # check tags
         Experiment.__check_tags(datasets)
         Experiment.__check_tags(learners)
@@ -35,7 +35,7 @@ class Experiment:
 
         for data_tag, task_tag in datasets:
             # get data and user
-            data, user = get_dataset_and_user(task_tag)
+            data, user = get_dataset_and_user(task_tag, keep_duplicates=False, noise=noise)
 
             # get new random state
             initial_sampler.new_random_state()
@@ -58,7 +58,7 @@ class Experiment:
                         self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
 
                         # run task
-                        X, y = explore(data, user, learner, sample)
+                        X, y, y_true = explore(data, user, learner, sample)
 
                         # persist metrics
                         # filename = "run{0}_time.tsv".format(i+1)
@@ -67,6 +67,7 @@ class Experiment:
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
                         X['labels'] = y
+                        X['true_labels'] = y_true
 
                         data_folder.write(X, filename, index=True)
 
@@ -88,8 +89,8 @@ class Experiment:
 
     def get_average_fscores(self, datasets, learners):
         for data_tag, task_tag in datasets:
-            data, user = get_dataset_and_user(task_tag, keep_duplicates=True)
-            y_true = user.get_label(data, update_counter=False)
+            data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
+            y_true = user.get_label(data, update_counter=False, use_noise=False)
 
             for learner_tag, learner in learners:
                 # get runs

@@ -19,7 +19,7 @@ class StratifiedSampler:
 
     def _sample(self, data, user):
         user.clear()
-        y_true = user.get_label(data, update_counter=False)
+        y_true = user.get_label(data, update_counter=False, use_noise=False)
 
         positive = y_true[(y_true == 1) & self.pos_mask]
         pos_samples = positive.sample(self.pos, replace=False, random_state=self.random_state)

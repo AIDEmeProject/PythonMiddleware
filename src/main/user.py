@@ -1,9 +1,9 @@
 from pandas import Series
 from pandasql import sqldf
+from random import random
 
-
-def bool_to_sign(labels):
-    return 2. * labels - 1.
+def bool_to_sign(ls):
+    return [1.0 if x else -1.0 for x in ls]
 
 
 class User:
@@ -14,11 +14,15 @@ class User:
         or by directly inputting all true labels. In the future, a real user can be queried for labels.
     """
 
-    def __init__(self, max_iter):
+    def __init__(self, max_iter, noise=0.0):
         """
             :param max_iter: max number of points the user is willing to classify
         """
+        if(max_iter <= 0 or noise < 0.0 or noise >= 1.0):
+            raise ValueError("Invalid arguments in user.")
+
         self.max_iter = int(max_iter)
+        self.noise = noise
         self.labeled_samples = 0
         self._true_index = None
 
@@ -35,7 +39,10 @@ class User:
         """
         return self.labeled_samples < self.max_iter
 
-    def get_label(self, points, update_counter=True):
+    def flip_bool(self, ls):
+        return [x if random() > self.noise else not x for x in ls]
+
+    def get_label(self, points, update_counter=True, use_noise=True):
         """
             Labels user provided points
             :param points: collection of points to label
@@ -48,8 +55,10 @@ class User:
             self.labeled_samples += len(points)
 
         labels = points.index.isin(self._true_index)
-        return Series(data=bool_to_sign(labels), index=points.index)
+        if use_noise:
+            labels = self.flip_bool(labels)
 
+        return Series(data=bool_to_sign(labels), index=points.index)
 
 
 class DummyUser(User):
@@ -58,21 +67,20 @@ class DummyUser(User):
         It's just a proxy to the cases where the true labeling is given and no user is actually being queried.
     """
 
-    def __init__(self, y_true, max_iter, true_class=1.0):
+    def __init__(self, y_true, max_iter, true_class=1.0, noise=0.0):
         """
         :param y_true:  true labeling of points (must be -1, 1 format)
         """
-        super().__init__(max_iter)
+        super().__init__(max_iter, noise)
         self._true_index = y_true[y_true == true_class].index
 
         if len(self._true_index) == len(y_true):
             raise RuntimeError("All labels are identical!")
 
 
-
 class FakeUser(User):
-    def __init__(self, data, true_predicate, max_iter):
-        super().__init__(max_iter)
+    def __init__(self, data, true_predicate, max_iter, noise=0.0):
+        super().__init__(max_iter, noise)
 
         if not true_predicate:
             raise ValueError("Received empty true predicate!")
@@ -86,17 +94,3 @@ class FakeUser(User):
 
         if len(self._true_index) == len(data):
             raise RuntimeError("All labels are identical!")
-
-
-class IndexUser(User):
-    """
-        This also represent a 'fake user', who labels each point based on its index. It consumes less memory than the
-        DummyUser, and it is more adapted to data coming from databases.
-    """
-    def __init__(self, index, max_iter):
-        super().__init__(max_iter)
-        self.__index = set(index)
-
-    def _get_label(self, points):
-        labels = points.index.isin(self.__index)
-        return Series(data=bool_to_sign(labels), index=points.index)
