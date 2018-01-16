@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.metrics.pairwise import rbf_kernel
-
 from src.main.active_learning.base import ActiveLearner
 from src.main.version_space import LinearVersionSpace
 
@@ -23,21 +22,26 @@ class SamplingBase(ActiveLearner):
     def clear(self):
         super().clear()
         self._data = None
+        self._index = None
         self._labeled_indexes = []
         self._labels = []
         self._L = None
         self._samples = None
 
     def initialize(self, data):
-        self._data = data
+        self._data = data.values
+        self._index = data.index
+
+    def _get_row_number(self, index):
+        return np.where(self._index == index)[0]
 
     def update(self, points, labels):
         # update labels and indexes
         self._labels.extend(labels.values)
-        self._labeled_indexes.extend(points.index)
+        self._labeled_indexes.extend([self._get_row_number(idx) for idx in points.index])
 
         # compute kernel matrix
-        K = self.get_kernel_matrix(self._data.loc[self._labeled_indexes])
+        K = self.get_kernel_matrix(self._data[self._labeled_indexes])
         if self.cholesky:
             K = np.linalg.cholesky(K + 1e-8 * np.eye(len(K)))
             self._L = K
@@ -54,7 +58,8 @@ class SamplingBase(ActiveLearner):
     def ranker(self, data):
         bias, weight = self.get_bias_and_weight()
 
-        K = self.get_kernel_matrix(data, self._data.loc[self._labeled_indexes])
+        K = self.get_kernel_matrix(data, self._data[self._labeled_indexes])
+
         predictions = np.sign(bias + weight.dot(K.T))
         return np.abs(np.sum(predictions, axis=0))
 
@@ -73,6 +78,6 @@ class MajorityVote(SamplingBase):
     def predict(self, X):
         bias, weight = self.get_bias_and_weight()
 
-        K = self.get_kernel_matrix(X, self._data.loc[self._labeled_indexes])
+        K = self.get_kernel_matrix(X, self._data[self._labeled_indexes])
         predictions = np.sign(bias + weight.dot(K.T))
         return 2*(np.sum(predictions, axis=0) > 0) - 1
