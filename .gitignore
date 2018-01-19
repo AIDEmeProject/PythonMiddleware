@@ -1,6 +1,7 @@
 data/
 notebooks/
 /experiments/
+/resources/
 /.env/
 *.pyc
 __pycache__/
