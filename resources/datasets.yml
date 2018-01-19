@@ -20,5 +20,5 @@ mushroom:
 sdss_random_sample:
   connection: postgres
   database: sdss
-  name: sdss_random_sample
+  name: sdss_1_percent
   key: objid
