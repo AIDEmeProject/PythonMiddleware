@@ -29,7 +29,7 @@ class SimpleMargin(SVMBase):
 
 
 class OptimalMargin(SamplingBase, SVMBase):
-    def __init__(self, chain_length=50, sample_size=8, top=-1, cholesky=False,
+    def __init__(self, top=-1, chain_length=50, sample_size=8, cholesky=False,
                  kind='linear', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
-        SamplingBase.__init__(self, chain_length, sample_size, top, cholesky)
-        SVMBase.__init__(self, top, kind, C, kernel, fit_intercept, class_weight)
+        SamplingBase.__init__(self, chain_length=chain_length, sample_size=sample_size, top=top, cholesky=cholesky)
+        SVMBase.__init__(self, top=top, kind=kind, C=C, kernel=kernel, fit_intercept=fit_intercept, class_weight=class_weight)

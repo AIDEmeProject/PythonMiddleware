@@ -53,7 +53,6 @@ class SamplingBase(ActiveLearner):
 
     def ranker(self, data):
         bias, weight = self.get_bias_and_weight()
-
         K = self.get_kernel_matrix(data, self._data.loc[self._labeled_indexes])
         predictions = np.sign(bias + weight.dot(K.T))
         return np.abs(np.sum(predictions, axis=0))
