@@ -19,8 +19,11 @@ class LinearVersionSpace(Polytope, VersionSpace):
         constrain_vector = -label * point  # constrain = -y_i (1, x_i)
         self.inequality_constrain.append(constrain_vector, 0)
 
-    def sample(self, chain_length, sample_size=-1):
-        initial_point = self.get_point()
+    def sample(self, chain_length, sample_size=-1, initial_point=None):
+        if initial_point is None:
+            print('falling back to linprog')
+            initial_point = self.get_point()
+
         if sample_size > 0:
             return HitAndRunSampler.uniform(self, initial_point, chain_length, sample_size)
         return HitAndRunSampler.sample_chain(self, initial_point, chain_length)

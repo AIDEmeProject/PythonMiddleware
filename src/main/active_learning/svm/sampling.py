@@ -10,7 +10,7 @@ class SamplingBase(ActiveLearner):
 
         self.sample_size = sample_size
         self.chain_length = chain_length
-        self._samples = None
+        self._samples = []
 
         self.cholesky = cholesky
         self._L = None
@@ -25,7 +25,7 @@ class SamplingBase(ActiveLearner):
         self._labeled_indexes = []
         self._labels = []
         self._L = None
-        self._samples = None
+        self._samples = []
 
     def initialize(self, data):
         self._data = data
@@ -45,7 +45,15 @@ class SamplingBase(ActiveLearner):
         self.version_space = LinearVersionSpace(K.shape[1])
         self.version_space.update(K, self._labels)
 
-        self._samples = self.version_space.sample(self.chain_length, self.sample_size)
+        # get initial point from previous samples
+        try:
+            initial_points = filter(self.version_space.is_inside, map(lambda x: np.hstack([x, [0]]), self._samples))
+            initial_point = next(initial_points)
+        except (StopIteration, AttributeError):
+            initial_point = None  # if failed, fall back to linprog solution
+
+        self._samples = self.version_space.sample(self.chain_length, self.sample_size, initial_point)
+
 
     def get_kernel_matrix(self, X, Y=None):
         return rbf_kernel(X, Y)
