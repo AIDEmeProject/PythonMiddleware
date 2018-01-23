@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import gamma
 
-from src.main.utils import check_sizes
+from src.main.utils.utilities import check_sizes
 from .base import ConvexBody
 
 

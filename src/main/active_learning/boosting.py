@@ -3,7 +3,7 @@ import numpy as np
 from ..version_space.boosting import ActboostPolytope
 from ..convexbody.sampling.markov import HitAndRunSampler
 from .base import ActiveLearner
-from ..utils import Adaboost
+from ..utils.adaboost import Adaboost
 
 
 class BaseBoosting(ActiveLearner):

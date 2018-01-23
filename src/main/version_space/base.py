@@ -1,4 +1,4 @@
-from ..utils import check_points_and_labels
+from ..utils.utilities import check_points_and_labels
 
 
 class VersionSpace:

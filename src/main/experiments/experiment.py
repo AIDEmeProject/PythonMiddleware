@@ -4,6 +4,7 @@ from .directory_manager import ExperimentDirManager
 from .explore import explore, compute_fscore, compute_cut_ratio
 from .logger import ExperimentLogger
 from .plot import ExperimentPlotter
+from ..utils.email import EmailSender
 
 from ..config import get_dataset_and_user
 
@@ -14,6 +15,7 @@ class Experiment:
         self.logger = ExperimentLogger()
         self.dir_manager = ExperimentDirManager()
         self.plotter = ExperimentPlotter(self.dir_manager)
+        self.email_sender = EmailSender()
 
     @classmethod
     def __check_tags(cls, ls):
@@ -59,10 +61,6 @@ class Experiment:
                         # run task
                         X, y, y_true = explore(data, user, learner, sample)
 
-                        # persist metrics
-                        # filename = "run{0}_time.tsv".format(i+1)
-                        # self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
-
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
                         X['labels'] = y
@@ -70,12 +68,11 @@ class Experiment:
 
                         data_folder.write(X, filename, index=True)
 
-                    # self.dir_manager.compute_folder_average(data_tag, learner_tag)
-
                 except Exception as e:
                     # if error occurred, log error and add learner to skip list
                     self.logger.error(e)
                     self.skip_list.append(learner_tag)
+                    self.email_sender.send_error_email(data_tag, learner_tag, e)
 
                 finally:
                     pass  # continue to next tasks
@@ -84,42 +81,73 @@ class Experiment:
                 initial_sampler.reset_random_state()
 
         # log experiment end
-        self.logger.end()
+        msg = self.logger.end()
+        self.email_sender.send_end_email('ALL EXPERIMENTS', msg)
+
 
     def get_average_fscores(self, datasets, learners):
+        self.logger.clear()
+        self.logger.set_folder(self.dir_manager.experiment_folder, 'fscore.log')
+
         for data_tag, task_tag in datasets:
             data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
             y_true = user.get_label(data, update_counter=False, use_noise=False)
 
             for learner_tag, learner in learners:
-                # get runs
-                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
-                runs = data_folder.get_raw_runs()
+                try:
+                    self.logger.averaging(data_tag, learner_tag)
+                    # get runs
+                    data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
+                    runs = data_folder.get_raw_runs()
 
-                # compute average
-                scores = [compute_fscore(data, y_true, learner, run) for run in runs]
-                final = concat(scores, axis=1)
-                final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
-                final['average'] = final.mean(axis=1)
+                    # compute average
+                    scores = [compute_fscore(data, y_true, learner, run) for run in runs]
+                    final = concat(scores, axis=1)
+                    final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
+                    final['average'] = final.mean(axis=1)
 
-                data_folder.write(final, "average_fscore.tsv", index=False)
+                    data_folder.write(final, "average_fscore.tsv", index=False)
+
+                except Exception as e:
+                    self.logger.error(e)
+                    self.email_sender.send_error_email(data_tag, learner_tag, e)
+                finally:
+                    pass
+
+        msg = self.logger.end()
+        self.email_sender.send_end_email('F-SCORE COMPUTATION', msg)
 
     def get_average_cut_ratio(self, datasets, learners, limit=50):
+        self.logger.clear()
+        self.logger.set_folder(self.dir_manager.experiment_folder, 'cut_ratio.log')
+
         for data_tag, task_tag in datasets:
             data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
 
             for learner_tag, learner in learners:
-                # get runs
-                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
-                runs = data_folder.get_raw_runs()
+                try:
+                    self.logger.averaging(data_tag, learner_tag)
 
-                # compute average
-                scores = [compute_cut_ratio(run, limit) for run in runs]
-                final = concat(scores, axis=1)
-                final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
-                final['average'] = final.mean(axis=1)
+                    # get runs
+                    data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
+                    runs = data_folder.get_raw_runs()
 
-                data_folder.write(final, "average_cut_ratio.tsv", index=False)
+                    # compute average
+                    scores = [compute_cut_ratio(run, limit) for run in runs]
+                    final = concat(scores, axis=1)
+                    final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
+                    final['average'] = final.mean(axis=1)
+
+                    data_folder.write(final, "average_cut_ratio.tsv", index=False)
+
+                except Exception as e:
+                    self.logger.error(e)
+                    self.email_sender.send_error_email(data_tag, learner_tag, e)
+                finally:
+                    pass
+
+        msg = self.logger.end()
+        self.email_sender.send_end_email('CUT RATIO COMPUTATION', msg)
 
     def make_plot(self, datasets, learners, iter_lim=None):
         self.plotter.plot_comparisons(datasets, learners, iter_lim)

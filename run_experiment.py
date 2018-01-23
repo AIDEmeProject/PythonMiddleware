@@ -33,8 +33,8 @@ active_learners_list = [
 
 # run experiment
 experiment = Experiment()
-experiment.run(datasets_list, active_learners_list, times=5, initial_sampler=StratifiedSampler(1, 1), noise=0.0)
-#experiment.dir_manager.experiment_folder = os.path.join(experiment.dir_manager.root, 'tmp', '2018-01-23 14:45:37.912684')
+#experiment.run(datasets_list, active_learners_list, times=5, initial_sampler=StratifiedSampler(1, 1), noise=0.0)
+experiment.dir_manager.experiment_folder = os.path.join(experiment.dir_manager.root, 'tmp', '2018-01-23 22:14:46.815602')
 experiment.get_average_fscores(datasets_list, active_learners_list)
-experiment.get_average_cut_ratio(datasets_list, active_learners_list, limit=50)
-experiment.make_plot([x[0] for x in datasets_list], [x[0] for x in active_learners_list])
+#experiment.get_average_cut_ratio(datasets_list, active_learners_list, limit=50)
+#experiment.make_plot([x[0] for x in datasets_list], [x[0] for x in active_learners_list])

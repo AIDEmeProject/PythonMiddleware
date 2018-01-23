@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.main.utils import check_points
+from src.main.utils.utilities import check_points
 
 
 def get_constrain(kind, vector=None, matrix=None):
