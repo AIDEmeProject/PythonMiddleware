@@ -3,7 +3,6 @@ from src.main.experiments import Experiment
 from src.main.initial_sampling import StratifiedSampler
 import os
 
-
 def get_user_study(ls):
     datasets_list = []
     for i in ls:
@@ -19,22 +18,23 @@ def get_sdss():
     return [('SDSS Query ' + q, 'sdss_Q' + q) for q in query_list]
 
 #datasets_list = get_user_study([11, 12])  # range(1,13)
-datasets_list = get_sdss()[:1]
+datasets_list = get_sdss()
 
 # set learners
 active_learners_list = [
-    ("Simple Margin", SimpleMargin(top=50000, kind='kernel', kernel='rbf', C=1024)),
-    #("Optimal Margin", OptimalMargin(top=50000, cholesky=False, chain_length=64, sample_size=8, kernel='rbf', C=1e6)),
-    #("Cholesky Optimal Margin", OptimalMargin(top=500, cholesky=True, chain_length=64, sample_size=8, kind='kernel', kernel='rbf', C=1024)),
-    #("Simple Margin C=100000", SimpleMargin(top=-1, kind='kernel', kernel='rbf', C=100000)),
-    #("Majority Vote", MajorityVote(top=50000, chain_length=64, sample_size=8)),
-    #("Majority Vote + Cholesky", MajorityVote(top=500, cholesky=True, chain_length=64, sample_size=8))
+    #("Simple Margin C=1e3", SimpleMargin(top=50000, kind='kernel', kernel='rbf', C=1e3)),
+    #("Simple Margin C=1e8", SimpleMargin(top=50000, kind='kernel', kernel='rbf', C=1e8)),
+    #("Optimal Margin SS=8 CL=32", OptimalMargin(top=50000, cholesky=False, chain_length=32, sample_size=8, kernel='rbf', C=1e8)),
+    ("Optimal Margin SS=8 CL=64", OptimalMargin(top=50000, cholesky=False, chain_length=64, sample_size=8, kernel='rbf', C=1e8)),
+    ("Optimal Margin SS=8 CL=128", OptimalMargin(top=50000, cholesky=False, chain_length=128, sample_size=8, kernel='rbf', C=1e8)),
+    ("Optimal Margin SS=4 CL=64", OptimalMargin(top=50000, cholesky=False, chain_length=64, sample_size=4, kernel='rbf', C=1e8)),
+    #("Majority Vote SS=8 CL=64", MajorityVote(top=50000, chain_length=64, sample_size=8)),
 ]
 
 # run experiment
 experiment = Experiment()
 #experiment.run(datasets_list, active_learners_list, times=5, initial_sampler=StratifiedSampler(1, 1), noise=0.0)
-experiment.dir_manager.experiment_folder = os.path.join(experiment.dir_manager.root, 'tmp', '2018-01-23 22:14:46.815602')
-experiment.get_average_fscores(datasets_list, active_learners_list)
-#experiment.get_average_cut_ratio(datasets_list, active_learners_list, limit=50)
+experiment.dir_manager.experiment_folder = os.path.join(experiment.dir_manager.root, 'tmp', '2018-01-20 20:00:38.047936')
+#experiment.get_average_fscores(datasets_list, active_learners_list)
+experiment.get_average_cut_ratio(datasets_list, active_learners_list, limit=50)
 #experiment.make_plot([x[0] for x in datasets_list], [x[0] for x in active_learners_list])
