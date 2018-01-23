@@ -33,7 +33,6 @@ class ExperimentPlotter:
         # get axis for plotting
         axs = self.get_axis(len(dataset_tags), 1)
 
-
         for i, data_tag in enumerate(dataset_tags):
             for k, marker, learner_tag in zip(np.linspace(0, 1, len(learner_tags)), Line2D.filled_markers, learner_tags):
                 data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
@@ -54,4 +53,6 @@ class ExperimentPlotter:
                     if j == len(avg.columns) - 1:
                         ax.legend(bbox_to_anchor=(1.1, 1.0))
 
+        plt.legend(loc='best')
         plt.savefig(self.dir_manager.experiment_folder + '/plot.eps', dpi=1000)
+

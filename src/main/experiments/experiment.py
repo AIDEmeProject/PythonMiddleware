@@ -1,10 +1,9 @@
 from pandas import concat
 
 from .directory_manager import ExperimentDirManager
-from .explore import explore, compute_fscore
+from .explore import explore, compute_fscore, compute_cut_ratio
 from .logger import ExperimentLogger
 from .plot import ExperimentPlotter
-from .utils import get_generator_average
 
 from ..config import get_dataset_and_user
 
@@ -99,6 +98,23 @@ class Experiment:
 
                 # compute average
                 scores = [compute_fscore(data, y_true, learner, run) for run in runs]
+                final = concat(scores, axis=1)
+                final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
+                final['average'] = final.mean(axis=1)
+
+                data_folder.write(final, "average_fscore.tsv", index=False)
+
+    def get_average_cut_ratio(self, datasets, learners):
+        for data_tag, task_tag in datasets:
+            data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
+
+            for learner_tag, learner in learners:
+                # get runs
+                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
+                runs = data_folder.get_raw_runs()
+
+                # compute average
+                scores = [compute_cut_ratio(data, learner, run) for run in runs]
                 final = concat(scores, axis=1)
                 final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
                 final['average'] = final.mean(axis=1)

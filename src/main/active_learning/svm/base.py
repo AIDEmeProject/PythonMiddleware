@@ -28,8 +28,7 @@ class SimpleMargin(SVMBase):
         return np.abs(self.clf.decision_function(data))
 
 
-class OptimalMargin(SamplingBase, SVMBase):
-    def __init__(self, top=-1, chain_length=50, sample_size=8, cholesky=False,
-                 kind='linear', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
-        SamplingBase.__init__(self, top=top, chain_length=chain_length, sample_size=sample_size, cholesky=cholesky)
-        SVMBase.__init__(self, top=top, kind=kind, C=C, kernel=kernel, fit_intercept=fit_intercept, class_weight=class_weight)
+class OptimalMargin(SamplingBase):
+    def __init__(self, top=-1, chain_length=50, sample_size=8, cholesky=False, C=1000, kernel='rbf'):
+        super().__init__(top=top, chain_length=chain_length, sample_size=sample_size, kernel=kernel, cholesky=cholesky)
+        self.clf = SVC(C=C, kernel=kernel, decision_function_shape='ovr')

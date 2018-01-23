@@ -15,6 +15,3 @@ class VersionSpace:
 
     def _update_single(self, point, label):
         pass
-
-    def sample(self, n):
-        raise NotImplementedError

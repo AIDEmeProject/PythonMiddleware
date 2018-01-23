@@ -49,19 +49,43 @@ def explore(data, user, learner, initial_samples):
     return data.loc[labels.index].set_index(multi_index), Series(data=labels.values, index=multi_index), Series(data=y_true.values, index=multi_index)
 
 
+def data_generator(run):
+    for iteration in run.index.levels[0]:
+        next_iter = run[run.index.get_level_values('iter') == iteration]
+        X = next_iter.drop('labels', axis=1).drop('true_labels', axis=1)
+        y = next_iter['labels']
+        yield X, y
+
 def compute_fscore(data, y_true, learner, run):
     f_scores = []
     learner.clear()
+    Xs, ys = [], []
 
-    for iteration in run.index.levels[0]:
-        next_iter = run[run.index.get_level_values('iter') <= iteration]
-        X = next_iter.drop('labels', axis=1).drop('true_labels', axis=1)
-        y = next_iter['labels']
+    for X, y in data_generator(run):
+        Xs.extend(X.values)
+        ys.extend(y.values)
 
-        learner.fit_classifier(X, y)
+        learner.fit_classifier(Xs, ys)
 
         # compute f-score over entire dataset
         y_pred = learner.predict(data)
         f_scores.append(f1_score(y_true, y_pred))
 
     return Series(data=f_scores)
+
+def compute_cut_ratio(data, learner, run):
+    cut_ratios = []
+    version_space = learner.version_space
+    version_space.clear()
+
+    for X, y in data_generator(run):
+        # sample from current version space
+        samples = version_space.sample(100,100)
+
+        # check how many samples satisfy the new constrains
+
+        # update version space
+        version_space.update(X, y)
+
+
+
