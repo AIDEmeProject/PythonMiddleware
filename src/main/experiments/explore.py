@@ -1,4 +1,4 @@
-from numpy import argsort
+import numpy as np
 from pandas import Series, MultiIndex
 from sklearn.metrics import f1_score
 
@@ -8,7 +8,7 @@ def get_minimizer_over_unlabeled_data(data, labeled_indexes, ranker, sample_size
     data = data if sample_size <= 0 else data.sample(sample_size)
     thresholds = ranker(data.values)
 
-    for i in argsort(thresholds):
+    for i in np.argsort(thresholds):
         idx = data.index[i]
         if idx not in labeled_indexes:
             return data.loc[[idx]]
@@ -24,8 +24,8 @@ def explore(data, user, learner, initial_samples):
 
     # train classifier
     learner.initialize(data)
-    learner.fit_classifier(data.loc[labels.index], labels)
     learner.update(data.loc[labels.index], labels)
+    learner.fit_classifier(data.loc[labels.index], labels)
 
     # main loop
     iteration = 1
@@ -38,8 +38,8 @@ def explore(data, user, learner, initial_samples):
         multi_index.extend([(iteration, idx) for idx in new_labels.index])
 
         # retrain active learner
-        learner.fit_classifier(data.loc[labels.index], labels)
         learner.update(new_points, new_labels)
+        learner.fit_classifier(data.loc[labels.index], labels)
 
         iteration += 1
 
@@ -73,19 +73,31 @@ def compute_fscore(data, y_true, learner, run):
 
     return Series(data=f_scores)
 
-def compute_cut_ratio(data, learner, run):
+def compute_cut_ratio(run, limit=50):
     cut_ratios = []
-    version_space = learner.version_space
-    version_space.clear()
+    from src.main.version_space.linear import KernelVersionSpace
+    version_space = KernelVersionSpace()
 
+    i=0
+    sample = None
     for X, y in data_generator(run):
-        # sample from current version space
-        samples = version_space.sample(100,100)
+        if i > 0:
+            # sample classifiers from current version space
+            sample = version_space.sample_classifier(chain_length=100, sample_size=500, previous_sample=sample)
 
-        # check how many samples satisfy the new constrains
+            # check how many samples satisfy the new constrains
+            pred = np.all(sample.predict(X) == y.values, axis=1)
+            prop = 1.0 - np.sum(pred) / 500.0
+            cut_ratios.append(prop)
 
         # update version space
         version_space.update(X, y)
+        i+=1
+        print(i)
+        if i > limit:
+            break
+
+    return Series(data=cut_ratios)
 
 
 

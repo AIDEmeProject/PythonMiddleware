@@ -104,7 +104,7 @@ class Experiment:
 
                 data_folder.write(final, "average_fscore.tsv", index=False)
 
-    def get_average_cut_ratio(self, datasets, learners):
+    def get_average_cut_ratio(self, datasets, learners, limit=50):
         for data_tag, task_tag in datasets:
             data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
 
@@ -114,12 +114,12 @@ class Experiment:
                 runs = data_folder.get_raw_runs()
 
                 # compute average
-                scores = [compute_cut_ratio(data, learner, run) for run in runs]
+                scores = [compute_cut_ratio(run, limit) for run in runs]
                 final = concat(scores, axis=1)
                 final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
                 final['average'] = final.mean(axis=1)
 
-                data_folder.write(final, "average_fscore.tsv", index=False)
+                data_folder.write(final, "average_cut_ratio.tsv", index=False)
 
     def make_plot(self, datasets, learners, iter_lim=None):
         self.plotter.plot_comparisons(datasets, learners, iter_lim)

@@ -1,8 +1,9 @@
-from .svm import SimpleMargin, SolverMethod, OptimalMargin, MajorityVote
+from .svm import SimpleMargin, SolverMethod, MajorityVote
+from .svm import *
 from .agnostic import RandomLearner
 from .boosting import QueryByBoosting, ActBoost
 
-__all__=['RandomLearner', 'QueryByBoosting', 'ActBoost', 'SimpleMargin', 'SolverMethod', 'OptimalMargin']
+__all__=['RandomLearner', 'QueryByBoosting', 'ActBoost', 'SimpleMargin', 'SolverMethod', 'OptimalMargin', 'MajorityVote']
 
 learner_configs = {
     'simplemargin': SimpleMargin,

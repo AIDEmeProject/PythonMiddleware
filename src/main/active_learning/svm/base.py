@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.svm import SVC, LinearSVC
 
-from .sampling import SamplingBase
 from ..base import ActiveLearner
 
 
@@ -28,7 +27,3 @@ class SimpleMargin(SVMBase):
         return np.abs(self.clf.decision_function(data))
 
 
-class OptimalMargin(SamplingBase):
-    def __init__(self, top=-1, chain_length=50, sample_size=8, cholesky=False, C=1000, kernel='rbf'):
-        super().__init__(top=top, chain_length=chain_length, sample_size=sample_size, kernel=kernel, cholesky=cholesky)
-        self.clf = SVC(C=C, kernel=kernel, decision_function_shape='ovr')

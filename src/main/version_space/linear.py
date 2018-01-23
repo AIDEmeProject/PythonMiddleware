@@ -6,6 +6,7 @@ from .base import VersionSpace
 
 from ..convexbody.objects import Polytope
 from ..convexbody.sampling import HitAndRunSampler
+from ..experiments.utils import get_generator_average
 
 
 class LinearVersionSpace(Polytope, VersionSpace):
@@ -79,19 +80,18 @@ class KernelVersionSpace(VersionSpace):
         self.__linear_version_space = LinearVersionSpace(K.shape[1])
         self.__linear_version_space.update(K, self.__labels)
 
-    def sample(self, chain_length, sample_size=-1, initial_point=None):
-        return self.__linear_version_space.sample(chain_length, sample_size, initial_point)
+    def get_initial_point(self, previous_sample=None):
+        if previous_sample is None:
+            return None
+        initial_points = filter(self.is_inside, map(lambda x: np.hstack([x, [0]]), previous_sample.get_params()))
+        return get_generator_average(initial_points)
 
-    def sample_classifiers(self, chain_length, sample_size=-1, initial_point=None):
-        samples = self.__linear_version_space.sample(chain_length, sample_size, initial_point)
+    def sample(self, chain_length, sample_size=-1, previous_sample=None):
+        return self.__linear_version_space.sample(chain_length, sample_size, self.get_initial_point(previous_sample))
+
+    def sample_classifier(self, chain_length, sample_size=-1, previous_sample=None):
+        samples = self.__linear_version_space.sample(chain_length, sample_size, self.get_initial_point(previous_sample))
         return SVMClassifier(samples[:,0], samples[:,1:], self.__labeled_points, self.kernel_name)
-        #[
-        #    SVMClassifier(bias, alpha, self.__labeled_points, self.kernel_name)
-        #    for bias, alpha in zip(samples[:,0], samples[:, 1:])
-        #]
-
-    def compute_kernel_against_data(self, data):
-        return self.kernel(data, self.__labeled_points)
 
     def is_inside(self, points):
         if self.__linear_version_space is None:
@@ -110,7 +110,7 @@ class SVMClassifier:
 
     def __init__(self, bias, alpha, support_vectors, kernel):
         self.bias = np.atleast_1d(bias).reshape(-1,1)
-        self.alpha = np.atleast_2d(alpha) #.ravel()
+        self.alpha = np.atleast_2d(alpha)
         self.support_vectors = np.atleast_2d(support_vectors)
         self.kernel = SVMClassifier.__kernel_functions[kernel]
 

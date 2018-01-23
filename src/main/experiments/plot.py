@@ -20,14 +20,9 @@ class ExperimentPlotter:
 
     def set_axis_parameters(self, ax, data_tag, metric):
         ax.set_title(data_tag)
-        ax.set_xlabel("# Labeled Samples")
-
-        if metric.lower().endswith('time'):
-            metric += " (s)"
-        ax.set_ylabel(metric)
-
-        if metric in ['F-Score', 'Accuracy', 'Precision', 'Recall', 'Labeled Set F-Score']:
-            ax.set_ylim([0, 1])
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel('F-Score')
+        ax.set_ylim([0, 1])
 
     def plot_comparisons(self, dataset_tags, learner_tags, iter_lim=None):
         # get axis for plotting
