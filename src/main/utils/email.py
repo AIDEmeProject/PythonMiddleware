@@ -28,9 +28,10 @@ class EmailSender:
         self.active = config['active']
 
         # create SMTP server
-        self.server = smtplib.SMTP('smtp.gmail.com', 587)
-        self.server.starttls()
-        self.server.login(self.sender_email, self.sender_password)
+        if self.active:
+            self.server = smtplib.SMTP('smtp.gmail.com', 587)
+            self.server.starttls()
+            self.server.login(self.sender_email, self.sender_password)
 
     def get_hostname(self):
         import socket
