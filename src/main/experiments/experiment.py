@@ -1,4 +1,4 @@
-from pandas import concat
+from pandas import concat, DataFrame
 
 from .directory_manager import ExperimentDirManager
 from .explore import explore, compute_fscore, compute_cut_ratio
@@ -52,6 +52,7 @@ class Experiment:
 
                 # create new task and try to run it
                 try:
+                    time_measurements = DataFrame()
                     for i in range(times):
                         sample = initial_sampler(data, user)
 
@@ -59,7 +60,7 @@ class Experiment:
                         self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
 
                         # run task
-                        X, y, y_true = explore(data, user, learner, sample)
+                        X, y, y_true, time_measurement = explore(data, user, learner, sample)
 
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
@@ -67,6 +68,10 @@ class Experiment:
                         X['true_labels'] = y_true
 
                         data_folder.write(X, filename, index=True)
+                        time_measurements['run{0}'.format(i+1)] = time_measurement
+
+                    time_measurements['average'] = time_measurements.mean(axis=1)
+                    data_folder.write(time_measurements, 'average_time.tsv', index=True)
 
                 except Exception as e:
                     # if error occurred, log error and add learner to skip list
@@ -121,10 +126,8 @@ class Experiment:
         self.logger.clear()
         self.logger.set_folder(self.dir_manager.experiment_folder, 'cut_ratio.log')
 
-        for data_tag, task_tag in datasets:
-            data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
-
-            for learner_tag, learner in learners:
+        for data_tag, _ in datasets:
+            for learner_tag, _ in learners:
                 try:
                     self.logger.averaging(data_tag, learner_tag)
 

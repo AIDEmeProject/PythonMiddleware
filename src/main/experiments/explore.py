@@ -1,7 +1,7 @@
 import numpy as np
 from pandas import Series, MultiIndex
 from sklearn.metrics import f1_score
-
+from time import perf_counter
 
 def get_minimizer_over_unlabeled_data(data, labeled_indexes, ranker, sample_size=-1):
     # if unlabeled pool is too large, restrict search to sample
@@ -27,9 +27,12 @@ def explore(data, user, learner, initial_samples):
     learner.update(data.loc[labels.index], labels)
     learner.fit_classifier(data.loc[labels.index], labels)
 
+    times = []
+
     # main loop
     iteration = 1
     while user.is_willing() and len(labels) < len(data):
+        t_init = perf_counter()
         new_points = get_minimizer_over_unlabeled_data(data, labels.index, learner.ranker)
         new_labels = user.get_label(new_points)
 
@@ -42,11 +45,15 @@ def explore(data, user, learner, initial_samples):
         learner.fit_classifier(data.loc[labels.index], labels)
 
         iteration += 1
+        times.append(perf_counter() - t_init)
 
     multi_index = MultiIndex.from_tuples(multi_index, names=['iter', 'index'])
     user.clear()
     y_true = user.get_label(data.loc[labels.index], update_counter=False, use_noise=False)
-    return data.loc[labels.index].set_index(multi_index), Series(data=labels.values, index=multi_index), Series(data=y_true.values, index=multi_index)
+    return (data.loc[labels.index].set_index(multi_index),
+            Series(data=labels.values, index=multi_index),
+            Series(data=y_true.values, index=multi_index),
+            Series(data=times, index=multi_index.get_level_values('iter')[2:]))
 
 
 def data_generator(run):
