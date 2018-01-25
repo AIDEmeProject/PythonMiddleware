@@ -6,8 +6,4 @@ notebooks/
 *.pyc
 __pycache__/
 .idea/
-<<<<<<< HEAD
-run_experiments.py
-=======
 run_experiment.py
->>>>>>> a1756bcd94564d86a7b2710ca919e4fcd8930366
