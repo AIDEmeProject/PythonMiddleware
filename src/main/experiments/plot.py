@@ -22,7 +22,8 @@ class ExperimentPlotter:
         ax.set_title(data_tag)
         ax.set_xlabel("Iteration")
         ax.set_ylabel(metric)
-        ax.set_ylim([0, 1])
+        if metric != 'time':
+            ax.set_ylim([0, 1])
 
     def plot_comparisons(self, dataset_tags, learner_tags, metric, iter_lim=None):
         # get axis for plotting
@@ -31,17 +32,20 @@ class ExperimentPlotter:
         for i, data_tag in enumerate(dataset_tags):
             for k, marker, learner_tag in zip(np.linspace(0, 1, len(learner_tags)), Line2D.filled_markers, learner_tags):
                 data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
-                avg = data_folder.read_average(metric)
+                try:
+                    avg = data_folder.read_average(metric)
+                    iter_lim = len(avg) if iter_lim is None else iter_lim
+                    step = max(int(len(avg) / 50), 1)
 
-                iter_lim = len(avg) if iter_lim is None else iter_lim
-                step = max(int(len(avg) / 50), 1)
+                    avg = avg.loc[avg.index.isin(range(0, iter_lim, step))]
 
-                avg = avg.loc[avg.index.isin(range(0, iter_lim, step))]
-
-                ax = axs[i][0]
-                self.set_axis_parameters(ax, data_tag, metric)
-                ax.plot(avg.index, avg['average'], label=learner_tag, marker=marker, markersize=5, color=plt.cm.jet(k))
-                ax.legend(bbox_to_anchor=(1.1, 1.0))
+                    ax = axs[i][0]
+                    self.set_axis_parameters(ax, data_tag, metric)
+                    ax.plot(avg.index, avg['average'], label=learner_tag, marker=marker, markersize=5,
+                            color=plt.cm.jet(k))
+                    ax.legend(bbox_to_anchor=(1.1, 1.0))
+                except Exception:
+                    continue
 
             yield axs[i][0]
         #plt.legend(loc='best')

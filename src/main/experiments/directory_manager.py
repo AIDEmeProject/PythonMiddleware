@@ -37,7 +37,10 @@ class DataFolder:
         return (read_csv(file, sep='\t', index_col=['iter', 'index']) for file in raw_files)
 
     def read_average(self, name):
-        return read_csv(self.get_full_path('average_{0}.tsv'.format(name)), sep='\t')
+        avg = read_csv(self.get_full_path('average_{0}.tsv'.format(name)), sep='\t')
+        if 'iter' in avg.columns:
+            avg = avg.set_index('iter')
+        return avg
 
     def write(self, data, filename, index=False):
         path = os.path.join(self.path, filename)

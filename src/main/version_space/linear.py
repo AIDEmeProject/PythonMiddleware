@@ -91,12 +91,18 @@ class KernelVersionSpace(VersionSpace):
 
     def sample_classifier(self, chain_length, sample_size=-1, previous_sample=None):
         samples = self.__linear_version_space.sample(chain_length, sample_size, self.get_initial_point(previous_sample))
-        return SVMClassifier(samples[:,0], samples[:,1:], self.__labeled_points, self.kernel_name)
+        b,w = samples[:,0], samples[:,1:]
+        if self.cholesky:
+            w = w.dot(np.linalg.inv(self._L))
+        return SVMClassifier(b, w, self.__labeled_points, self.kernel_name)
 
     def is_inside(self, points):
         if self.__linear_version_space is None:
             size = len(points) if len(points.shape) > 1 else 1
             return [True] * size
+        if self.cholesky:
+            print(points.shape)
+            points[1:] = points[1:].dot(self._L)
         return self.__linear_version_space.is_inside(points)
 
 
