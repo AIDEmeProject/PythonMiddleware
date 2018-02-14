@@ -114,11 +114,9 @@ class Polytope(ConvexBody):
             r1.append(r[den < 0])
             r2.append(r[den > 0])
 
-        if len(r1) == 0 or len(r2) == 0:
-            raise RuntimeError("Line does not intersect polytope.")
 
-        t1 = np.max(np.hstack(r1))
-        t2 = np.min(np.hstack(r2))
+        t1 = -float('inf') if len(r1) == 0 else np.max(np.hstack(r1))
+        t2 = float('inf') if len(r2) == 0 else np.min(np.hstack(r2))
 
         if t1 >= t2:
             raise RuntimeError("Line does not intersect polytope.")

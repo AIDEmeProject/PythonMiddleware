@@ -72,3 +72,17 @@ class AppendableInequalityConstrain(InequalityConstrain):
             raise RuntimeError("Found zero vector. Check constrains for degeneracy of Version Space.")
 
         return 0.99 * point / np.linalg.norm(point)
+
+    def intersection(self, line):
+        den = np.dot(self.matrix, line.direction)
+        r = (self.vector - np.dot(self.matrix, line.center)) / den
+        r1 = r[den < 0]
+        r2 = r[den > 0]
+
+        t1 = -float('inf') if len(r1) == 0 else np.max(np.hstack(r1))
+        t2 = float('inf') if len(r2) == 0 else np.min(np.hstack(r2))
+
+        if t1 >= t2:
+            raise RuntimeError("Line does not intersect polytope.")
+
+        return line.get_segment(t1, t2)

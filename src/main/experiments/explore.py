@@ -73,7 +73,7 @@ def compute_fscore(data, y_true, learner, run):
         ys.extend(y.values)
 
         learner.fit_classifier(Xs, ys)
-
+        print(f1_score(y_true=ys, y_pred=learner.predict(Xs)))
         # compute f-score over entire dataset
         y_pred = learner.predict(data)
         f_scores.append(f1_score(y_true, y_pred))

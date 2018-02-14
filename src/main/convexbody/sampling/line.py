@@ -26,6 +26,11 @@ class Line:
     def get_segment(self, left_limit, right_limit):
         return LineSegment(self, left_limit, right_limit)
 
+    def __eq__(self, other):
+        return np.allclose(self.center, other.center) and np.allclose(self.direction, other.direction)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class LineSegment:
     def __init__(self, line, left_limit, right_limit):
@@ -45,3 +50,12 @@ class LineSegment:
             self.line.center + self.left_limit * self.line.direction,
             self.line.center + self.right_limit * self.line.direction
         )
+
+    @classmethod
+    def intersection(cls, segment1, segment2):
+        if segment1.line != segment2.line:
+            raise ValueError("Cannot intersect distinct lines")
+
+        return LineSegment(segment1.line,
+                           max(segment1.left_limit, segment2.left_limit),
+                           min(segment1.right_limit, segment2.right_limit))

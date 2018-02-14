@@ -61,3 +61,29 @@ class HitAndRunSampler(MarkovSampler):
         line = Line.sample_line(point, convexbody.projection_matrix)
         segment = convexbody.intersection(line)
         return segment.sample(1)[0]
+
+
+class SphericalHitAndRunSampler(MarkovSampler):
+    @staticmethod
+    def _step(convexbody, point):
+        # normalize point
+        assert convexbody.is_inside(point)
+        point = point / np.linalg.norm(point)
+
+        # sample random direction orthogonal to point
+        direction = np.random.normal(size=len(point))
+        direction = direction - direction.dot(point) * point
+        direction = direction / np.linalg.norm(direction)
+
+        # find intersection
+        # c(t) = cos(t) * point + sin(t) * direction
+        a = np.dot(convexbody.inequality_constrain._matrix, point)
+        b = np.dot(convexbody.inequality_constrain._matrix, direction)
+        assert np.all(a < 0)
+        c = -b / a
+        t_max = np.min(np.pi/2 - np.arctan(c))
+        t_min = np.max(-np.pi/2 - np.arctan(c))
+
+        # compute point
+        t_sample = np.random.uniform(low=t_min, high=t_max, size=(1,))
+        return np.cos(t_sample) * point + np.sin(t_sample) * direction

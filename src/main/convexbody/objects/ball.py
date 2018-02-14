@@ -76,7 +76,7 @@ class Ball(Ellipsoid):
     """ Ball centered at C and of radius R """
 
     def __init__(self, center, radius):
-        ConvexBody.__init__(self)
+        ConvexBody.__init__(self, len(center))
 
         self._center = np.asarray(center, dtype=np.float64).ravel()
         self._dim = len(self._center)
@@ -99,7 +99,7 @@ class Ball(Ellipsoid):
 
 class UnitBall(Ball):
     def __init__(self, dim):
-        ConvexBody.__init__(self)
+        ConvexBody.__init__(self, dim)
 
         self._dim = int(dim)
         if self._dim <= 0:
