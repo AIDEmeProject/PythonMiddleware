@@ -80,21 +80,21 @@ def compute_fscore(data, y_true, learner, run):
 
     return Series(data=f_scores)
 
-def compute_cut_ratio(run, limit=50):
+def compute_cut_ratio(run, limit=100):
     cut_ratios = []
     from src.main.version_space.linear import KernelVersionSpace
-    version_space = KernelVersionSpace()
+    version_space = KernelVersionSpace(rounding=True)
 
     i=0
     sample = None
     for X, y in data_generator(run):
         if i > 0:
             # sample classifiers from current version space
-            sample = version_space.sample_classifier(chain_length=100, sample_size=500, previous_sample=sample)
+            sample = version_space.sample_classifier(chain_length=64, sample_size=100, previous_sample=sample)
 
             # check how many samples satisfy the new constrains
             pred = np.all(sample.predict(X) == y.values, axis=1)
-            prop = 1.0 - np.sum(pred) / 500.0
+            prop = 1.0 - np.sum(pred) / 100.0
             cut_ratios.append(prop)
 
         # update version space
