@@ -23,15 +23,15 @@ class EmailSender:
     def __init__(self):
         config = get_config_from_file('email.yml')
         self.sender_email = config['sender_email']
-        self.sender_password = config['sender_password']
         self.recipient_email = config['receipient_email']
         self.active = config['active']
 
         # create SMTP server
         if self.active:
-            self.server = smtplib.SMTP('smtp.gmail.com', 587)
+            self.server = smtplib.SMTP(config['service'], config['port'])
+            self.server.ehlo()
             self.server.starttls()
-            self.server.login(self.sender_email, self.sender_password)
+            self.server.login(config['username'], config['sender_password'])
 
     def get_hostname(self):
         import socket
@@ -56,3 +56,7 @@ class EmailSender:
         msg['Subject'] = "Experiment status update at {0}".format(datetime.now())
         msg.attach(MIMEText(body, 'plain'))
         self.server.sendmail(self.sender_email, self.recipient_email, msg.as_string())
+
+    def quit(self):
+        if self.active:
+            self.server.quit()
