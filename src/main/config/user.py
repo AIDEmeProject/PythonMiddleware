@@ -9,7 +9,12 @@ def get_user_from_file(dataset_name, max_iter, true_class=1.0, noise=0.0):
     data_dir = read_connection_config('datafolder')
     path = join(data_dir, dataset_name, dataset_name) + '.labels'
 
-    y_true = read_csv(path).iloc[:, 0]  # to get a series
+    y_true = read_csv(path, sep='\t')  # to get a series
+    if len(y_true.columns) > 2 :
+        raise ValueError("1 or 2 columns expected.")
+    elif len(y_true.columns) == 2:
+        y_true = y_true.set_index(y_true.columns[0])
+
     return DummyUser(y_true, max_iter, true_class, noise)
 
 

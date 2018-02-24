@@ -74,9 +74,6 @@ class DummyUser(User):
         super().__init__(max_iter, noise)
         self._true_index = y_true[y_true == true_class].index
 
-        if len(self._true_index) == len(y_true):
-            raise RuntimeError("All labels are identical!")
-
 
 class FakeUser(User):
     def __init__(self, data, true_predicate, max_iter, noise=0.0):
