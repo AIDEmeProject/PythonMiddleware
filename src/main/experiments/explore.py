@@ -32,6 +32,7 @@ def explore(data, user, learner, initial_samples):
     # main loop
     iteration = 1
     while user.is_willing() and len(labels) < len(data):
+        print('iter: ' + str(iteration))
         t_init = perf_counter()
         new_points = get_minimizer_over_unlabeled_data(data, labels.index, learner.ranker)
         new_labels = user.get_label(new_points)

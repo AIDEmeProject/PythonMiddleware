@@ -5,7 +5,7 @@ from ..base import ActiveLearner
 
 
 class SVMBase(ActiveLearner):
-    def __init__(self, top=-1, kind='linear', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
+    def __init__(self, top=-1, kind='kernel', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
         super().__init__(top)
 
         if kind == 'kernel':
