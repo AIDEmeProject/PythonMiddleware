@@ -3,7 +3,7 @@ from scipy.optimize import minimize
 from .base import SVMBase
 
 
-class BoundingPool(object):
+class BoundingPool:
     def __init__(self, pool_size):
         self.__pool = None
         self.__size = pool_size

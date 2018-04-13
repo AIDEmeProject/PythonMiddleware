@@ -6,8 +6,8 @@ from src.main.version_space import KernelVersionSpace
 
 
 class SamplingBase(ActiveLearner):
-    def __init__(self, top=-1, chain_length=50, sample_size=8, kernel='rbf', cholesky=False, rounding=False):
-        super().__init__(top)
+    def __init__(self, chain_length=50, sample_size=8, kernel='rbf', cholesky=False, rounding=False):
+        super().__init__()
 
         self.cholesky = cholesky
         self.kernel = kernel
@@ -46,6 +46,6 @@ class MajorityVote(SamplingBase):
 
 
 class OptimalMargin(SamplingBase):
-    def __init__(self, top=-1, chain_length=50, sample_size=8, cholesky=False, rounding=False, C=1000, kernel='rbf', degree=3, coef0=0, gamma='auto'):
-        super().__init__(top=top, chain_length=chain_length, sample_size=sample_size, kernel=kernel, cholesky=cholesky, rounding=rounding)
+    def __init__(self, chain_length=50, sample_size=8, cholesky=False, rounding=False, C=1000, kernel='rbf', degree=3, coef0=0, gamma='auto'):
+        super().__init__(chain_length=chain_length, sample_size=sample_size, kernel=kernel, cholesky=cholesky, rounding=rounding)
         self.clf = SVC(C=C, kernel=kernel, degree=degree, coef0=coef0, gamma=gamma, decision_function_shape='ovr')

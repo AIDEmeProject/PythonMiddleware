@@ -5,8 +5,8 @@ from ..base import ActiveLearner
 
 
 class SVMBase(ActiveLearner):
-    def __init__(self, top=-1, kind='kernel', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
-        super().__init__(top)
+    def __init__(self, kind='kernel', C=1000, kernel='rbf', fit_intercept=True, class_weight=None):
+        super().__init__()
 
         if kind == 'kernel':
             self.clf = SVC(C=C, kernel=kernel, decision_function_shape='ovr', class_weight=class_weight)

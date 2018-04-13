@@ -23,7 +23,7 @@ class Experiment:
         if len(tags) != len(set(tags)):
             raise ValueError("All tags must be distinct!")
 
-    def run(self, datasets, learners, times, initial_sampler, noise=0.0):
+    def run(self, datasets, learners, times, initial_sampler, top, noise=0.0):
         # check tags
         Experiment.__check_tags(datasets)
         Experiment.__check_tags(learners)
@@ -60,7 +60,7 @@ class Experiment:
                         self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
 
                         # run task
-                        X, y, y_true, time_measurement = explore(data, user, learner, sample)
+                        X, y, y_true, time_measurement = explore(data, user, learner, sample, top)
 
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)

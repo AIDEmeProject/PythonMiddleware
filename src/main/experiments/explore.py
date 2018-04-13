@@ -14,7 +14,7 @@ def get_minimizer_over_unlabeled_data(data, labeled_indexes, ranker, sample_size
             return data.loc[[idx]]
 
 
-def explore(data, user, learner, initial_samples):
+def explore(data, user, learner, initial_samples, top):
     user.clear()
     learner.clear()
 
@@ -34,7 +34,7 @@ def explore(data, user, learner, initial_samples):
     while user.is_willing() and len(labels) < len(data):
         print('iter: ' + str(iteration))
         t_init = perf_counter()
-        new_points = get_minimizer_over_unlabeled_data(data, labels.index, learner.ranker)
+        new_points = get_minimizer_over_unlabeled_data(data, labels.index, learner.ranker, top)
         new_labels = user.get_label(new_points)
 
         # update labeled points
@@ -69,15 +69,17 @@ def compute_fscore(data, y_true, learner, run):
     learner.clear()
     Xs, ys = [], []
 
-    for X, y in data_generator(run):
+    for i, (X, y) in enumerate(data_generator(run)):
         Xs.extend(X.values)
         ys.extend(y.values)
 
         learner.fit_classifier(Xs, ys)
-        print(f1_score(y_true=ys, y_pred=learner.predict(Xs)))
+
         # compute f-score over entire dataset
         y_pred = learner.predict(data)
         f_scores.append(f1_score(y_true, y_pred))
+
+        print('iter:', i+1, ', labeled:', f1_score(y_true=ys, y_pred=learner.predict(Xs)), ', total:', f_scores[-1])
 
     return Series(data=f_scores)
 

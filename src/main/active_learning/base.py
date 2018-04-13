@@ -8,10 +8,9 @@ class ActiveLearner:
             - define which point to retrieve at every iteration
             - predicting the labels for other points of the data pool
     """
-    def __init__(self, top=-1):
+    def __init__(self):
         self.clf = None
         self.version_space = VersionSpace()
-        self.top = int(top)
 
     def predict(self, X):
         return self.clf.predict(X)
@@ -39,9 +38,6 @@ class ActiveLearner:
 
     def update(self, points, labels):
         self.version_space.update(points, labels)
-
-    def get_next(self, pool):
-        return pool.get_minimizer_over_unlabeled_data(self.ranker, sample_size=self.top)
 
     def ranker(self, data):
         raise NotImplementedError

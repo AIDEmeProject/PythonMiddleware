@@ -2,8 +2,10 @@ from .svm import SimpleMargin, SolverMethod, MajorityVote
 from .svm import *
 from .agnostic import RandomLearner
 from .boosting import QueryByBoosting, ActBoost
+from .bayesian import BayesianLogisticActiveLearner, KernelBayesianActiveLearner
 
-__all__=['RandomLearner', 'QueryByBoosting', 'ActBoost', 'SimpleMargin', 'SolverMethod', 'OptimalMargin', 'MajorityVote']
+__all__=['RandomLearner', 'QueryByBoosting', 'ActBoost', 'SimpleMargin', 'SolverMethod', 'OptimalMargin', 'MajorityVote',
+         'BayesianLogisticActiveLearner', 'KernelBayesianActiveLearner']
 
 learner_configs = {
     'simplemargin': SimpleMargin,
