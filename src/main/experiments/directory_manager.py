@@ -16,15 +16,18 @@ class ExperimentDirManager:
         self.experiment_folder = os.path.join(self.root, 'tmp', str(now))
         os.makedirs(self.experiment_folder)
 
-    def get_data_folder(self, data_tag, learner_tag):
-        return DataFolder(self.experiment_folder, data_tag, learner_tag)
+    def get_data_folder(self, data_tag, learner_tag, force_create=True):
+        return DataFolder(self.experiment_folder, data_tag, learner_tag, force_create)
 
 
 class DataFolder:
-    def __init__(self, experiment_folder, data_tag, learner_tag):
+    def __init__(self, experiment_folder, data_tag, learner_tag, force_create=True):
         self.path = os.path.join(experiment_folder, data_tag, learner_tag)
         if not os.path.exists(self.path):
-            os.makedirs(self.path)
+            if force_create:
+                os.makedirs(self.path)
+            else:
+                raise FileNotFoundError("No such directory")
 
     def get_full_path(self, file):
         return os.path.join(self.path, file)

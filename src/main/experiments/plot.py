@@ -31,8 +31,8 @@ class ExperimentPlotter:
 
         for i, data_tag in enumerate(dataset_tags):
             for k, marker, learner_tag in zip(np.linspace(0, 1, len(learner_tags)), Line2D.filled_markers, learner_tags):
-                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
                 try:
+                    data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag, force_create=False)
                     avg = data_folder.read_average(metric)
                     iter_lim = len(avg) if iter_lim is None else iter_lim
                     step = max(int(len(avg) / 50), 1)
@@ -44,7 +44,7 @@ class ExperimentPlotter:
                     ax.plot(avg.index, avg['average'], label=learner_tag, marker=marker, markersize=5,
                             color=plt.cm.jet(k))
                     ax.legend(bbox_to_anchor=(1.1, 1.0))
-                except Exception:
+                except:
                     continue
 
             yield axs[i][0]

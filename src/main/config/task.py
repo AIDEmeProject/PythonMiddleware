@@ -31,11 +31,16 @@ def parse_dataset(task_string):
     params = {}
     for elem in elems[1:]:
         key,val = elem.split('=')
-        params[key] = float(val)
+        if elems[0] == 'ra-dec':
+            params[key] = [float(x) for x in val.split(',')]
+        else:
+            params[key] = float(val)
 
     if elems[0] == 'circle':
         return circle_query(N=10000, center=[0]*int(params['dim']), sel=params['sel'], sep=params['sep'])
     elif elems[0] == 'xor':
         return xor_query(N=10000, sel=params['sel'])
+    elif elems[0] == 'ra-dec':
+        return cluster_query(clusters=params['clusters'])
 
     raise ValueError("Unknown query type.")
