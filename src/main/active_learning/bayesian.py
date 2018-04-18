@@ -4,6 +4,8 @@ from sklearn.metrics.pairwise import rbf_kernel
 
 from .base import ActiveLearner
 from pystan import StanModel
+from definitions import RESOURCES_DIR
+import os
 
 class StanLogregSampler:
     __stan_model = """
@@ -36,7 +38,12 @@ class StanLogregSampler:
         self.sigma = sigma
 
         # STAN model
-        self.model = StanModel(model_code=self.__stan_model)
+        model_path = os.path.join(RESOURCES_DIR, 'stan_logreg.pkl')
+        if os.path.isfile(model_path):
+            import pickle
+            self.model = pickle.load(open(model_path, 'rb'))
+        else:
+            self.model = StanModel(model_code=self.__stan_model)
 
     def __preprocess(self, X, Y):
         """
