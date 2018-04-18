@@ -3,116 +3,100 @@ from scipy.special import expit
 from sklearn.metrics.pairwise import rbf_kernel
 
 from .base import ActiveLearner
+from pystan import StanModel
 
+class StanLogregSampler:
+    __stan_model = """
+        data { 
+             int<lower=1> D; 
+             int<lower=0> N; 
+             int<lower=0,upper=1> y[N]; 
+             matrix[N,D] x; 
+             real<lower=0> sig0;
+        } 
+        parameters { 
+             vector[D] beta; 
+        } 
+        model { 
+             beta ~ normal(0,sig0); 
+             y ~ bernoulli_logit(x * beta); 
+        } 
+    """
 
-class LogisticPdf:
-    def __init__(self, X, Y, add_bias=True, sig0=1., class_weight=True):
-        X = np.array(X, dtype='float')
-        X = X.reshape(len(X), -1)
-        if add_bias:
-            X = np.hstack([np.ones(shape=(len(X), 1)), X])
+    def __init__(self, add_intercept=False, iter=1000, warmup=500, thin=1, sigma=1.):
+        # add intercept to linear model?
+        self.add_intercept = add_intercept
 
-        Y = np.array(Y, dtype='float')
-        Y = Y.reshape(-1, 1)
-        if class_weight:
-            pos, neg = len(Y) / (2 * sum(Y == 1)), -len(Y) / (2 * sum(Y == -1))
-            Y = np.where(Y == 1, pos, neg)
+        # MCMC parameters
+        self.iter = iter
+        self.warmup = warmup
+        self.thin = thin
 
-        # prod_ij = y_i * x_ij
-        self.prod = Y * X
-        self.pos_mask = self.prod > 0
-        self.neg_mask = self.prod < 0
+        # gaussian prior standar deviation
+        self.sigma = sigma
 
-        # variance of gaussian prior
-        self.var = float(sig0) ** 2
+        # STAN model
+        self.model = StanModel(model_code=self.__stan_model)
 
-    def __sigmoid(self, th):
+    def __preprocess(self, X, Y):
         """
-        Sigmoid function applied to all data points: sigma(th) = 1 / (1 + exp(- y_i <x_i, th>))
-
-        th: input value
+        Add ones column to X (if necessary), and cast Y to {0,1} integer array
         """
-        return expit(self.prod.dot(th))
+        if self.add_intercept:
+            ones = np.ones((len(X), 1))
+            X = np.hstack([ones, X])
+        Y = np.array(Y == 1, dtype='int')
+        return X, Y
 
-    def sample_height(self, th):
+    def sample(self, X, Y):
         """
-        Sample an uniform height from [0, f_i(th)]
-
-        th: point to sample height
+        Sample from the posterior distribution given the data (X,Y)
         """
-        return np.random.uniform(low=0, high=self.__sigmoid(th))
+        X, Y = self.__preprocess(X, Y)
+        data_dict = {
+            'N': X.shape[0],
+            'D': X.shape[1],
+            'x': X,
+            'y': Y,
+            'sig0': self.sigma
+        }
 
-    def sample_intersection(self, th, j, heights):
-        """
-        Sample from the set {th_j: f_i(th_j | th_-j) > height_i, for all i}
-
-        th     : current theta value
-        j      : dimension to sample
-        heights: sampled heights (do not include prior)
-        """
-
-        # bounds_i = log(h_i / (1 - h_i)) - sum_{k != j} prod_ik th_k
-        bounds = np.log(heights / (1 - heights)) - self.prod.dot(th) + self.prod[:, j] * th[j]
-
-        # prod_ij th_j >= bounds_i, for all i
-        extremes = bounds / self.prod[:, j]
-        min_bound = np.max(extremes[self.pos_mask[:, j]]) if np.any(self.pos_mask[:, j]) else -float('inf')
-        max_bound = np.min(extremes[self.neg_mask[:, j]]) if np.any(self.neg_mask[:, j]) else float('inf')
-
-        # gaussian prior constrains
-        limit = np.sqrt(th[j] ** 2 - 2 * self.var * np.log(np.random.rand()))  # np.sqrt(np.sum(th**2) - 2*self.var*np.log(np.random.rand()))
-        min_bound = max(min_bound, -limit)
-        max_bound = min(max_bound, limit)
-
-        return np.random.uniform(min_bound, max_bound)
+        result = self.model.sampling(data=data_dict, iter=self.iter, warmup=self.warmup, thin=self.thin, chains=1)
+        return result.extract()['beta']
 
 
 class BayesianLogisticActiveLearner(ActiveLearner):
-    def __init__(self, add_bias=True, n_samples=1000, burn_in=-1,
-                 skip=1, sig0=1., class_weight=True):
+    def __init__(self, sampler):
         super().__init__()
-
-        self.add_bias     = bool(add_bias)
-        self.n_samples    = int(n_samples)
-        self.burn_in      = int(burn_in)
-        self.skip         = int(skip)
-        self.sig0         = float(sig0)
-        self.class_weight = bool(class_weight)
-        self.samples      = None
+        self.sampler = sampler
+        self.samples = None
 
     def clear(self):
         self.samples = None
 
     def predict(self, X):
-        return 2 * (self.predict_proba(X) > 0.5) - 1
+        return 2. * (self.predict_proba(X) > 0.5) - 1.
 
     def predict_proba(self, X):
-        if self.add_bias:
+        if X.shape[1] + 1 == self.samples.shape[1]:
             bias, weights = self.samples[:, 0].reshape(-1, 1), self.samples[:, 1:]
         else:
             bias, weights = 0, self.samples
         return np.mean(expit(bias + weights.dot(np.transpose(X))), axis=0)
 
     def fit_classifier(self, X, y):
-        p = LogisticPdf(X, y, self.add_bias, self.sig0, self.class_weight)
-        start = np.zeros(X.shape[1] + self.add_bias)
-        if self.samples is not None:
-            start[:self.samples.shape[1]] = np.mean(self.samples, axis=0)
-        self.samples = slice_sampler(p, start, self.n_samples, self.burn_in, self.skip)
+        self.samples = self.sampler.sample(X, y)
 
     def ranker(self, data):
         return (self.predict_proba(data) - 0.5)**2
 
 
 class KernelBayesianActiveLearner(ActiveLearner):
-    def __init__(self, add_bias=True, n_samples=1000, burn_in=-1, skip=1, sig0=1., class_weight=True, gamma=None):
+    def __init__(self, sampler, gamma=None):
         super().__init__()
-
-        self.gamma          = gamma
-        self.linear_learner = BayesianLogisticActiveLearner(add_bias, n_samples, burn_in,
-                                                            skip, sig0, class_weight)
+        self.linear_learner = BayesianLogisticActiveLearner(sampler)
         self.X = None
-
+        self.gamma = gamma
 
     def clear(self):
         self.X = None
@@ -128,31 +112,9 @@ class KernelBayesianActiveLearner(ActiveLearner):
         return self.linear_learner.predict_proba(self.__preprocess(X))
 
     def fit_classifier(self, X, y):
+        X, y = np.array(X), np.array(y)
         self.X = X.copy()
         self.linear_learner.fit_classifier(self.__preprocess(X), y)
 
     def ranker(self, data):
         return self.linear_learner.ranker(self.__preprocess(data))
-
-
-def slice_sampler(p, th0, N, burn_in=0, skip=1):
-    th = np.array(th0, copy=True, dtype='float').ravel()
-    dim = len(th)
-
-    samples = []
-    count = 0
-
-    for _ in range(N):
-        for j in range(dim):
-            # sample uniformly from [0, f_i(th)] for each i
-            heights = p.sample_height(th)
-
-            # sample th[j] uniformly from {th_j: p(th_j | th_-j) >= height}
-            th[j] = p.sample_intersection(th, j, heights)
-
-        # update samples
-        if count >= burn_in and (count - burn_in) % skip == 0:
-            samples.append(th.copy())
-        count += 1
-
-    return np.array(samples)

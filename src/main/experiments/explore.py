@@ -11,6 +11,7 @@ def get_minimizer_over_unlabeled_data(data, labeled_indexes, ranker, sample_size
     for i in np.argsort(thresholds):
         idx = data.index[i]
         if idx not in labeled_indexes:
+            print('threshold:', thresholds[i])
             return data.loc[[idx]]
 
 
@@ -72,7 +73,6 @@ def compute_fscore(data, y_true, learner, run):
     for i, (X, y) in enumerate(data_generator(run)):
         Xs.extend(X.values)
         ys.extend(y.values)
-
         learner.fit_classifier(Xs, ys)
 
         # compute f-score over entire dataset
