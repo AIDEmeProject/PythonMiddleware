@@ -18,33 +18,24 @@ def read_from_database(connection_string, table, columns=None, key=None):
     return read_sql_table(table_name=table, con=connection_string, index_col=key, columns=columns)
 
 
-def read_from_file(path, columns=None, key=None, read_class=False):
+def read_from_file(path, key=None):
     """
     Reads data from a CSV file
 
     :param path: path to file
-    :param columns: list of columns to read
     :param key: column to set as index
-    :param read_class: force-read class column in file
     :return pandas Dataframe
     """
-    if columns:
-        if read_class:
-            columns.append('class')
-        if key:
-            columns.append(key)
-
-    return read_csv(path, usecols=columns, index_col=key)
+    return read_csv(path, index_col=key)
 
 
-def read_dataset(name, columns=None, distinct=False, read_class=False):
+def read_dataset(name, columns=None, distinct=False):
     """
     Read a given dataset from a CSV file or database, as specified in the resources/datasets.yml file.
 
     :param name: dataset to be read, defined on config.py file
     :param columns: list of columns to read (if None, all columns are read)
     :param distinct: whether to remove duplicates or not
-    :param read_class: add 'class' column when reading from CSV file
     :return: pandas Dataframe
     """
     # read main configs
@@ -56,18 +47,16 @@ def read_dataset(name, columns=None, distinct=False, read_class=False):
     # set dataset config
     if source == 'file':
         reader = read_from_file
-        config['read_class'] = read_class
-        config['path'] = join(source_uri, name, name + '.csv')
+        config['path'] = join(source_uri, name + '.csv')
 
     elif source == 'postgres':
         reader = read_from_database
         database = config.pop('database')
         config['connection_string'] = '{}/{}'.format(source_uri, database)
+        config['columns'] = columns
 
     else:
         raise ValueError("Unknown source value: " + source)
-
-    config['columns'] = columns
 
     # read data
     data = reader(**config)

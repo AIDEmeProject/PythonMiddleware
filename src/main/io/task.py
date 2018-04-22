@@ -18,7 +18,7 @@ def read_task(task, distinct=False, get_raw=False):
 
     # read data
     dataset_config = task_config['dataset']
-    data = read_dataset(distinct=distinct, read_class=True, **dataset_config)
+    data = read_dataset(distinct=distinct,  **dataset_config)
 
     # read labels
     labels_config = task_config.get('user', {})
