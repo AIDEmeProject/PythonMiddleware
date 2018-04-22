@@ -46,24 +46,16 @@ def read_dataset(name, columns=None, distinct=False):
 
     # set dataset config
     if source == 'file':
-        reader = read_from_file
-        config['path'] = join(source_uri, name + '.csv')
+        path = join(source_uri, name + '.csv')
+        data = read_from_file(path, **config)
 
     elif source == 'postgres':
-        reader = read_from_database
         database = config.pop('database')
-        config['connection_string'] = '{}/{}'.format(source_uri, database)
-        config['columns'] = columns
+        connection_string = '{}/{}'.format(source_uri, database)
+        data = read_from_database(connection_string, columns=columns, **config)
 
     else:
         raise ValueError("Unknown source value: " + source)
-
-    # read data
-    data = reader(**config)
-
-    # set a name to the index column
-    if data.index.name is None:
-        data.index.name = 'rowid'
 
     # drop duplicates if necessary
     return data.drop_duplicates() if distinct else data
