@@ -4,7 +4,6 @@ from .directory_manager import ExperimentDirManager
 from .explore import explore, compute_fscore
 from .logger import ExperimentLogger
 from .plot import ExperimentPlotter
-from .utils import get_generator_average
 
 from ..config import get_dataset_and_user
 

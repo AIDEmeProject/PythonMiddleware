@@ -5,3 +5,4 @@ notebooks/
 *.pyc
 __pycache__/
 .idea/
+resources/
