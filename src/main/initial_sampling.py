@@ -1,43 +1,32 @@
-from numpy.random import RandomState
 from pandas import Series
 
 class StratifiedSampler:
-    def __init__(self, pos, neg, pos_mask=True, neg_mask=True):
+    """
+    Binary stratified sampling method. Randomly selects a given number of positive and negative points from a list of labels.
+    """
+    def __init__(self, pos, neg):
+        """
+
+        :param pos: Number of positive points to sample. Must be non-negative.
+        :param neg: Number of negative points to sample. Must be non-negative.
+        """
         self.pos = int(pos)
         self.neg = int(neg)
 
         if self.pos < 0 or self.neg < 0:
-            raise ValueError("Found negative sample size. Please provide a positive number.")
+            raise ValueError("Found negative sample size. Only non-negative values allowed.")
 
-        self.pos_mask = pos_mask
-        self.neg_mask = neg_mask
+    def __call__(self, y, true_class=1.0):
+        """
+        Call the sampling procedure over the given labeled collection.
 
-        self.new_random_state()
+        :param y: label collection. Should be a numpy array or pandas Series
+        :param true_class: class to be considered positive. Default to 1.0.
+        :return: position or index of samples in the array
+        """
+        y = Series(y)
 
-    def __call__(self, data, user):
-        return self._sample(data, user)
+        pos_samples = y[y == true_class].sample(self.pos, replace=False).index
+        neg_samples = y[y != true_class].sample(self.neg, replace=False).index
 
-    def _sample(self, data, user):
-        user.clear()
-        y_true = user.get_label(data, update_counter=False, use_noise=False)
-
-        positive = y_true[(y_true == 1) & self.pos_mask]
-        pos_samples = positive.sample(self.pos, replace=False, random_state=self.random_state)
-
-        negative = y_true[(y_true == -1) & self.neg_mask]
-        neg_samples = negative.sample(self.neg, replace=False, random_state=self.random_state)
-
-        labels = pos_samples.append(neg_samples)
-        return labels
-
-    def reset_random_state(self):
-        self.random_state.set_state(self.state)
-
-    def new_random_state(self):
-        self.random_state = RandomState()
-        self.state = self.random_state.get_state()
-
-
-class EmptySampler:
-    def __call__(self, data, user):
-        return Series()
+        return pos_samples.append(neg_samples)
