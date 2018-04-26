@@ -1,5 +1,6 @@
 from pandas import Series
 
+
 class StratifiedSampler:
     """
     Binary stratified sampling method. Randomly selects a given number of positive and negative points from a list of labels.
@@ -29,4 +30,4 @@ class StratifiedSampler:
         pos_samples = y[y == true_class].sample(self.pos, replace=False).index
         neg_samples = y[y != true_class].sample(self.neg, replace=False).index
 
-        return pos_samples.append(neg_samples)
+        return list(pos_samples.append(neg_samples))
