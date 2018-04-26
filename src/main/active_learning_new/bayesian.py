@@ -12,6 +12,12 @@ from .active_learner import ActiveLearner
 
 
 class LogregSampler:
+    """
+    Logistic regression posterior sampler. Uses pystan library, which is basically a wrapper over the Bayesian library
+    STAN in R.
+
+    Link: https://github.com/stan-dev/pystan
+    """
     __stan_model = """
         data { 
              int<lower=1> D; 
@@ -61,7 +67,10 @@ class LogregSampler:
 
     def sample(self, X, y):
         """
-        Sample from the posterior distribution given the data (X,Y)
+        Sample from the posterior distribution given the some labeled data
+
+        :param X: data matrix
+        :param y: labels array
         """
         X, y = self.__preprocess(X, y)
         data = {
@@ -77,6 +86,12 @@ class LogregSampler:
 
 
 class LinearBayesianQueryByCommittee(ActiveLearner):
+    """
+    Bayesian Query By Committee model for linear classifiers. Similarly to the usual QBC, we maintain a probability
+    distribution over the Hypothesis Space, but different from the uniform. Instead, we consider a non-informative
+    gaussian prior N(0, sig^2), and update probabilities through the Bayes Rule. Another change is we no longer sample
+    from the Version Space, but from the maintained posterior probability distribution.
+    """
     def __init__(self, sampler):
         ActiveLearner.__init__(self)
         self.sampler = sampler
@@ -100,6 +115,11 @@ class LinearBayesianQueryByCommittee(ActiveLearner):
 
 
 class KernelBayesianQueryByCommittee(ActiveLearner):
+    """
+    Add kernel support to LinearBayesianQueryByCommittee model. Basically, the data matrix X is substituted by the Kernel
+    Matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined). Note that the Hypothesis Space
+    dimension grows with the number of labeled points.
+    """
 
     def __init__(self, sampler, kernel='linear', gamma=None, degree=3, coef0=0.):
         ActiveLearner.__init__(self)

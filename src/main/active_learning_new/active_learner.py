@@ -14,7 +14,8 @@ class ActiveLearner:
     """
     def fit(self, X, y):
         """
-        Fit model over labeled data
+        Fit model over labeled data.
+
         :param X: data matrix
         :param y: labels array
         """
@@ -23,6 +24,7 @@ class ActiveLearner:
     def predict(self, X):
         """
         Predict classes for each data point x in X.
+
         :param X: data matrix
         :return: class labels
         """
@@ -31,6 +33,7 @@ class ActiveLearner:
     def predict_proba(self, X):
         """
         Predict probability of class being positive for each data point x in X.
+
         :param X: data matrix
         :return: positive class probability
         """
@@ -39,6 +42,7 @@ class ActiveLearner:
     def rank(self, X):
         """
         Ranking function returning an "informativeness" score for each data point x in X
+
         :param X: data matrix
         :return: scores array
         """
@@ -47,6 +51,7 @@ class ActiveLearner:
     def get_next(self, X, labeled_index=None):
         """
         Get next point to label. We retrieve the "lowest score unlabeled point" in the dataset X.
+
         :param X: data matrix
         :param labeled_index: collection of previously labeled rows. These will not be considered when retrieving the
         next point.
@@ -73,6 +78,7 @@ class ActiveLearner:
     def run(self, X, y, n_iter, initial_sampler, metric=None, plot=None):
         """
         Run Active Learning model over data, for a given number of iterations.
+
         :param X: data matrix
         :param y: labels array
         :param n_iter: number of iterations to run (after initial sampling)
@@ -101,11 +107,22 @@ class ActiveLearner:
         return labeled_indexes
 
     def plot(self, X, y, labeled_indexes):
+        """
+        Make contour plot of learner predictions (for 2D data only). Contour lines are either probabilities (if available)
+        or class label predictions otherwise.
+
+        :param X: data matrix
+        :param y: labels
+        :param labeled_indexes: labeled data indexes
+        """
+        # subsample large datasets
         if len(X) > 50000:
             idx = labeled_indexes + list(np.random.choice(X.shape[0], 10000, replace=False))
             X = X[idx]
             y = y[idx]
             labeled_indexes = range(len(labeled_indexes))
+
+        # contour plot
         xs = np.linspace(X[:, 0].min(), X[:, 0].max(), 300)
         ys = np.linspace(X[:, 1].min(), X[:, 1].max(), 300)
 
@@ -115,12 +132,14 @@ class ActiveLearner:
         except:
             Z = self.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
 
-        contour = plt.contourf(xx, yy, Z, alpha=0.4, cmap=plt.cm.RdBu, vmin=0, vmax=1)
+        contour = plt.contourf(xx, yy, Z, alpha=0.4, cmap=plt.cm.RdBu, vmin=0, vmax=1, levels=np.linspace(0,1,11))
+        plt.colorbar(contour, ticks=np.linspace(0,1,11))
 
+        # plot data points
         plt.scatter(X[:, 0], X[:, 1], c='k', s=10 / len(X))
+
+        # plot labeled data
         plt.scatter(X[labeled_indexes, 0], X[labeled_indexes, 1],
                     c=['b' if lb == 1 else 'r' for lb in y[labeled_indexes]], s=10)
-
-        plt.colorbar(contour)
 
         plt.show()
