@@ -1,6 +1,6 @@
 import numpy as np
 import sklearn.utils
-
+import matplotlib.pyplot as plt
 
 class ActiveLearner:
     """
@@ -61,7 +61,16 @@ class ActiveLearner:
 
         raise RuntimeError("The entire dataset has already been labeled!")
 
-    def run(self, X, y, n_iter, initial_sampler, metric=None):
+    def _update_model(self, iter, X, y, labeled_indexes, metric, plot):
+        self.fit(X[labeled_indexes], y[labeled_indexes])
+
+        if metric:
+            print('Iter', iter, ': accuracy =', metric(y, self.predict(X)))
+
+        if plot:
+            self.plot(X, y, labeled_indexes)
+
+    def run(self, X, y, n_iter, initial_sampler, metric=None, plot=None):
         """
         Run Active Learning model over data, for a given number of iterations.
         :param X: data matrix
@@ -79,7 +88,7 @@ class ActiveLearner:
         # fit model over initial sample
         labeled_indexes = initial_sampler(y)
 
-        self.fit(X[labeled_indexes], y[labeled_indexes])
+        self._update_model(0, X, y, labeled_indexes, metric, plot)
 
         # run n_iter iterations
         for i in range(n_iter):
@@ -87,11 +96,31 @@ class ActiveLearner:
             idx = self.get_next(X, labeled_indexes)
             labeled_indexes.append(idx)
 
-            # fit model
-            self.fit(X[labeled_indexes], y[labeled_indexes])
-
-            # compute metric
-            if metric:
-                print('Iter', i, ': accuracy =', metric(y, self.predict(X)))
+            self._update_model(i+1, X, y, labeled_indexes, metric, plot)
 
         return labeled_indexes
+
+    def plot(self, X, y, labeled_indexes):
+        if len(X) > 50000:
+            idx = labeled_indexes + list(np.random.choice(X.shape[0], 10000, replace=False))
+            X = X[idx]
+            y = y[idx]
+            labeled_indexes = range(len(labeled_indexes))
+        xs = np.linspace(X[:, 0].min(), X[:, 0].max(), 300)
+        ys = np.linspace(X[:, 1].min(), X[:, 1].max(), 300)
+
+        xx, yy = np.meshgrid(xs, ys)
+        try:
+            Z = self.predict_proba(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+        except:
+            Z = self.predict(np.c_[xx.ravel(), yy.ravel()]).reshape(xx.shape)
+
+        contour = plt.contourf(xx, yy, Z, alpha=0.4, cmap=plt.cm.RdBu, vmin=0, vmax=1)
+
+        plt.scatter(X[:, 0], X[:, 1], c='k', s=10 / len(X))
+        plt.scatter(X[labeled_indexes, 0], X[labeled_indexes, 1],
+                    c=['b' if lb == 1 else 'r' for lb in y[labeled_indexes]], s=10)
+
+        plt.colorbar(contour)
+
+        plt.show()

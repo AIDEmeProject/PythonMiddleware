@@ -1,7 +1,9 @@
 from .active_learner import ActiveLearner
-from .uncertainty import UncertaintySampler
+from .bayesian import LinearBayesianQueryByCommittee, KernelBayesianQueryByCommittee
 from .random import RandomSampler
 from .svm import SimpleMargin, RatioMargin
+from .uncertainty import UncertaintySampler
 
 
-__all__ = ['ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin']
+__all__ = ['ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
+           'LinearBayesianQueryByCommittee', 'KernelBayesianQueryByCommittee']
