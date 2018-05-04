@@ -8,7 +8,7 @@ import numpy as np
 import sklearn
 import sklearn.utils.validation
 
-from .uncertainty import UncertaintySampler
+from ..uncertainty import UncertaintySampler
 
 
 class SimpleMargin(UncertaintySampler):

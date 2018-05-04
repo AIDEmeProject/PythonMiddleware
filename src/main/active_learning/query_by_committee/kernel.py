@@ -7,14 +7,15 @@ from sklearn.utils.validation import check_is_fitted
 from .linear import BayesianLogisticRegression
 
 
-class KernelBayesianLogisticRegression:
+class KernelLogisticRegression:
     """
     Add kernel support to LinearBayesianLogisticRegression classifier. Basically, the data matrix X is substituted by
     the Kernel matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined).
     """
 
-    def __init__(self, sampler, n_samples, add_intercept=True, kernel='linear', gamma=None, degree=3, coef0=0.):
-        self.logreg = BayesianLogisticRegression(sampler, n_samples, add_intercept)
+    def __init__(self, n_samples, add_intercept=True, sampling='bayesian', warmup=100, thin=1, sigma=1.0,
+                       kernel='linear', gamma=None, degree=3, coef0=0.):
+        self.logreg = BayesianLogisticRegression(n_samples, add_intercept, sampling, warmup, thin, sigma)
         self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
 
     @staticmethod

@@ -1,9 +1,11 @@
 import numpy as np
 from scipy.optimize import minimize
-from .base import SVMBase
+from sklearn.svm import SVC
+
+from ..uncertainty import UncertaintySampler
 
 
-class BoundingPool(object):
+class BoundingPool:
     def __init__(self, pool_size):
         self.__pool = None
         self.__size = pool_size
@@ -32,15 +34,11 @@ class BoundingPool(object):
         return self.pool[self.__count]
 
 
-class SolverMethod(SVMBase):
+class SolverMethod(UncertaintySampler):
 
-    def __init__(self, pool_size=20, top=None, kind='kernel', C=1000, kernel='rbf', fit_intercept=True):
-        super().__init__(kind, C, kernel, fit_intercept, top)
+    def __init__(self, pool_size=20, C=1000, kernel='rbf'):
+        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel))
         self.bounding_pool = BoundingPool(pool_size=pool_size)
-
-    def initialize(self, data):
-        super().initialize(data)
-        self.bounding_pool.build_pool(data)
 
     def get_fake_point(self, positive_sample, negative_sample):
         positive_sample, negative_sample = np.atleast_2d(positive_sample, negative_sample)
@@ -53,12 +51,14 @@ class SolverMethod(SVMBase):
         res = minimize(func, 0.5, bounds=[(0, 1)])
         return res.x * positive_sample + (1 - res.x) * negative_sample
 
-    def get_next(self, pool):
-        """ Get closest point to SVM's boundary given current  """
-        positive_sample = pool.get_positive_points()[-1]
+    def fit(self, X, y):
+        self.positive_point = X[y == 1][-1]
+        super(self).fit(X, y)
+
+    def rank(self, X):
+        positive_sample = self.positive_point
         negative_sample = self.bounding_pool.get_next_negative_point()
         fake_point = self.get_fake_point(positive_sample, negative_sample)
 
         # find closest unlabeled point to fake point
-        ranker = lambda data: np.linalg.norm(data - fake_point, axis=-1)
-        return pool.get_minimizer_over_unlabeled_data(ranker)
+        return np.linalg.norm(X - fake_point, axis=-1)

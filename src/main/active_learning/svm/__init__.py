@@ -1,5 +1,3 @@
-from .base import SimpleMargin, OptimalMargin
-from .sampling import MajorityVote
-from .solver import SolverMethod
+from .margin import SimpleMargin, RatioMargin
 
-__all__ = ['SimpleMargin', 'SolverMethod', 'OptimalMargin', 'MajorityVote']
+__all__ = ['SimpleMargin', 'RatioMargin']

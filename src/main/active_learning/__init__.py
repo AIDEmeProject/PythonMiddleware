@@ -1,20 +1,9 @@
-from .svm import SimpleMargin, SolverMethod, OptimalMargin, MajorityVote
-from .agnostic import RandomLearner
-from .boosting import QueryByBoosting, ActBoost
+from .active_learner import ActiveLearner
+from .query_by_committee import *
+from .random import RandomSampler
+from .svm import SimpleMargin, RatioMargin
+from .uncertainty import UncertaintySampler
 
-__all__=['RandomLearner', 'QueryByBoosting', 'ActBoost', 'SimpleMargin', 'SolverMethod', 'OptimalMargin']
 
-learner_configs = {
-    'simplemargin': SimpleMargin,
-    'solvermethod': SolverMethod,
-    'optimalmargin': OptimalMargin,
-    'majorityvote': MajorityVote,
-    'random': RandomLearner,
-    'actboost': ActBoost,
-    'querybyboosting': QueryByBoosting
-}
-
-def get_active_learner(name, params):
-    name = name.replace(" ", "").lower()
-    learner = learner_configs[name]
-    return learner(**params)
+__all__ = ['ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
+           'LinearQueryByCommittee', 'KernelQueryByCommittee']
