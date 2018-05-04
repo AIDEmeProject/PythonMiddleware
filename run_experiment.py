@@ -1,6 +1,7 @@
-from src.main.active_learning.svm import *
-from src.main.experiments import Experiment
-from src.main.initial_sampling import StratifiedSampler
+from explore_by_example.main.experiments import Experiment
+from explore_by_example.main.initial_sampling import StratifiedSampler
+
+from active_learning.svm import *
 
 
 def get_user_study(ls):
@@ -22,12 +23,7 @@ datasets_list = get_sdss()[:1]
 
 # set learners
 active_learners_list = [
-    ("Simple Margin", SimpleMargin(top=-1, kind='kernel', kernel='rbf', C=1024)),
-    #("Optimal Margin", OptimalMargin(top=-1, cholesky=False, chain_length=64, sample_size=8, kind='kernel', kernel='rbf', C=100000)),
-    #("Cholesky Optimal Margin", OptimalMargin(top=500, cholesky=True, chain_length=64, sample_size=8, kind='kernel', kernel='rbf', C=1024)),
-    #("Simple Margin C=100000", SimpleMargin(top=-1, kind='kernel', kernel='rbf', C=100000)),
-    #("Majority Vote", MajorityVote(top=500, chain_length=64, sample_size=8)),
-    #("Majority Vote + Cholesky", MajorityVote(top=500, cholesky=True, chain_length=64, sample_size=8))
+    ("Simple Margin", SimpleMargin(kernel='rbf', C=1024)),
 ]
 
 # run experiment

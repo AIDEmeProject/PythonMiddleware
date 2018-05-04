@@ -13,9 +13,9 @@ class KernelLogisticRegression:
     the Kernel matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined).
     """
 
-    def __init__(self, n_samples, add_intercept=True, sampling='bayesian', warmup=100, thin=1, sigma=1.0,
+    def __init__(self, n_samples, add_intercept=True, sampling='bayesian', warmup=100, thin=1, sigma=100.0, rounding=True,
                        kernel='linear', gamma=None, degree=3, coef0=0.):
-        self.logreg = BayesianLogisticRegression(n_samples, add_intercept, sampling, warmup, thin, sigma)
+        self.logreg = BayesianLogisticRegression(n_samples, add_intercept, sampling, warmup, thin, sigma, rounding)
         self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
 
     @staticmethod

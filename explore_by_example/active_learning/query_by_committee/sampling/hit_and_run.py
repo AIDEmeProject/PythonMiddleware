@@ -2,6 +2,8 @@ import numpy as np
 from scipy.optimize import linprog
 from sklearn.utils import check_array
 
+from .ellipsoid import Ellipsoid
+
 
 class LinearVersionSpace:
     def __init__(self, A):
@@ -77,11 +79,22 @@ class LinearVersionSpace:
         point = res.x[1:].ravel()
         return point / np.linalg.norm(point)
 
+    def get_separating_oracle(self, point):
+        for a in self.A:
+            if np.dot(a, point) > 0:
+                return a
+
+        if np.dot(point, point) > 1:
+            return point
+
+        return None
+
 
 class HitAndRunSampler:
-    def __init__(self, warmup=100, thin=1):
+    def __init__(self, warmup=100, thin=1, rounding=True):
         self.warmup = warmup
         self.thin = thin
+        self.rounding = rounding
 
     def sample(self, X, y, n_samples):
         n, dim = X.shape
@@ -90,10 +103,18 @@ class HitAndRunSampler:
         version_space = LinearVersionSpace(prod)
         center = version_space.get_point()
 
+        if self.rounding:
+            elp = Ellipsoid(x=np.zeros(dim), P=np.eye(dim))
+            elp.weak_ellipsoid(version_space)
+            P = np.linalg.cholesky(elp.P)
+
         samples = []
         for i in range(self.warmup + self.thin * n_samples):
             # sample random direction
             direction = np.random.normal(size=dim)
+
+            if self.rounding:
+                direction = P.dot(direction)
 
             # get extremes of line segment determined by intersection
             t1, t2 = version_space.intersection(center, direction)

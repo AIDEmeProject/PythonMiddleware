@@ -11,11 +11,11 @@ class BayesianLogisticRegression:
         Logistic regression bayesian model.
     """
 
-    def __init__(self, n_samples, add_intercept=True, sampling='bayesian', warmup=100, thin=1, sigma=100.0):
+    def __init__(self, n_samples, add_intercept=True, sampling='bayesian', warmup=100, thin=1, sigma=100.0, rounding=True):
         if sampling == 'bayesian':
             self.sampler = StanLogisticRegressionSampler(warmup, thin, sigma)
         elif sampling == 'deterministic':
-            self.sampler = HitAndRunSampler(warmup, thin)
+            self.sampler = HitAndRunSampler(warmup, thin, rounding)
         else:
             raise ValueError("Unknown sampling backend. Options are 'stan' or 'hit-and-run'.")
 
