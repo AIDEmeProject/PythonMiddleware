@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Ellipsoid:
     """
     Ellipsoid equation: {z : (z - x)^T P^-1 (z - x) <= 1}

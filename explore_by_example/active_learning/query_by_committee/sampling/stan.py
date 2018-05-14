@@ -8,11 +8,11 @@ from definitions import RESOURCES_DIR
 
 class StanLogisticRegressionSampler:
     """
-       Logistic regression posterior sampler. Uses pystan library, which is basically a wrapper over the Bayesian modeling
-       library STAN in R.
+    Logistic regression posterior sampler. Uses pystan library, which is basically a wrapper over the Bayesian modeling
+    library STAN in R.
 
-       Link: https://github.com/stan-dev/pystan
-       """
+    Link: https://github.com/stan-dev/pystan
+    """
     __stan_model = """
             data { 
                  int<lower=1> D; 
@@ -31,6 +31,11 @@ class StanLogisticRegressionSampler:
         """
 
     def __init__(self, warmup=100, thin=1, sigma=1.0):
+        """
+        :param warmup: number of initial samples to ignore
+        :param thin: number of samples to skip
+        :param sigma: Gaussian prior standard deviation
+        """
         self.warmup = warmup
         self.thin = thin
 
@@ -45,6 +50,14 @@ class StanLogisticRegressionSampler:
 
 
     def sample(self, X, y, n_samples):
+        """
+        Sample from the posterior distribution through an MCMC sampler.
+
+        :param X: data matrix
+        :param y: labels (positive label should be 1)
+        :param n_samples: number of samples
+        :return: samples in a numpy array (one per line)
+        """
         y = (y == 1).astype('int')
 
         data = {
