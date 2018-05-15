@@ -1,11 +1,13 @@
+import numpy as np
 from pandas import concat
+import sklearn
 
 from .directory_manager import ExperimentDirManager
 from .explore import explore, compute_fscore
 from .logger import ExperimentLogger
 from .plot import ExperimentPlotter
 
-from ..config import get_dataset_and_user
+from ..io import read_task
 
 
 class Experiment:
@@ -34,7 +36,7 @@ class Experiment:
 
         for data_tag, task_tag in datasets:
             # get data and user
-            data, user = get_dataset_and_user(task_tag, keep_duplicates=False, noise=noise)
+            data, user = read_task(task_tag, distinct=False)
 
             # get new random state
             initial_sampler.new_random_state()
@@ -88,7 +90,7 @@ class Experiment:
 
     def get_average_fscores(self, datasets, learners):
         for data_tag, task_tag in datasets:
-            data, user = get_dataset_and_user(task_tag, keep_duplicates=True, noise=0.0)
+            data, user = read_task(task_tag, distinct=False)
             y_true = user.get_label(data, update_counter=False, use_noise=False)
 
             for learner_tag, learner in learners:
@@ -106,3 +108,55 @@ class Experiment:
 
     def make_plot(self, datasets, learners, iter_lim=None):
         self.plotter.plot_comparisons(datasets, learners, iter_lim)
+
+
+class PoolBasedExploration:
+    def __init__(self, iter, initial_sampler, metric=None, plot=None):
+        """
+        :param iter: number of iterations of the active learning algorithm to run
+        :param initial_sampler: InitialSampler object
+        :param metric: accuracy metric to be computed every iteration
+        :param plot: plotting function for each iteration
+        """
+        self.iter = iter
+        self.initial_sampler = initial_sampler
+        self.metric = metric
+        self.plot = plot
+
+    def _run_iter(self, iter, X, y, learner, labeled_indexes):
+        learner.fit(X[labeled_indexes], y[labeled_indexes])
+
+        if self.metric:
+            print('Iter', iter, ': accuracy =', self.metric(y, learner.predict(X)))
+
+        if self.plot:
+            self.plot(X, y, learner, labeled_indexes)
+
+    def run(self, X, y, learner):
+        """
+        Run Active Learning model over data, for a given number of iterations.
+
+        :param X: data matrix
+        :param y: labels array
+        :param learner: Active Learning algorithm to run
+        :return: labeled points chosen by the algorithm
+        """
+        X, y = sklearn.utils.check_X_y(X, y)
+
+        if len(np.unique(y)) > 2:
+            raise ValueError("Found more than two distinct values in y; only binary classification is supported!")
+
+        # fit model over initial sample
+        labeled_indexes = self.initial_sampler(y)
+
+        self._run_iter(0, X, y, learner, labeled_indexes)
+
+        # run n_iter iterations
+        for i in range(self.iter):
+            # get next point to label
+            idx = learner.get_next(X, labeled_indexes)
+            labeled_indexes.append(idx)
+
+            self._run_iter(i+1, X, y, learner, labeled_indexes)
+
+        return labeled_indexes

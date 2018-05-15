@@ -40,17 +40,18 @@ def plot_showdown(output, metrics_list=None):
     plt.show()
 
 
-def plot_learner_prediction(X, y, labeled_indexes, learner):
+def plot_learner_prediction(X, y, learner, labeled_indexes):
     """
         Make contour plot of learner predictions (for 2D data only). Contour lines are either probabilities (if available)
         or class label predictions otherwise.
 
         :param X: data matrix
         :param y: labels
+        :learner: Active Learning model
         :param labeled_indexes: labeled data indexes
     """
     if X.shape[1] != 2:
-        raise ValueError("Only two-dimensional datasets supported")
+        raise ValueError("Only two-dimensional datasets supported.")
 
     # subsample large datasets
     if len(X) > 50000:
