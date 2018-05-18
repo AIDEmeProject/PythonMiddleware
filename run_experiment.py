@@ -1,5 +1,5 @@
-from explore_by_example.main.experiments import Experiment
-from explore_by_example.main.initial_sampling import StratifiedSampler
+from explore_by_example.experiments import Experiment
+from explore_by_example.initial_sampling import StratifiedSampler
 
 from active_learning.svm import *
 

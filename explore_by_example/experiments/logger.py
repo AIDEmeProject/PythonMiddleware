@@ -23,15 +23,14 @@ class ExperimentLogger:
         handler.setFormatter(self.formatter)
         self.logger.addHandler(handler)
 
-    def begin(self, data_tag, learner_tag, run_id, sample_index):
+    def begin(self, data_tag, learner_tag, run_id):
         self.total += 1
 
-        self.logger.info("Starting experiment #{0}: TASK = {1}, LEARNER = {2}, RUN = {3}, SAMPLE = {4}".format(
+        self.logger.info("Starting experiment #{0}: TASK = {1}, LEARNER = {2}, RUN = {3}".format(
             self.total,
             data_tag,
             learner_tag,
-            run_id,
-            list(sample_index)
+            run_id
         ))
 
     def skip(self):
@@ -41,7 +40,6 @@ class ExperimentLogger:
 
     def error(self, exception):
         self.errors += 1
-
         self.logger.error(exception, exc_info=1)
 
     def end(self):

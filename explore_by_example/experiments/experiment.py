@@ -1,12 +1,11 @@
-import numpy as np
-from pandas import concat
+from time import perf_counter
+
+import pandas as pd
 import sklearn
 
 from .directory_manager import ExperimentDirManager
-from .explore import explore, compute_fscore
 from .logger import ExperimentLogger
 from .plot import ExperimentPlotter
-
 from ..io import read_task
 
 
@@ -23,7 +22,7 @@ class Experiment:
         if len(tags) != len(set(tags)):
             raise ValueError("All tags must be distinct!")
 
-    def run(self, datasets, learners, times, initial_sampler, noise=0.0):
+    def run(self, datasets, learners, times, explore):
         # check tags
         Experiment.__check_tags(datasets)
         Experiment.__check_tags(learners)
@@ -36,10 +35,7 @@ class Experiment:
 
         for data_tag, task_tag in datasets:
             # get data and user
-            data, user = read_task(task_tag, distinct=False)
-
-            # get new random state
-            initial_sampler.new_random_state()
+            X, y = read_task(task_tag, distinct=False)
 
             for learner_tag, learner in learners:
                 # if learners failed previously, skip it
@@ -53,24 +49,16 @@ class Experiment:
                 # create new task and try to run it
                 try:
                     for i in range(times):
-                        sample = initial_sampler(data, user)
-
                         # log task begin
-                        self.logger.begin(data_tag, learner_tag, i+1, list(sample.index))
+                        self.logger.begin(data_tag, learner_tag, i+1)
 
                         # run task
-                        X, y, y_true = explore(data, user, learner, sample)
-
-                        # persist metrics
-                        # filename = "run{0}_time.tsv".format(i+1)
-                        # self.dir_manager.persist(metrics, data_tag, learner_tag, filename)
+                        metrics = explore.run(X, y, learner)
 
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
-                        X['labels'] = y
-                        X['true_labels'] = y_true
-
-                        data_folder.write(X, filename, index=True)
+                        df = pd.DataFrame.from_dict({i: metric for i, metric in enumerate(metrics)}, orient='index')
+                        data_folder.write(df, filename, index=True)
 
                     # self.dir_manager.compute_folder_average(data_tag, learner_tag)
 
@@ -82,32 +70,8 @@ class Experiment:
                 finally:
                     pass  # continue to next tasks
 
-                # reset random state, so all learners are run over the set of initial samples
-                initial_sampler.reset_random_state()
-
         # log experiment end
         self.logger.end()
-
-    def get_average_fscores(self, datasets, learners):
-        for data_tag, task_tag in datasets:
-            data, user = read_task(task_tag, distinct=False)
-            y_true = user.get_label(data, update_counter=False, use_noise=False)
-
-            for learner_tag, learner in learners:
-                # get runs
-                data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
-                runs = data_folder.get_raw_runs()
-
-                # compute average
-                scores = [compute_fscore(data, y_true, learner, run) for run in runs]
-                final = concat(scores, axis=1)
-                final.columns = ['run{0}'.format(i+1) for i in range(len(scores))]
-                final['average'] = final.mean(axis=1)
-
-                data_folder.write(final, "average_fscore.tsv", index=False)
-
-    def make_plot(self, datasets, learners, iter_lim=None):
-        self.plotter.plot_comparisons(datasets, learners, iter_lim)
 
 
 class PoolBasedExploration:
@@ -123,11 +87,16 @@ class PoolBasedExploration:
         self.metric = metric
         self.plot = plot
 
-    def _run_iter(self, iter, X, y, learner, labeled_indexes):
+    def _run_iter(self, iter, X, y, learner, labeled_indexes, metrics):
+        t0 = perf_counter()
         learner.fit(X[labeled_indexes], y[labeled_indexes])
+        metrics[iter]['fit_time'] = perf_counter() - t0
 
         if self.metric:
-            print('Iter', iter, ': accuracy =', self.metric(y, learner.predict(X)))
+            t0 = perf_counter()
+            y_pred = learner.predict(X)
+            metrics[iter]['predict_time'] = perf_counter() - t0
+            metrics[iter]['accuracy'] = self.metric(y_true=y, y_pred=y_pred)
 
         if self.plot:
             self.plot(X, y, learner, labeled_indexes)
@@ -143,20 +112,26 @@ class PoolBasedExploration:
         """
         X, y = sklearn.utils.check_X_y(X, y)
 
-        if len(np.unique(y)) > 2:
-            raise ValueError("Found more than two distinct values in y; only binary classification is supported!")
+        metrics = [dict() for _ in range(self.iter+1)]
 
         # fit model over initial sample
+        t0 = perf_counter()
         labeled_indexes = self.initial_sampler(y)
+        metrics[0]['index'] = labeled_indexes.copy()
 
-        self._run_iter(0, X, y, learner, labeled_indexes)
+        self._run_iter(0, X, y, learner, labeled_indexes, metrics)
+        metrics[0]['iter_time'] = perf_counter() - t0
 
-        # run n_iter iterations
+        # run iterations
         for i in range(self.iter):
             # get next point to label
+            t0 = perf_counter()
             idx = learner.get_next(X, labeled_indexes)
+            metrics[i+1]['get_next_time'] = perf_counter() - t0
+            metrics[i+1]['index'] = idx
             labeled_indexes.append(idx)
 
-            self._run_iter(i+1, X, y, learner, labeled_indexes)
+            self._run_iter(i+1, X, y, learner, labeled_indexes, metrics)
+            metrics[i+1]['iter_time'] = perf_counter() - t0
 
-        return labeled_indexes
+        return metrics
