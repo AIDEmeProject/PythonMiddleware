@@ -35,7 +35,7 @@ class BayesianLogisticRegression:
         if sampling == 'bayesian':
             self.sampler = StanLogisticRegressionSampler(warmup, thin, sigma)
         elif sampling == 'deterministic':
-            self.sampler = HitAndRunSampler(warmup, thin, rounding)
+            self.sampler = HitAndRunSampler(warmup, thin, rounding, cache=True)
         else:
             raise ValueError("Unknown sampling backend. Options are 'stan' or 'hit-and-run'.")
 

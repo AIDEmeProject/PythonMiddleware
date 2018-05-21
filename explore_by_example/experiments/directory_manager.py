@@ -46,8 +46,9 @@ class DataFolder:
             avg += run.drop('index', axis=1)
             count += 1
 
-        avg /= count
-        self.write(avg, 'average.tsv')
+        if count > 0:
+            avg /= count
+            self.write(avg, 'average.tsv')
 
     def write(self, data, filename):
         path = os.path.join(self.path, filename)

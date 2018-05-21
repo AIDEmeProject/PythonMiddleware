@@ -29,6 +29,9 @@ class LinearVersionSpace:
         sq_delta = np.sqrt(delta)
         return (-b - sq_delta) / a, (-b + sq_delta) / a
 
+    def is_inside(self, X):
+        return np.all(np.dot(X, self.A.T) < 0, axis=-1)
+
     def intersection(self, center, direction):
         """
         Finds the intersection between the version space and a straight line.
@@ -118,7 +121,7 @@ class HitAndRunSampler:
     Reference: https://link.springer.com/content/pdf/10.1007%2Fs101070050099.pdf
     """
 
-    def __init__(self, warmup=100, thin=1, rounding=True):
+    def __init__(self, warmup=100, thin=1, rounding=True, cache=False):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
@@ -128,6 +131,8 @@ class HitAndRunSampler:
         self.warmup = warmup
         self.thin = thin
         self.rounding = rounding
+        self.cache = cache
+        self.samples = None
 
     def sample(self, X, y, n_samples):
         """
@@ -141,8 +146,22 @@ class HitAndRunSampler:
         n, dim = X.shape
 
         version_space = LinearVersionSpace(X, y)
-        center = version_space.get_point()
 
+        # find center
+        center = None
+        if self.samples is not None:
+            if self.samples.shape[1] == dim - 1:
+                self.samples = np.hstack([self.samples, np.zeros((len(self.samples), 1))])
+            for sample in self.samples:
+                if version_space.is_inside(sample):
+                    center = sample
+                    break
+
+        if center is None:
+            print('Falling back to linprog in Hit-and-Run sampler.')
+            center = version_space.get_point()
+
+        # rounding
         if self.rounding:
             elp = Ellipsoid(x=np.zeros(dim), P=np.eye(dim))
             elp.weak_ellipsoid(version_space)
@@ -166,4 +185,7 @@ class HitAndRunSampler:
             if i >= self.warmup and i % self.thin == 0:
                 samples.append(center)
 
-        return np.array(samples)
+        samples = np.array(samples, dtype='float')
+        if self.cache:
+            self.samples = samples
+        return samples
