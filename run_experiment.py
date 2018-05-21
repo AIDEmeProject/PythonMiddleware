@@ -1,4 +1,7 @@
+from sklearn.metrics import f1_score
+
 from explore_by_example.experiments import Experiment
+from experiments import PoolBasedExploration
 from explore_by_example.initial_sampling import StratifiedSampler
 
 from active_learning.svm import *
@@ -27,7 +30,5 @@ active_learners_list = [
 ]
 
 # run experiment
-experiment = Experiment()
-experiment.run(datasets_list, active_learners_list, times=1, initial_sampler=StratifiedSampler(1, 1), noise=0.1)
-experiment.get_average_fscores(datasets_list, active_learners_list)
-experiment.make_plot([x[0] for x in datasets_list], [x[0] for x in active_learners_list])
+explore = PoolBasedExploration(iter=20, initial_sampler=StratifiedSampler(1,1), metric=f1_score)
+Experiment().run(datasets_list, active_learners_list, times=1, explore=explore)

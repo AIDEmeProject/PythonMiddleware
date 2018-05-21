@@ -48,21 +48,3 @@ class ActiveLearner:
         :return: scores array
         """
         raise NotImplementedError
-
-    def get_next(self, X, labeled_index=None):
-        """
-        Get next point to label. We retrieve the "lowest ranked unlabeled point" in the dataset X.
-
-        :param X: data matrix
-        :param labeled_index: collection of previously labeled rows. These will not be considered when retrieving the
-        next point.
-        :return: row number of next point to be labeled
-        """
-        if labeled_index is None:
-            labeled_index = []
-
-        for row_number in np.argsort(self.rank(X)):
-            if row_number not in labeled_index:
-                return row_number
-
-        raise RuntimeError("The entire dataset has already been labeled!")
