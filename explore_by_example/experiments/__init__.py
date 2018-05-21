@@ -1,2 +1,2 @@
 from .experiment import Experiment
-from experiments.explore import PoolBasedExploration
+from .explore import PoolBasedExploration

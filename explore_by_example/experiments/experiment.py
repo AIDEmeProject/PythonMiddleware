@@ -32,7 +32,7 @@ class Experiment:
 
         for data_tag, task_tag in datasets:
             # get data and user
-            X, y = read_task(task_tag, distinct=False)
+            X, y = read_task(task_tag, distinct=True)
 
             for learner_tag, learner in learners:
                 # if learners failed previously, skip it

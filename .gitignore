@@ -6,3 +6,4 @@ notebooks/
 __pycache__/
 .idea/
 resources/
+run_experiment.py

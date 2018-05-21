@@ -6,6 +6,7 @@ Link: http://www.jmlr.org/papers/volume2/tong01a/tong01a.pdf
 """
 import numpy as np
 import sklearn
+from sklearn.svm import SVC
 import sklearn.utils.validation
 
 from ..uncertainty import UncertaintySampler
@@ -17,7 +18,7 @@ class SimpleMargin(UncertaintySampler):
     as most informative point.
     """
     def __init__(self, C=1.0, kernel='rbf'):
-        UncertaintySampler.__init__(self, sklearn.svm.SVC(C=C, kernel=kernel))
+        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel))
 
     def rank(self, X):
         """
