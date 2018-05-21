@@ -34,11 +34,21 @@ class DataFolder:
 
     def get_raw_runs(self):
         raw_files = self.get_files('raw')
-        return (read_csv(file, sep='\t', index_col=['iter', 'index']) for file in raw_files)
+        return (read_csv(file, sep='\t', index_col='iter') for file in raw_files)
 
     def read_average(self):
         return read_csv(self.get_full_path('average_fscore.tsv'), sep='\t')
 
-    def write(self, data, filename, index=False):
+    def compute_runs_average(self):
+        avg, count = 0., 0
+
+        for run in self.get_raw_runs():
+            avg += run.drop('index', axis=1)
+            count += 1
+
+        avg /= count
+        self.write(avg, 'average.tsv')
+
+    def write(self, data, filename):
         path = os.path.join(self.path, filename)
-        data.to_csv(path, sep='\t', header=True, index=index, index_label=data.index.names, float_format='%.6f')
+        data.to_csv(path, sep='\t', header=True, index=True, index_label='iter', float_format='%.6f')

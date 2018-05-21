@@ -55,9 +55,7 @@ class Experiment:
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
                         df = pd.DataFrame.from_dict({i: metric for i, metric in enumerate(metrics)}, orient='index')
-                        data_folder.write(df, filename, index=True)
-
-                    # self.dir_manager.compute_folder_average(data_tag, learner_tag)
+                        data_folder.write(df, filename)
 
                 except Exception as e:
                     # if error occurred, log error and add learner to skip list
@@ -66,6 +64,8 @@ class Experiment:
 
                 finally:
                     pass  # continue to next tasks
+
+                data_folder.compute_runs_average()
 
         # log experiment end
         self.logger.end()
