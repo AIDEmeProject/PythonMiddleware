@@ -149,6 +149,10 @@ class HitAndRunSampler:
 
         # find center
         center = None
+
+        if self.samples is not None and abs(self.samples.shape[1] - dim) > 1:
+            self.samples = None
+
         if self.samples is not None:
             if self.samples.shape[1] == dim - 1:
                 self.samples = np.hstack([self.samples, np.zeros((len(self.samples), 1))])
