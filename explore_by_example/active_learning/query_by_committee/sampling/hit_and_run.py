@@ -103,12 +103,12 @@ class LinearVersionSpace:
         :param point: data point
         :return: normal vector to separating hyperplane. If no such plane exists, returns None
         """
+        if np.dot(point, point) > 1:
+            return 1, point / np.linalg.norm(point)
+
         for a in self.A:
             if np.dot(a, point) > 0:
-                return a
-
-        if np.dot(point, point) > 1:
-            return point
+                return 0, a
 
         return None
 
@@ -167,9 +167,9 @@ class HitAndRunSampler:
 
         # rounding
         if self.rounding:
-            elp = Ellipsoid(x=np.zeros(dim), P=np.eye(dim))
-            elp.weak_ellipsoid(version_space)
-            rounding_matrix = np.linalg.cholesky(elp.P)
+            elp = Ellipsoid(dim)
+            elp.fit(version_space)
+            rounding_matrix = elp.L * np.sqrt(elp.D).reshape(1, -1)
 
         samples = []
         for i in range(self.warmup + self.thin * n_samples):
