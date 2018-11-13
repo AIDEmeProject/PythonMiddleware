@@ -58,7 +58,7 @@ class Ellipsoid:
         # update P
         self.P -= sigma * Pg.reshape(-1, 1).dot(Pg.reshape(1, -1))
         self.P *= delta
-        assert np.allclose(self.P, self.L.dot(np.diag(self.D)).dot(self.L.T), atol=1e-15)
+        #assert np.allclose(self.P, self.L.dot(np.diag(self.D)).dot(self.L.T), atol=1e-15)
 
     def update_diagonal(self, p, sigma, delta):
         """ LDL^T for D - sigma pp^T """
