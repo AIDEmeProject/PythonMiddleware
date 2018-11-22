@@ -23,14 +23,15 @@ class Ellipsoid:
         self.D = np.ones(self.n)
         self.P = np.eye(dim)
 
-        assert self.P.shape == (self.n, self.n)
-
     def __repr__(self):
         return str(self.x) + "\n" + str(self.P)
 
 
     def get_endpoints(self, factor=1.0):
+        yield self.x
+
         eig, P = np.linalg.eigh(self.P)
+
         for i in range(self.n):
             a = P[:, i] * np.sqrt(eig[i])
             yield self.x + factor * a
@@ -58,7 +59,6 @@ class Ellipsoid:
         # update P
         self.P -= sigma * Pg.reshape(-1, 1).dot(Pg.reshape(1, -1))
         self.P *= delta
-        #assert np.allclose(self.P, self.L.dot(np.diag(self.D)).dot(self.L.T), atol=1e-15)
 
     def update_diagonal(self, p, sigma, delta):
         """ LDL^T for D - sigma pp^T """
@@ -86,16 +86,10 @@ class Ellipsoid:
         while not converge:
             converge = True
 
-            bad_constrain = pol.get_separating_oracle(self.x)
-            if bad_constrain is not None:
-                converge = False
-                b, g = bad_constrain
-                self.update(b, g)
-            else:
-                for end_point in self.get_endpoints(factor=1.0 / (self.n + 1)):
-                    bad_constrain = pol.get_separating_oracle(end_point)
-                    if bad_constrain is not None:
-                        converge = False
-                        b, g = bad_constrain
-                        self.update(b,g)
-                        break
+            for end_point in self.get_endpoints(factor=1.0 / (self.n + 1)):
+                bad_constrain = pol.get_separating_oracle(end_point)
+                if bad_constrain is not None:
+                    converge = False
+                    b, g = bad_constrain
+                    self.update(b,g)
+                    break
