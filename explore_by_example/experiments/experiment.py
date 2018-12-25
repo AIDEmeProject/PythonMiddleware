@@ -3,7 +3,7 @@ import pandas as pd
 from .directory_manager import ExperimentDirManager
 from .logger import ExperimentLogger
 from .plot import ExperimentPlotter
-from ..io import read_task
+from ..io import read_task, EmailSender
 
 
 class Experiment:
@@ -12,6 +12,7 @@ class Experiment:
         self.logger = ExperimentLogger()
         self.dir_manager = ExperimentDirManager()
         self.plotter = ExperimentPlotter(self.dir_manager)
+        self.email = EmailSender()
 
     @classmethod
     def __check_tags(cls, ls):
@@ -61,6 +62,7 @@ class Experiment:
                     # if error occurred, log error and add learner to skip list
                     self.logger.error(e)
                     self.skip_list.append(learner_tag)
+                    self.email.send_error_email(data_tag, learner_tag, e)
 
                 finally:
                     pass  # continue to next tasks
@@ -69,3 +71,4 @@ class Experiment:
 
         # log experiment end
         self.logger.end()
+        self.email.send_end_email(self.logger.end_message())

@@ -1,13 +1,9 @@
-import numpy as np
-import sklearn.utils
-
-
 class ActiveLearner:
     """
-    Pool-based Active Learning base class. It performs 2 main tasks:
+    Pool-based Active Learning base class. It performs two main tasks:
 
-        - Train a classification model over labeled data, capable of predicting class labels and, possibly, class probabilites.
-        - Rank unlabeled points from "more informative" to "less informative"
+        - Trains a classification model over labeled data, predicting class labels and, possibly, class probabilities.
+        - Ranks unlabeled points from "more informative" to "less informative"
 
     It also implements the helper methods "get_next", which returns which point the model considers the most informative
     from a given data pool (used for pool-based AL).
@@ -16,7 +12,7 @@ class ActiveLearner:
         """
         Fit model over labeled data.
 
-        :param X: data matrix
+        :param X: array-like object of data points
         :param y: labels array
         """
         raise NotImplementedError

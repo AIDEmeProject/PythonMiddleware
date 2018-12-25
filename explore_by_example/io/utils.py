@@ -5,7 +5,7 @@ from yaml import safe_load
 from definitions import RESOURCES_DIR
 
 
-def get_config_from_resources(config, section):
+def get_config_from_resources(config, section=None):
     """
     Read an specific section of a YAML configuration file
 
@@ -17,4 +17,4 @@ def get_config_from_resources(config, section):
 
     with open(path, 'r') as file:
         config = safe_load(file)
-        return config[section]
+        return config[section] if section else config

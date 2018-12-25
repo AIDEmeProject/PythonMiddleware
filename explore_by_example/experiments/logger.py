@@ -43,10 +43,12 @@ class ExperimentLogger:
         self.logger.error(exception, exc_info=1)
 
     def end(self):
-        self.logger.info("Finished all experiments! Total: {0}, Success: {1}, Fail: {2}, Skipped: {3}".format(
+        self.logger.info("Finished all experiments! " + self.end_message())
+
+    def end_message(self):
+        return "Total: {0}, Success: {1}, Fail: {2}, Skipped: {3}".format(
             self.total,
             self.total - self.errors - self.skips,
             self.errors,
             self.skips
-        ))
-
+        )
