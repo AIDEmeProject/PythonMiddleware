@@ -26,27 +26,24 @@ class BayesianLogisticRegression:
         """
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not
-        :param sampling: sampling method. Options: 'bayesian' (allows labeling noise) and 'determinisitic' (no noise)
+        :param sampling: sampling method. Options: 'bayesian' (allows labeling noise) and 'deterministic' (no noise)
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
         :param thin: how many iterations to skip between samples
         :param sigma: gaussian prior standard deviation. Works as a L2 regularization (the lower sigma is, the more regularization)
         :param rounding: whether to apply a rounding procedure in the 'deterministic' sampling.
         """
         if sampling == 'bayesian':
-            self.sampler = StanLogisticRegressionSampler(warmup, thin, sigma)
+            self.sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, sigma=sigma)
         elif sampling == 'deterministic':
-            self.sampler = HitAndRunSampler(warmup, thin, rounding, cache=True)
+            self.sampler = HitAndRunSampler(warmup=warmup, thin=thin, rounding=rounding, cache=True)
         else:
-            raise ValueError("Unknown sampling backend. Options are 'stan' or 'hit-and-run'.")
+            raise ValueError("Unknown sampling option. Options are 'deterministic' and 'bayesian'.")
 
-        self.sampling = sampling
         self.n_samples = n_samples
         self.add_intercept = add_intercept
+        self.sampling = sampling
 
     def fit(self, X, y):
-        # check data
-        X, y = check_X_y(X, y)
-
         # add intercept if needed
         if self.add_intercept:
             ones = np.ones(shape=(len(X), 1))
@@ -61,18 +58,20 @@ class BayesianLogisticRegression:
         else:
             self.bias, self.weight = 0, samples
 
-    def __likelihood(self, X):
-        if self.sampling == 'bayesian':
-            return expit(X)
-        else:
-            return (X > 0).astype('float')
+    def predict(self, X):
+        return (self.predict_proba(X) > 0.5).astype('float')
 
     def predict_proba(self, X):
         check_is_fitted(self, ('weight', 'bias'))
 
-        X = check_array(X)
+        return np.mean(self.__likelihood(X), axis=0)
 
-        return np.mean(self.__likelihood(self.bias + self.weight.dot(X.T)), axis=0)
+    def __likelihood(self, X):
+        margin = self.__margin(X)
+        if self.sampling == 'bayesian':
+            return expit(margin)
+        else:
+            return (margin > 0).astype('float')
 
-    def predict(self, X):
-        return (self.predict_proba(X) > 0.5).astype('float')
+    def __margin(self, X):
+        return self.bias + self.weight.dot(X.T)

@@ -38,7 +38,6 @@ class StanLogisticRegressionSampler:
         """
         self.warmup = warmup
         self.thin = thin
-
         self.sigma = sigma
 
         model_path = os.path.join(RESOURCES_DIR, 'stan_logreg.pkl')

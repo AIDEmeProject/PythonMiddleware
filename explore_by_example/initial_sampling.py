@@ -1,11 +1,13 @@
-from pandas import Series
+from numpy import arange
+from sklearn.utils import check_random_state, column_or_1d
 
 
 class StratifiedSampler:
     """
-    Binary stratified sampling method. Randomly selects a given number of positive and negative points from a list of labels.
+        Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
+        of labels.
     """
-    def __init__(self, pos, neg):
+    def __init__(self, pos, neg, random_state=None):
         """
 
         :param pos: Number of positive points to sample. Must be non-negative.
@@ -17,17 +19,34 @@ class StratifiedSampler:
         if self.pos < 0 or self.neg < 0:
             raise ValueError("Found negative sample size. Only non-negative values allowed.")
 
-    def __call__(self, y, true_class=1.0):
-        """
-        Call the sampling procedure over the given labeled collection.
+        if self.pos == self.neg == 0:
+            raise ValueError("Either 'pos' or 'neg' must be positive.")
 
-        :param y: label collection. Should be a numpy array or pandas Series
+        self.__random_state = check_random_state(random_state)
+
+    def __call__(self, y, true_class=1):
+        """
+        Call the sampling procedure over the input array.
+
+        :param y: array-like collection of labels
         :param true_class: class to be considered positive. Default to 1.0.
-        :return: position or index of samples in the array
+        :return: index of samples in the array
         """
-        y = Series(y)
+        y = column_or_1d(y)
 
-        pos_samples = y[y == true_class].sample(self.pos, replace=False).index
-        neg_samples = y[y != true_class].sample(self.neg, replace=False).index
+        idx = arange(len(y))
+        pos_samples = self.__random_state.choice(idx[y == true_class], size=self.pos, replace=False)
+        neg_samples = self.__random_state.choice(idx[y != true_class], size=self.neg, replace=False)
 
         return list(pos_samples.append(neg_samples))
+
+
+class FixedSampler:
+    """
+        Dummy sampler which returns a specified selection of indexes.
+    """
+    def __init__(self, indexes):
+        self.indexes = indexes.copy()
+
+    def __call__(self, y):
+        return self.indexes

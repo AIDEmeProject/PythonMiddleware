@@ -4,15 +4,12 @@ class ActiveLearner:
 
         - Trains a classification model over labeled data, predicting class labels and, possibly, class probabilities.
         - Ranks unlabeled points from "more informative" to "less informative"
-
-    It also implements the helper methods "get_next", which returns which point the model considers the most informative
-    from a given data pool (used for pool-based AL).
     """
     def fit(self, X, y):
         """
         Fit model over labeled data.
 
-        :param X: array-like object of data points
+        :param X: data matrix
         :param y: labels array
         """
         raise NotImplementedError

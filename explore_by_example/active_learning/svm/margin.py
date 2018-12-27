@@ -39,32 +39,33 @@ class RatioMargin(SimpleMargin):
         self.clf.fit(X, y)
 
         # store training data
-        self.X = X.copy()
-        self.y = y.copy()
+        self.X_train = np.vstack([X, np.zeros(X.shape[1])])
+        self.y_train = np.hstack([y, 0])
 
     def rank(self, X):
         # check model is fitted
         sklearn.utils.validation.check_is_fitted(self.clf, 'support_')
 
-        scores = []
-        classes = self.clf.classes_
+        # clone fitted model to avoid losing its weights
         clf = sklearn.clone(self.clf)
 
-        for x in X:
-            data = np.vstack([self.X, x])
+        # add "-" sign because we want the LARGEST margin to be returned
+        return -np.array([self.__compute_margin_ratio(clf, x) for x in X])
 
-            # fit first model
-            clf.fit(data, np.hstack([self.y, classes[0]]))
-            margin0 = float(clf.dual_coef_.dot(clf.decision_function(clf.support_vectors_)))
+    def __compute_margin_ratio(self, clf, x):
+        margin0 = self.__compute_margin(clf, x, clf.classes_[0])
+        margin1 = self.__compute_margin(clf, x, clf.classes_[1])
 
-            # fit second model
-            clf.fit(data, np.hstack([self.y, classes[1]]))
-            margin1 = float(clf.dual_coef_.dot(clf.decision_function(clf.support_vectors_)))
+        if margin0 <= 0 or margin1 <= 0:
+            return float('inf')
 
-            # margin ratio
-            if margin0 <= 0 or margin1 <= 0:
-                scores.append(float('inf'))
-            else:
-                scores.append(-min(margin1/margin0, margin0/margin1))  # use negative sign since we want the LARGEST ratio
+        return min(margin1 / margin0, margin0 / margin1)
 
-        return np.array(scores)
+    def __compute_margin(self, clf, x, y):
+        # set training data
+        self.X_train[-1] = x
+        self.y_train[-1] = y
+
+        # train classifier and
+        clf.fit(self.X_train, self.y_train)
+        return float(clf.dual_coef_.dot(clf.decision_function(clf.support_vectors_)))

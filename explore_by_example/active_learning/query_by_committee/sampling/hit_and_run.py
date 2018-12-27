@@ -19,6 +19,10 @@ class LinearVersionSpace:
         y = np.where(y == 1, 1, -1).reshape(-1, 1)
         self.A = -X * y
 
+    @property
+    def dim(self):
+        return self.A.shape[1]
+
     @staticmethod
     def __solve_second_degree_equation(a, b, c):
         delta = b ** 2 - a * c
@@ -43,10 +47,14 @@ class LinearVersionSpace:
         lower, upper = [], []
 
         # polytope intersection
+        num = self.A.dot(center)
         den = self.A.dot(direction)
-        extremes = -self.A.dot(center) / den
+        extremes = -num / den
         lower.extend(extremes[den < 0])
         upper.extend(extremes[den > 0])
+
+        if np.any(num[den == 0] < 0):
+            raise RuntimeError("Line does not intersect polytope.")
 
         # ball intersection
         a, b, c = (
@@ -67,13 +75,13 @@ class LinearVersionSpace:
 
         return lower_extreme, upper_extreme
 
-    def get_point(self):
+    def get_interior_point(self):
         """
         Finds an interior point to the version space by solving the following Linear Programming problem:
 
             minimize s,  s.t.  |w_i| < 1  AND a_i^T w < s
 
-        Raises an error in case polytope is degenerate (only 0 vector).
+        Raises an error in case the polytope is degenerate (only 0 vector).
 
         :return: point inside search space
         """
@@ -130,7 +138,10 @@ class HitAndRunSampler:
         """
         self.warmup = warmup
         self.thin = thin
+
         self.rounding = rounding
+        self.elp = None
+
         self.cache = cache
         self.samples = None
 
@@ -143,53 +154,69 @@ class HitAndRunSampler:
         :param n_samples: number of samples
         :return: samples in a numpy array (one per line)
         """
-        n, dim = X.shape
-
         version_space = LinearVersionSpace(X, y)
 
-        # find center
-        center = None
-
-        if self.samples is not None and abs(self.samples.shape[1] - dim) > 1:
-            self.samples = None
-
-        if self.samples is not None:
-            if self.samples.shape[1] == dim - 1:
-                self.samples = np.hstack([self.samples, np.zeros((len(self.samples), 1))])
-            for sample in self.samples:
-                if version_space.is_inside(sample):
-                    center = sample
-                    break
-
-        if center is None:
-            print('Falling back to linprog in Hit-and-Run sampler.')
-            center = version_space.get_point()
-
         # rounding
+        rounding_matrix = None
         if self.rounding:
-            elp = Ellipsoid(dim)
-            elp.fit(version_space)
-            rounding_matrix = elp.L * np.sqrt(elp.D).reshape(1, -1)
+            self.elp = Ellipsoid(version_space)
+            rounding_matrix = self.elp.L * np.sqrt(self.elp.D).reshape(1, -1)
 
-        samples = []
-        for i in range(self.warmup + self.thin * n_samples):
+        center = self.__get_center(version_space)
+        samples = np.empty((n_samples, version_space.dim))
+
+        # skip samples
+        self.__advance(self.warmup, center, rounding_matrix, version_space)
+        samples[0] = center.copy()
+
+        # thin samples
+        for i in range(1, n_samples):
+            self.__advance(self.thin, center, rounding_matrix, version_space)
+            samples[i] = center.copy()
+
+        # cache samples
+        if self.cache:
+            self.samples = samples
+
+        return samples
+
+    def __advance(self, n_iter, center, rounding_matrix, version_space):
+        for _ in range(n_iter):
             # sample random direction
-            direction = np.random.normal(size=(dim,))
-
-            if self.rounding:
-                direction = rounding_matrix.dot(direction)
+            direction = self.__sample_direction(version_space.dim, rounding_matrix)
 
             # get extremes of line segment determined by intersection
             t1, t2 = version_space.intersection(center, direction)
 
             # get random point on line segment
             t_rand = np.random.uniform(t1, t2)
-            center = center + t_rand * direction
+            center += t_rand * direction
 
-            if i >= self.warmup and i % self.thin == 0:
-                samples.append(center)
+    def __sample_direction(self, dim, rounding_matrix):
+        direction = np.random.normal(size=(dim,))
 
-        samples = np.array(samples, dtype='float')
-        if self.cache:
-            self.samples = samples
-        return samples
+        if self.rounding:
+            direction = rounding_matrix.dot(direction)
+
+        return direction
+
+    def __get_center(self, version_space):
+        if self.rounding:
+            return self.elp.x
+
+        if self.cache and self.samples is not None:
+            samples = self.__truncate_samples(version_space.dim)
+            for sample in samples:
+                if version_space.is_inside(sample):
+                    return sample
+
+        print('Falling back to linprog in Hit-and-Run sampler.')
+        return version_space.get_interior_point()
+
+    def __truncate_samples(self, new_dim):
+        N, dim = self.samples.shape
+
+        if new_dim <= dim:
+            return self.samples[:, :new_dim]
+
+        return np.hstack([self.samples, np.zeros((N, new_dim - dim))])
