@@ -22,7 +22,7 @@ class PoolBasedExploration:
 
         self.__labeled_indexes = []
 
-    def run(self, X, y, active_learner, positive_class=1.0):
+    def run(self, X, y, active_learner):
         """
             Run the Active Learning model over data, for a given number of iterations.
 
