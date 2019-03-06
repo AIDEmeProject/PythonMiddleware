@@ -6,4 +6,4 @@ from .uncertainty import UncertaintySampler
 
 
 __all__ = ['ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
-           'LinearQueryByCommittee', 'KernelQueryByCommittee']
+           'LinearQueryByCommittee', 'KernelQueryByCommittee', 'SubspaceLearner']

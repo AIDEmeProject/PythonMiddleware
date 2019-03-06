@@ -36,7 +36,7 @@ class PoolBasedExploration:
                     - Timing measurements (fit, select next point, ...)
                     - Any metrics returned by the callback function
         """
-        X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=False, y_numeric=False,
+        X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
                          copy=False, force_all_finite=True)
 
         self.__labeled_indexes = []

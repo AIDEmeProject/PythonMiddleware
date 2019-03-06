@@ -5,9 +5,10 @@ Classification", JMLR (2001), by Simon TONG & Daphne KOLLER.
 Link: http://www.jmlr.org/papers/volume2/tong01a/tong01a.pdf
 """
 import numpy as np
-import sklearn
+from scipy.special import expit
+from sklearn import clone
 from sklearn.svm import SVC
-import sklearn.utils.validation
+from sklearn.utils.validation import check_is_fitted
 
 from ..uncertainty import UncertaintySampler
 
@@ -17,8 +18,11 @@ class SimpleMargin(UncertaintySampler):
     At every iteration, it trains an SVM model over labeled data, and picks the closest point to the decision boundary
     as most informative point.
     """
-    def __init__(self, C=1.0, kernel='rbf'):
-        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel))
+    def __init__(self, C=1.0, kernel='rbf', gamma=None):
+        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel, gamma=gamma))
+
+    def predict_proba(self, X):
+        return expit(self.clf.decision_function(X))
 
     def rank(self, X):
         """
@@ -44,10 +48,10 @@ class RatioMargin(SimpleMargin):
 
     def rank(self, X):
         # check model is fitted
-        sklearn.utils.validation.check_is_fitted(self.clf, 'support_')
+        check_is_fitted(self.clf, 'support_')
 
         # clone fitted model to avoid losing its weights
-        clf = sklearn.clone(self.clf)
+        clf = clone(self.clf)
 
         # add "-" sign because we want the LARGEST margin to be returned
         return -np.array([self.__compute_margin_ratio(clf, x) for x in X])

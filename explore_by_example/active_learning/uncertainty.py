@@ -30,4 +30,4 @@ class UncertaintySampler(ActiveLearner):
         return self.clf.predict_proba(X)
 
     def rank(self, X):
-        return np.abs(self.clf.predict_proba(X) - 0.5)
+        return np.abs(self.predict_proba(X) - 0.5)

@@ -63,7 +63,7 @@ def read_data(config):
     """
     # add dataset config
     name = config.pop('name')
-    config.__update(get_config_from_resources('datasets', name))
+    config.update(get_config_from_resources('datasets', name))
 
     # add source config
     source = config.pop('source')
