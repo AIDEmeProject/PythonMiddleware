@@ -1,5 +1,5 @@
 from numpy import arange
-from sklearn.utils import check_random_state, column_or_1d
+from sklearn.utils import check_random_state, check_array
 
 
 class StratifiedSampler:
@@ -24,7 +24,7 @@ class StratifiedSampler:
 
         self.__random_state = check_random_state(random_state)
 
-    def __call__(self, y, true_class=1):
+    def __call__(self, y, true_class=1, neg_class=0):
         """
         Call the sampling procedure over the input array.
 
@@ -32,13 +32,15 @@ class StratifiedSampler:
         :param true_class: class to be considered positive. Default to 1.0.
         :return: index of samples in the array
         """
-        y = column_or_1d(y)
+        y = check_array(y, ensure_2d=False, allow_nd=False)
+        if y.ndim == 2:
+            y = y.mean(axis=1)
 
         idx = arange(len(y))
         pos_samples = self.__random_state.choice(idx[y == true_class], size=self.pos, replace=False)
-        neg_samples = self.__random_state.choice(idx[y != true_class], size=self.neg, replace=False)
+        neg_samples = self.__random_state.choice(idx[y == neg_class], size=self.neg, replace=False)
 
-        return list(pos_samples.append(neg_samples))
+        return list(pos_samples) + list(neg_samples)
 
 
 class FixedSampler:

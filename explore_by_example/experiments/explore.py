@@ -1,11 +1,11 @@
 from time import perf_counter
 
-from numpy import argsort
+import numpy as np
 from sklearn.utils import check_X_y
 
 
 class PoolBasedExploration:
-    def __init__(self, iters, initial_sampler, callback=None):
+    def __init__(self, iters, initial_sampler, callback=None, subsampling=float('inf')):
         """
             :param iters: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -19,6 +19,7 @@ class PoolBasedExploration:
         self.iters = iters
         self.initial_sampler = initial_sampler
         self.callback = callback
+        self.subsampling = subsampling
 
         self.__labeled_indexes = []
 
@@ -85,7 +86,9 @@ class PoolBasedExploration:
             return self.initial_sampler(y)
 
         # otherwise, select point by running the active learning procedure
-        for row_number in argsort(active_learner.rank(X)):
+        row_sample, X_sample = self.__subsample_data(X)
+
+        for _, row_number in sorted(zip(active_learner.rank(X_sample), row_sample)):
             if row_number not in self.__labeled_indexes:
                 return [row_number]
 
@@ -97,3 +100,12 @@ class PoolBasedExploration:
         """
         X_train, y_train = X[self.__labeled_indexes], y[self.__labeled_indexes]
         active_learner.fit(X_train, y_train)
+
+    def __subsample_data(self, X):
+        idx = np.arange(len(X))
+
+        if self.subsampling >= len(X):
+            return idx, X
+
+        idx = np.random.choice(idx, size=self.subsampling, replace=False)
+        return idx, X[idx]

@@ -4,7 +4,7 @@ from ..active_learner import ActiveLearner
 
 
 class SubspaceLearner(ActiveLearner):
-    def __init__(self, partition, learners, label_function='AND', probability_function='min', ranking_function='distance'):
+    def __init__(self, partition, learners, label_function='AND', probability_function='min', ranking_function='SQUARE'):
         self.partition = partition
         self.learners = learners
         self.label_function = self.__get_label_connector(label_function)
@@ -14,7 +14,8 @@ class SubspaceLearner(ActiveLearner):
     @classmethod
     def __get_ranking_connector(cls, ranking_function):
         return cls.__get_function(ranking_function, {
-            'DISTANCE': lambda ps: np.sum(np.square(ps - 0.5), axis=1),
+            'SUM': lambda score: np.sum(score, axis=1),
+            'SQUARE': lambda score: np.sum(np.square(score), axis=1),
         })
 
     @classmethod
@@ -85,4 +86,7 @@ class SubspaceLearner(ActiveLearner):
         :param X: data matrix
         :return: scores array
         """
-        return self.ranking_function(self._predict_proba_all(X))
+        return self.ranking_function(self._rank_all(X))
+
+    def _rank_all(self, X):
+        return np.array([learner.rank(X[:, idx]) for (idx, learner) in zip(self.partition, self.learners)]).T

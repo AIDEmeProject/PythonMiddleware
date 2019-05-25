@@ -18,8 +18,8 @@ class SimpleMargin(UncertaintySampler):
     At every iteration, it trains an SVM model over labeled data, and picks the closest point to the decision boundary
     as most informative point.
     """
-    def __init__(self, C=1.0, kernel='rbf', gamma=None):
-        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel, gamma=gamma))
+    def __init__(self, C=1.0, kernel='rbf', gamma='auto'):
+        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel, gamma=gamma, decision_function_shape='ovo'))
 
     def predict_proba(self, X):
         return expit(self.clf.decision_function(X))
