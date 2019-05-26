@@ -36,7 +36,7 @@ class SubspaceLearner(ActiveLearner):
     @staticmethod
     def __get_function(function, name_to_function_map):
         if isinstance(function, str):
-            return name_to_function_map.get(function.upper())
+            return name_to_function_map[function.upper()]
 
         if callable(function):
             return function

@@ -21,15 +21,14 @@ class PoolBasedExploration:
         self.callback = callback
         self.subsampling = subsampling
 
-        self.__labeled_indexes = []
-
-    def run(self, X, y, active_learner):
+    def run(self, X, y, active_learner, repeat=1):
         """
             Run the Active Learning model over data, for a given number of iterations.
 
             :param X: data matrix
             :param y: labels array
             :param active_learner: Active Learning algorithm to run
+            :param repeat: repeat exploration this number of times
             :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
             containing:
 
@@ -40,10 +39,13 @@ class PoolBasedExploration:
         X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
                          copy=False, force_all_finite=True)
 
-        self.__labeled_indexes = []
-        return [self._run_single_iter(X, y, active_learner) for _ in range(self.iters)]
+        return [self._run(X, y, active_learner) for _ in range(repeat)]
 
-    def _run_single_iter(self, X, y, active_learner):
+    def _run(self, X, y, active_learner):
+        labeled_indexes = []
+        return [self._run_single_iter(X, y, active_learner, labeled_indexes) for _ in range(self.iters)]
+
+    def _run_single_iter(self, X, y, active_learner, labeled_indexes):
         """
             Run a single iteration of the active learning loop:
         """
@@ -51,29 +53,29 @@ class PoolBasedExploration:
 
         # find next point to label
         t0 = perf_counter()
-        idx = self._get_next_point_to_label(X, y, active_learner)
+        idx = self._get_next_point_to_label(X, y, active_learner, labeled_indexes)
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        self.__labeled_indexes.extend(idx)
+        labeled_indexes.extend(idx)
         metrics['labeled_indexes'] = idx
 
         # fit active learning model
         t1 = perf_counter()
-        self._fit_model(X, y, active_learner)
+        self._fit_model(X, y, active_learner, labeled_indexes)
         metrics['fit_time'] = perf_counter() - t1
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
         if self.callback:
-            callback_metrics = self.callback(X, y, active_learner, self.__labeled_indexes)
+            callback_metrics = self.callback(X, y, active_learner, labeled_indexes)
 
             if callback_metrics:
                 metrics.update(callback_metrics)
 
         return metrics
 
-    def _get_next_point_to_label(self, X, y, active_learner):
+    def _get_next_point_to_label(self, X, y, active_learner, labeled_indexes):
         """
            Get the next points to label. If not points have been labeled so far, the Initial Sampling procedure is run;
            otherwise, the most informative unlabeled data point is retrieved by the Active Learner
@@ -82,23 +84,23 @@ class PoolBasedExploration:
        """
 
         # if there are no labeled_indexes, run initial sample
-        if not self.__labeled_indexes:
+        if not labeled_indexes:
             return self.initial_sampler(y)
 
         # otherwise, select point by running the active learning procedure
         row_sample, X_sample = self.__subsample_data(X)
 
         for _, row_number in sorted(zip(active_learner.rank(X_sample), row_sample)):
-            if row_number not in self.__labeled_indexes:
+            if row_number not in labeled_indexes:
                 return [row_number]
 
         raise RuntimeError("The entire dataset has already been labeled!")
 
-    def _fit_model(self, X, y, active_learner):
+    def _fit_model(self, X, y, active_learner, labeled_indexes):
         """
             Fit the active learning model over the labeled data
         """
-        X_train, y_train = X[self.__labeled_indexes], y[self.__labeled_indexes]
+        X_train, y_train = X[labeled_indexes], y[labeled_indexes]
         active_learner.fit(X_train, y_train)
 
     def __subsample_data(self, X):
