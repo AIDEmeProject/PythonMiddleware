@@ -5,6 +5,9 @@ from ..active_learner import ActiveLearner
 
 class SubspaceLearner(ActiveLearner):
     def __init__(self, partition, learners, label_function='AND', probability_function='min', ranking_function='SQUARE'):
+        if len(partition) != len(learners):
+            raise ValueError("Partition and learners must have the same size")
+
         self.partition = partition
         self.learners = learners
         self.label_function = self.__get_label_connector(label_function)
