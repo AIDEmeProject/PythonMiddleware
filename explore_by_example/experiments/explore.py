@@ -42,6 +42,7 @@ class PoolBasedExploration:
         return [self._run(X, y, active_learner) for _ in range(repeat)]
 
     def _run(self, X, y, active_learner):
+        active_learner.clear()
         labeled_indexes = []
         return [self._run_single_iter(X, y, active_learner, labeled_indexes) for _ in range(self.iters)]
 

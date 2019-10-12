@@ -5,6 +5,12 @@ class ActiveLearner:
         - Trains a classification model over labeled data, predicting class labels and, possibly, class probabilities.
         - Ranks unlabeled points from "more informative" to "less informative"
     """
+    def clear(self):
+        """
+        Cleans the active learner's internal state.
+        """
+        pass
+
     def fit(self, X, y):
         """
         Fit model over labeled data.

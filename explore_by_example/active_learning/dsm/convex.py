@@ -6,8 +6,9 @@ class ConvexHull:
     """
     This class represents the convex hull of a finite number of points.
     """
-    def __init__(self):
-        self.hull = None
+    def __init__(self, points):
+        points = np.asmatrix(points)
+        self.hull = scipy.spatial.ConvexHull(points, incremental=True)
 
     @property
     def npoints(self):
@@ -33,9 +34,7 @@ class ConvexHull:
         """
         :return: a deep copy of the convex hull
         """
-        pr = ConvexHull()
-        pr.hull = scipy.spatial.ConvexHull(self.vertices.copy(), incremental=True)  # TODO: can we avoid recomputing the convex hull ?
-        return pr
+        return ConvexHull(self.vertices)
 
     def add_points(self, points):
         """
@@ -43,11 +42,7 @@ class ConvexHull:
         :param points: list of points to be added to the convex hull
         """
         points = np.asmatrix(points)
-
-        if self.hull is None:
-            self.hull = scipy.spatial.ConvexHull(points, incremental=True)
-        else:
-            self.hull.add_points(points)
+        self.hull.add_points(points)
 
     def is_inside(self, points):
         """
@@ -61,20 +56,20 @@ class ConvexHull:
 class ConvexCone:
     """
     Let H be a convex hull and V any point outside H. The convex cone C = cone(H, V) is a conical collection of points
-    which are guaranteed to be outside H as well.
+    which are guaranteed to be outside H.
     """
-    def __init__(self, convex_hull, vertex):
+    def __init__(self, points, vertex):
         self.vertex = np.asarray(vertex)
-        self.convex_hull = convex_hull.copy()  # TODO: can we avoid copying?
+        self.convex_hull = ConvexHull(np.vstack([points, self.vertex]))
 
-        self.vertex_id = self.convex_hull.npoints
-        self.add_points(self.vertex)
+        self.vertex_id = self.convex_hull.npoints - 1
+        self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
 
     def add_points(self, points):
         """
         Add new points to the positive region, updating the negative cone equations
         """
-        self.convex_hull.add_points(points)
+        self.convex_hull.add_points(points)  # TODO: can we avoid modifying the entire convex hull every time?
         self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
 
         if len(self.equations) == 0:
