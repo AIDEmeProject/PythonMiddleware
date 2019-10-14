@@ -1,7 +1,6 @@
 from time import perf_counter
-
-import numpy as np
 from sklearn.utils import check_X_y
+from .partitioned import PartitionedDataset
 
 
 class PoolBasedExploration:
@@ -39,14 +38,16 @@ class PoolBasedExploration:
         X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
                          copy=False, force_all_finite=True)
 
-        return [self._run(X, y, active_learner) for _ in range(repeat)]
+        data = PartitionedDataset(X)
 
-    def _run(self, X, y, active_learner):
+        return [self._run(data, y, active_learner) for _ in range(repeat)]
+
+    def _run(self, data, y, active_learner):
+        data.clear()
         active_learner.clear()
-        labeled_indexes = []
-        return [self._run_single_iter(X, y, active_learner, labeled_indexes) for _ in range(self.iters)]
+        return [self._run_single_iter(data, y, active_learner) for _ in range(self.iters)]
 
-    def _run_single_iter(self, X, y, active_learner, labeled_indexes):
+    def _run_single_iter(self, data, y, active_learner):
         """
             Run a single iteration of the active learning loop:
         """
@@ -54,29 +55,29 @@ class PoolBasedExploration:
 
         # find next point to label
         t0 = perf_counter()
-        idx = self._get_next_point_to_label(X, y, active_learner, labeled_indexes)
+        idx = self._get_next_point_to_label(data, y, active_learner)
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        labeled_indexes.extend(idx)
+        data.add_labeled_indexes(idx)
         metrics['labeled_indexes'] = idx
 
         # fit active learning model
         t1 = perf_counter()
-        self._fit_model(X, y, active_learner, labeled_indexes)
+        self._fit_model(data, y, active_learner)
         metrics['fit_time'] = perf_counter() - t1
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
         if self.callback:
-            callback_metrics = self.callback(X, y, active_learner, labeled_indexes)
+            callback_metrics = self.callback(data, y, active_learner)
 
             if callback_metrics:
                 metrics.update(callback_metrics)
 
         return metrics
 
-    def _get_next_point_to_label(self, X, y, active_learner, labeled_indexes):
+    def _get_next_point_to_label(self, data, y, active_learner):
         """
            Get the next points to label. If not points have been labeled so far, the Initial Sampling procedure is run;
            otherwise, the most informative unlabeled data point is retrieved by the Active Learner
@@ -84,31 +85,23 @@ class PoolBasedExploration:
            :return: list containing the row numbers of the next point to label
        """
 
-        # if there are no labeled_indexes, run initial sample
-        if not labeled_indexes:
+        if not data.num_labeled > 0:
             return self.initial_sampler(y)
 
+        if not data.num_unlabeled > 0:
+            raise RuntimeError("The entire dataset has already been labeled!")
+
         # otherwise, select point by running the active learning procedure
-        row_sample, X_sample = self.__subsample_data(X)
+        idx_sample, X_sample = data.unlabeled(self.subsampling)
 
-        for _, row_number in sorted(zip(active_learner.rank(X_sample), row_sample)):
-            if row_number not in labeled_indexes:
-                return [row_number]
+        idx_to_label = active_learner.next_points_to_label(X_sample)
 
-        raise RuntimeError("The entire dataset has already been labeled!")
+        return idx_sample[idx_to_label]
 
-    def _fit_model(self, X, y, active_learner, labeled_indexes):
+
+    def _fit_model(self, data, y, active_learner):
         """
             Fit the active learning model over the labeled data
         """
-        X_train, y_train = X[labeled_indexes], y[labeled_indexes]
-        active_learner.fit(X_train, y_train)
-
-    def __subsample_data(self, X):
-        idx = np.arange(len(X))
-
-        if self.subsampling >= len(X):
-            return idx, X
-
-        idx = np.random.choice(idx, size=self.subsampling, replace=False)
-        return idx, X[idx]
+        labeled_indexes, X_train = data.labeled
+        active_learner.fit(X_train, y[labeled_indexes])

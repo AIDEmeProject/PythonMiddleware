@@ -1,3 +1,5 @@
+import numpy as np
+
 class ActiveLearner:
     """
     Pool-based Active Learning base class. It performs two main tasks:
@@ -47,3 +49,15 @@ class ActiveLearner:
         :return: scores array
         """
         raise NotImplementedError
+
+    def next_points_to_label(self, X):
+        """
+        Returns a list of data points to be labeled at the next iteration. By default, it returns a minimizer of the
+        rank function at random.
+
+        :param X: data matrix
+        :return: row indexes of data points to be labeled
+        """
+        ranks = self.rank(X)
+        idx = np.arange(len(X))[ranks == ranks.min()]
+        return [np.random.choice(idx)]
