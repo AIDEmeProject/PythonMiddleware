@@ -2,9 +2,10 @@ import numpy as np
 
 
 class PartitionedDataset:
-    def __init__(self, X):
-        self.X = X
-        self.indexes = PartitionedIndex(len(X))
+    def __init__(self, data):
+        self.data = data
+        self.__labels = []
+        self.indexes = PartitionedIndex(len(data))
 
     @property
     def num_labeled(self):
@@ -15,26 +16,20 @@ class PartitionedDataset:
         return self.indexes.num_unlabeled
 
     @property
-    def labeled_indexes(self):
-        return self.indexes.labeled
-
-    @property
-    def unlabeled_indexes(self):
-        return self.indexes.unlabeled
+    def labels(self):
+        return np.asarray(self.__labels)
 
     @property
     def labeled(self):
-        return self.indexes.labeled, self.X[self.indexes.labeled]
+        return self.data[self.indexes.labeled], self.labels
 
     def unlabeled(self, size=float('inf')):
         idx_sample = self.indexes.unlabeled(size)
-        return idx_sample, self.X[idx_sample]
+        return idx_sample, self.data[idx_sample]
 
-    def clear(self):
-        self.indexes.clear()
-
-    def add_labeled_indexes(self, idx):
+    def add_labeled_indexes(self, idx, label):
         self.indexes.add_labeled_indexes(idx)
+        self.__labels.extend(label)
 
 
 class PartitionedIndex:
@@ -48,10 +43,6 @@ class PartitionedIndex:
 
     def __len__(self):
         return self.__size
-
-    def clear(self):
-        self.__labeled_indexes = []
-        self.__unlabeled_rows_mask.fill(True)
 
     def add_labeled_indexes(self, indices):
         for idx in indices:
