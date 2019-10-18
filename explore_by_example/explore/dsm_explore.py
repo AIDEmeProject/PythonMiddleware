@@ -6,7 +6,7 @@ from sklearn.utils import check_X_y
 from .partitioned import PartitionedDataset
 from .user import User
 
-from ..active_learning.dsm import PolytopeModel
+from ..active_learning.dsm import DualSpaceModel
 
 
 class DSMExploration:
@@ -27,7 +27,6 @@ class DSMExploration:
         self.subsampling = subsampling
 
         self.dsm_proba = dsm_proba
-        self.polytope_model = PolytopeModel()
 
     def run(self, X, y, active_learner, repeat=1):
         """
@@ -52,8 +51,7 @@ class DSMExploration:
     def _run(self, X, y, active_learner):
         data = PartitionedDataset(X, copy=True)
         user = User(y, self.iters)
-
-        self.polytope_model.clear()
+        active_learner = DualSpaceModel(active_learner, self.dsm_proba)
 
         metrics = []
         while user.is_willing and data.unknown_size > 0:
@@ -73,7 +71,7 @@ class DSMExploration:
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        user_labeled, labels = self._get_labels(idx, X, data, user)
+        user_labeled, labels = self._get_labels(idx, X, data, user, active_learner)
         data.move_to_labeled(idx, labels)
 
         metrics['labels'] = labels
@@ -87,7 +85,7 @@ class DSMExploration:
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
         if self.callback and user_labeled:
-            callback_metrics = self.callback(data, user, DualSpaceModel(active_learner, self.polytope_model))
+            callback_metrics = self.callback(data, user, active_learner)
 
             if callback_metrics:
                 metrics.update(callback_metrics)
@@ -110,11 +108,10 @@ class DSMExploration:
             raise RuntimeError("The entire dataset has already been labeled!")
 
         # otherwise, select point by running the active learning procedure
-        idx_sample, X_sample = data.sample_unlabeled(self.subsampling) if np.random.rand() < self.dsm_proba else data.sample_unknown(self.subsampling)
-        return active_learner.next_points_to_label(idx_sample, X_sample)
+        return active_learner.next_points_to_label(data, self.subsampling)
 
-    def _get_labels(self, idx, X, data, user):
-        labels = self.polytope_model.predict(X)
+    def _get_labels(self, idx, X, data, user, active_learner):
+        labels = active_learner.polytope_model.predict(X)
 
         unknown_mask = (labels == -1)
 
@@ -123,11 +120,11 @@ class DSMExploration:
 
             labels[unknown_mask] = user_labels
 
-            self.polytope_model.add_labeled_points(X[unknown_mask], user_labels)
+            active_learner.polytope_model.add_labeled_points(X[unknown_mask], user_labels)
 
             # relabel unknown partition
             unk_idx, unk = data.unknown
-            pred = self.polytope_model.predict(unk)
+            pred = active_learner.polytope_model.predict(unk)
             data.move_to_inferred(unk_idx[pred != -1])
 
         return np.any(unknown_mask), labels
@@ -138,35 +135,3 @@ class DSMExploration:
         """
         X_train, y_train = data.training_set
         active_learner.fit(X_train, y_train)
-
-
-class DualSpaceModel:
-    """
-    Dual Space model
-    """
-
-    def __init__(self, active_learner, polytope_model):
-        self.active_learner = active_learner
-        self.polytope_model = polytope_model
-
-    def predict(self, X):
-        """
-        Predicts classes based on polytope model first; unknown labels are labeled via the active learner
-        """
-        predictions = self.polytope_model.predict(X)
-
-        unknown_mask = (predictions == -1)
-        predictions[unknown_mask] = self.active_learner.predict(X[unknown_mask])
-
-        return predictions
-
-    def predict_proba(self, X):
-        """
-        Predicts probabilities using the polytope model first; unknown labels are predicted via the active learner
-        """
-        probas = self.polytope_model.predict_proba(X)
-
-        unknown_mask = (probas == 0.5)
-        probas[unknown_mask] = self.active_learner.predict_proba(X[unknown_mask])
-
-        return probas

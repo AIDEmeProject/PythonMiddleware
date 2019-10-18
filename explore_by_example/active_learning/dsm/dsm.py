@@ -8,16 +8,11 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, use_al_proba=0.5, random_state=None):
+    def __init__(self, active_learner, use_al_proba=0.5):
         self.active_learner = active_learner
         self.use_al_proba = use_al_proba
-        self.rng = np.random.RandomState(random_state)
         self.polytope_model = PolytopeModel()
-        self.npoints = 0
-
-    def clear(self):
-        self.polytope_model = PolytopeModel()
-        self.npoints = 0
+        #self.npoints = 0
 
     def fit(self, X, y):
         """
@@ -25,8 +20,8 @@ class DualSpaceModel(ActiveLearner):
         """
         self.active_learner.fit(X, y)
 
-        self.polytope_model.add_labeled_points(X[self.npoints:], y[self.npoints:])
-        self.npoints = len(y)
+        #self.polytope_model.add_labeled_points(X[self.npoints:], y[self.npoints:])
+        #self.npoints = len(y)
 
     def predict(self, X):
         """
@@ -52,13 +47,13 @@ class DualSpaceModel(ActiveLearner):
 
     def rank(self, X):
         """
-        With a probability given by use_al_proba parameter, rank points using the AL. Otherwise, ask for the label of any unknown point to the polytope model.
+        Simply use AL to rank points
         """
-        if self.rng.rand() < self.use_al_proba:
-            return self.active_learner.rank(X)
+        return self.active_learner.rank(X)
 
-        return np.abs(self.polytope_model.predict(X))
-
+    def next_points_to_label(self, data, subsample=None):
+        idx_sample, X_sample = data.sample_unlabeled(subsample) if np.random.rand() < self.use_al_proba else data.sample_unknown(subsample)
+        return self._select_next(idx_sample, X_sample)
 
 
 class PolytopeModel:

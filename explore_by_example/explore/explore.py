@@ -100,8 +100,7 @@ class PoolBasedExploration:
         if not data.unlabeled_size > 0:
             raise RuntimeError("The entire dataset has already been labeled!")
 
-        idx_sample, X_sample = data.sample_unlabeled(self.subsampling)
-        return active_learner.next_points_to_label(idx_sample, X_sample)
+        return active_learner.next_points_to_label(data, self.subsampling)
 
     def _get_labels(self, idx, X, data, user):
         return user.label(idx)

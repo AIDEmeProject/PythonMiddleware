@@ -44,14 +44,19 @@ class ActiveLearner:
         """
         raise NotImplementedError
 
-    def next_points_to_label(self, idx, X):
+    def next_points_to_label(self, data, subsample=None):
         """
-        Returns a list of data points to be labeled at the next iteration. By default, it returns a minimizer of the
-        rank function at random.
+        Returns a list of data points to be labeled at the next iteration. By default, it returns a random minimizer of
+        the rank function.
 
-        :param X: data matrix
+        :param data: a PartitionedDataset object
+        :param subsample: size of unlabeled points sample. By default, no subsample is performed
         :return: row indexes of data points to be labeled
         """
+        idx_sample, X_sample = data.unlabeled if subsample is None else data.sample_unlabeled(subsample)
+        return self._select_next(idx_sample, X_sample)
+
+    def _select_next(self, idx, X):
         ranks = self.rank(X)
         min_row = np.arange(len(X))[ranks == ranks.min()]
         chosen_row = np.random.choice(min_row)
