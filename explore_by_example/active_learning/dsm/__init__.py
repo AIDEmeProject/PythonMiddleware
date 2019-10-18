@@ -1,3 +1,3 @@
-from .dsm import DualSpaceModel
+from .dsm import DualSpaceModel, PolytopeModel
 
-__all__ = ['DualSpaceModel']
+__all__ = ['DualSpaceModel', 'PolytopeModel']

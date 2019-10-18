@@ -8,11 +8,11 @@ class PartitionedDataset:
         self.indexes = PartitionedIndex(len(data))
 
     @property
-    def num_labeled(self):
+    def labeled_size(self):
         return self.indexes.num_labeled
 
     @property
-    def num_unlabeled(self):
+    def unlabeled_size(self):
         return self.indexes.num_unlabeled
 
     @property

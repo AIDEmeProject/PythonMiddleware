@@ -12,10 +12,10 @@ class DualSpaceModel(ActiveLearner):
         self.active_learner = active_learner
         self.use_al_proba = use_al_proba
         self.rng = np.random.RandomState(random_state)
-        self.clear()
+        self.polytope_model = PolytopeModel()
+        self.npoints = 0
 
     def clear(self):
-        self.active_learner.clear()
         self.polytope_model = PolytopeModel()
         self.npoints = 0
 
@@ -63,6 +63,12 @@ class DualSpaceModel(ActiveLearner):
 
 class PolytopeModel:
     def __init__(self):
+        self.positive_region = None
+        self.negative_regions = []
+        self.pos_cache = None
+        self.neg_cache = None
+
+    def clear(self):
         self.positive_region = None
         self.negative_regions = []
         self.pos_cache = None

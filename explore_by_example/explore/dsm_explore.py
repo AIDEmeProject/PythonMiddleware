@@ -1,13 +1,16 @@
 from time import perf_counter
 
+import numpy as np
 from sklearn.utils import check_X_y
 
-from .partitioned import PartitionedDataset
+from .dsm_partition import PartitionedDataset
 from .user import User
 
+from ..active_learning.dsm import PolytopeModel
 
-class PoolBasedExploration:
-    def __init__(self, iters, initial_sampler, callback=None, subsampling=float('inf')):
+
+class DSMExploration:
+    def __init__(self, iters, initial_sampler, callback=None, subsampling=float('inf'), dsm_proba=0.5):
         """
             :param iters: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -22,6 +25,9 @@ class PoolBasedExploration:
         self.initial_sampler = initial_sampler
         self.callback = callback
         self.subsampling = subsampling
+
+        self.dsm_proba = dsm_proba
+        self.polytope_model = PolytopeModel()
 
     def run(self, X, y, active_learner, repeat=1):
         """
@@ -44,11 +50,13 @@ class PoolBasedExploration:
         return [self._run(X, y, active_learner) for _ in range(repeat)]
 
     def _run(self, X, y, active_learner):
-        data = PartitionedDataset(X)
+        data = PartitionedDataset(X, copy=True)
         user = User(y, self.iters)
 
+        self.polytope_model.clear()
+
         metrics = []
-        while user.is_willing:
+        while user.is_willing and data.unknown_size > 0:
             metrics.append(self._run_single_iter(data, user, active_learner))
 
         return metrics
@@ -65,8 +73,9 @@ class PoolBasedExploration:
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        labels = user.label(idx)
-        data.add_labeled_indexes(idx, labels)
+        user_labeled, labels = self._get_labels(idx, X, data, user)
+        data.move_to_labeled(idx, labels)
+
         metrics['labels'] = labels
         metrics['labeled_indexes'] = idx
 
@@ -77,8 +86,8 @@ class PoolBasedExploration:
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        if self.callback:
-            callback_metrics = self.callback(data, user, active_learner)
+        if self.callback and user_labeled:
+            callback_metrics = self.callback(data, user, DualSpaceModel(active_learner, self.polytope_model))
 
             if callback_metrics:
                 metrics.update(callback_metrics)
@@ -93,20 +102,71 @@ class PoolBasedExploration:
            :return: list containing the row numbers of the next point to label
        """
 
-        if not data.labeled_size > 0:
+        if data.labeled_size == 0:
             idx_sample = self.initial_sampler(user.labels)
             return idx_sample, data.data[idx_sample]
 
-        if not data.unlabeled_size > 0:
+        if data.unlabeled_size == 0:
             raise RuntimeError("The entire dataset has already been labeled!")
 
-        idx_sample, X_sample = data.unlabeled(self.subsampling)
+        # otherwise, select point by running the active learning procedure
+        idx_sample, X_sample = data.sample_unlabeled(self.subsampling) if np.random.rand() < self.dsm_proba else data.sample_unknown(self.subsampling)
         return active_learner.next_points_to_label(idx_sample, X_sample)
 
+    def _get_labels(self, idx, X, data, user):
+        labels = self.polytope_model.predict(X)
+
+        unknown_mask = (labels == -1)
+
+        if np.any(unknown_mask):
+            user_labels = user.label([x for i, x in enumerate(idx) if unknown_mask[i]])
+
+            labels[unknown_mask] = user_labels
+
+            self.polytope_model.add_labeled_points(X[unknown_mask], user_labels)
+
+            # relabel unknown partition
+            unk_idx, unk = data.unknown
+            pred = self.polytope_model.predict(unk)
+            data.move_to_inferred(unk_idx[pred != -1])
+
+        return np.any(unknown_mask), labels
 
     def _fit_model(self, data, active_learner):
         """
             Fit the active learning model over the labeled data
         """
-        X_train, y_train = data.labeled
+        X_train, y_train = data.training_set
         active_learner.fit(X_train, y_train)
+
+
+class DualSpaceModel:
+    """
+    Dual Space model
+    """
+
+    def __init__(self, active_learner, polytope_model):
+        self.active_learner = active_learner
+        self.polytope_model = polytope_model
+
+    def predict(self, X):
+        """
+        Predicts classes based on polytope model first; unknown labels are labeled via the active learner
+        """
+        predictions = self.polytope_model.predict(X)
+
+        unknown_mask = (predictions == -1)
+        predictions[unknown_mask] = self.active_learner.predict(X[unknown_mask])
+
+        return predictions
+
+    def predict_proba(self, X):
+        """
+        Predicts probabilities using the polytope model first; unknown labels are predicted via the active learner
+        """
+        probas = self.polytope_model.predict_proba(X)
+
+        unknown_mask = (probas == 0.5)
+        probas[unknown_mask] = self.active_learner.predict_proba(X[unknown_mask])
+
+        return probas

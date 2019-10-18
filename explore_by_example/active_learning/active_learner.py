@@ -7,12 +7,6 @@ class ActiveLearner:
         - Trains a classification model over labeled data, predicting class labels and, possibly, class probabilities.
         - Ranks unlabeled points from "more informative" to "less informative"
     """
-    def clear(self):
-        """
-        Cleans the active learner's internal state.
-        """
-        pass
-
     def fit(self, X, y):
         """
         Fit model over labeled data.
@@ -50,7 +44,7 @@ class ActiveLearner:
         """
         raise NotImplementedError
 
-    def next_points_to_label(self, X):
+    def next_points_to_label(self, idx, X):
         """
         Returns a list of data points to be labeled at the next iteration. By default, it returns a minimizer of the
         rank function at random.
@@ -59,5 +53,6 @@ class ActiveLearner:
         :return: row indexes of data points to be labeled
         """
         ranks = self.rank(X)
-        idx = np.arange(len(X))[ranks == ranks.min()]
-        return [np.random.choice(idx)]
+        min_row = np.arange(len(X))[ranks == ranks.min()]
+        chosen_row = np.random.choice(min_row)
+        return [idx[chosen_row]], X[[chosen_row]]
