@@ -3,7 +3,7 @@ from time import perf_counter
 import numpy as np
 from sklearn.utils import check_X_y
 
-from .dsm_partition import PartitionedDataset
+from .partitioned import PartitionedDataset
 from .user import User
 
 from ..active_learning.dsm import PolytopeModel

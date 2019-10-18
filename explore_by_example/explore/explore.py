@@ -65,8 +65,8 @@ class PoolBasedExploration:
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        labels = user.label(idx)
-        data.add_labeled_indexes(idx, labels)
+        labels = self._get_labels(idx, X, data, user)
+        data.move_to_labeled(idx, labels)
         metrics['labels'] = labels
         metrics['labeled_indexes'] = idx
 
@@ -100,13 +100,15 @@ class PoolBasedExploration:
         if not data.unlabeled_size > 0:
             raise RuntimeError("The entire dataset has already been labeled!")
 
-        idx_sample, X_sample = data.unlabeled(self.subsampling)
+        idx_sample, X_sample = data.sample_unlabeled(self.subsampling)
         return active_learner.next_points_to_label(idx_sample, X_sample)
 
+    def _get_labels(self, idx, X, data, user):
+        return user.label(idx)
 
     def _fit_model(self, data, active_learner):
         """
             Fit the active learning model over the labeled data
         """
-        X_train, y_train = data.labeled
+        X_train, y_train = data.training_set
         active_learner.fit(X_train, y_train)
