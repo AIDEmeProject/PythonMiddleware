@@ -1,3 +1,4 @@
+import random
 import numpy as np
 from .convex import ConvexHull, ConvexCone
 from ..active_learner import ActiveLearner
@@ -8,20 +9,34 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, use_al_proba=0.5):
+    def __init__(self, active_learner, use_al_proba=0.5, seed=None):
         self.active_learner = active_learner
         self.use_al_proba = use_al_proba
         self.polytope_model = PolytopeModel()
-        #self.npoints = 0
+        self.npoints = 0
+        self.rng = random.Random(seed)
 
-    def fit(self, X, y):
+    def fit_data(self, data):
         """
         Fits both active learner and polytope model.
         """
-        self.active_learner.fit(X, y)
+        self.active_learner.fit_data(data)
 
-        #self.polytope_model.add_labeled_points(X[self.npoints:], y[self.npoints:])
-        #self.npoints = len(y)
+        X, y = data.training_set
+        X_new, y_new = X[self.npoints:], y[self.npoints:]
+
+        pred = self.polytope_model.predict(X_new)
+        is_unknown = (pred == -1)
+
+        if np.any(is_unknown):
+            self.polytope_model.add_labeled_points(X_new[is_unknown], y_new[is_unknown])
+
+            # relabel unknown partition
+            unk_idx, unk = data.unknown
+            pred = self.polytope_model.predict(unk)
+            data.move_to_inferred(unk_idx[pred != -1])
+
+        self.npoints = len(y)
 
     def predict(self, X):
         """
@@ -52,7 +67,7 @@ class DualSpaceModel(ActiveLearner):
         return self.active_learner.rank(X)
 
     def next_points_to_label(self, data, subsample=None):
-        idx_sample, X_sample = data.sample_unlabeled(subsample) if np.random.rand() < self.use_al_proba else data.sample_unknown(subsample)
+        idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.use_al_proba else data.sample_unknown(subsample)
         return self._select_next(idx_sample, X_sample)
 
 
@@ -63,16 +78,10 @@ class PolytopeModel:
         self.pos_cache = None
         self.neg_cache = None
 
-    def clear(self):
-        self.positive_region = None
-        self.negative_regions = []
-        self.pos_cache = None
-        self.neg_cache = None
-
     def add_labeled_points(self, X, y):
         """
         Increments the polytope model with new labeled data
-        Labels must be either 1 (positive) or -1 (negative)
+        Labels must be either 1 (positive) or 0 (negative)
         """
         X, y = np.asmatrix(X), np.asarray(y)
 

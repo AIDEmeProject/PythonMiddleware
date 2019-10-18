@@ -5,9 +5,11 @@ from sklearn.utils import check_X_y
 from .partitioned import PartitionedDataset
 from .user import User
 
+from ..active_learning.dsm import DualSpaceModel
+
 
 class PoolBasedExploration:
-    def __init__(self, iters, initial_sampler, callback=None, subsampling=float('inf')):
+    def __init__(self, iters, initial_sampler, callback=None, subsampling=float('inf'), use_dsm=False, dsm_proba=0.5):
         """
             :param iters: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -22,6 +24,9 @@ class PoolBasedExploration:
         self.initial_sampler = initial_sampler
         self.callback = callback
         self.subsampling = subsampling
+
+        self.use_dsm = use_dsm
+        self.dsm_proba = dsm_proba
 
     def run(self, X, y, active_learner, repeat=1):
         """
@@ -44,11 +49,15 @@ class PoolBasedExploration:
         return [self._run(X, y, active_learner) for _ in range(repeat)]
 
     def _run(self, X, y, active_learner):
-        data = PartitionedDataset(X)
+        data = PartitionedDataset(X, copy=True)
         user = User(y, self.iters)
 
+        if self.use_dsm:
+            active_learner = DualSpaceModel(active_learner, self.dsm_proba)
+            user.polytope_model = active_learner.polytope_model
+
         metrics = []
-        while user.is_willing:
+        while user.is_willing and data.unknown_size > 0:
             metrics.append(self._run_single_iter(data, user, active_learner))
 
         return metrics
@@ -65,19 +74,20 @@ class PoolBasedExploration:
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        labels = self._get_labels(idx, X, data, user)
+        user_labeled, labels = user.label(idx, X)
         data.move_to_labeled(idx, labels)
+
         metrics['labels'] = labels
         metrics['labeled_indexes'] = idx
 
         # fit active learning model
         t1 = perf_counter()
-        self._fit_model(data, active_learner)
+        active_learner.fit_data(data)
         metrics['fit_time'] = perf_counter() - t1
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        if self.callback:
+        if self.callback and user_labeled:
             callback_metrics = self.callback(data, user, active_learner)
 
             if callback_metrics:
@@ -93,21 +103,11 @@ class PoolBasedExploration:
            :return: list containing the row numbers of the next point to label
        """
 
-        if not data.labeled_size > 0:
+        if data.labeled_size == 0:
             idx_sample = self.initial_sampler(user.labels)
             return idx_sample, data.data[idx_sample]
 
-        if not data.unlabeled_size > 0:
+        if data.unlabeled_size == 0:
             raise RuntimeError("The entire dataset has already been labeled!")
 
         return active_learner.next_points_to_label(data, self.subsampling)
-
-    def _get_labels(self, idx, X, data, user):
-        return user.label(idx)
-
-    def _fit_model(self, data, active_learner):
-        """
-            Fit the active learning model over the labeled data
-        """
-        X_train, y_train = data.training_set
-        active_learner.fit(X_train, y_train)

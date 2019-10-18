@@ -7,6 +7,15 @@ class ActiveLearner:
         - Trains a classification model over labeled data, predicting class labels and, possibly, class probabilities.
         - Ranks unlabeled points from "more informative" to "less informative"
     """
+    def fit_data(self, data):
+        """
+        Trains active learning model over data
+
+        :param data: PartitionedDataset object
+        """
+        X, y = data.training_set
+        self.fit(X, y)
+
     def fit(self, X, y):
         """
         Fit model over labeled data.

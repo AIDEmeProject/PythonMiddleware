@@ -4,6 +4,7 @@ class User:
             raise ValueError("max_iter must be a positive integer, got {0}".format(max_iter))
 
         self.labels = labels
+        self.polytope_model = None
         self.__max_iter = max_iter
         self.__num_labeled_points = 0
 
@@ -22,7 +23,14 @@ class User:
     def is_willing(self):
         return self.__num_labeled_points <= self.__max_iter
 
-    def label(self, idx):
+    def label(self, idx, X):
+        flag = True
         labels = self.labels[idx]
-        self.__num_labeled_points += len(labels)
-        return labels
+        unknown_labels = len(labels)
+
+        if self.polytope_model:
+            unknown_labels = (self.polytope_model.predict(X) == -1).sum()
+            flag = (unknown_labels > 0)
+
+        self.__num_labeled_points += unknown_labels
+        return flag, labels
