@@ -9,7 +9,7 @@ from ..active_learning.dsm import DualSpaceModel
 
 
 class PoolBasedExploration:
-    def __init__(self, iters, initial_sampler, callback=None, subsampling=float('inf'), use_dsm=False, dsm_proba=0.5):
+    def __init__(self, iters, initial_sampler, subsampling=float('inf'), callback=None, callback_skip=1):
         """
             :param iters: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -19,14 +19,14 @@ class PoolBasedExploration:
                               callback(data, user, active_learner)
 
             The callback can optionally return a dictionary containing new metrics to be included.
+            :param callback_skip: compute callback every callback_skip iterations only.
         """
         self.iters = iters
         self.initial_sampler = initial_sampler
-        self.callback = callback
         self.subsampling = subsampling
 
-        self.use_dsm = use_dsm
-        self.dsm_proba = dsm_proba
+        self.callback = callback
+        self.callback_skip = callback_skip
 
     def run(self, X, y, active_learner, repeat=1):
         """
@@ -51,17 +51,19 @@ class PoolBasedExploration:
     def _run(self, X, y, active_learner):
         data = PartitionedDataset(X, copy=True)
         user = User(y, self.iters)
+        active_learner.clear()
 
-        if self.use_dsm:
-            active_learner = DualSpaceModel(active_learner, self.dsm_proba)
-
-        metrics = []
-        while user.is_willing and data.unknown_size > 0:
-            metrics.append(self._run_single_iter(data, user, active_learner))
+        iter, metrics = 0, []
+        while self.__can_continue_exploration(data, user):
+            metrics.append(self._run_single_iter(iter, data, user, active_learner))
+            iter += 1
 
         return metrics
 
-    def _run_single_iter(self, data, user, active_learner):
+    def __can_continue_exploration(self, data, user):
+        return user.is_willing and data.unknown_size > 0
+
+    def _run_single_iter(self, iter, data, user, active_learner):
         """
             Run a single iteration of the active learning loop:
         """
@@ -86,8 +88,8 @@ class PoolBasedExploration:
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        if self.callback:
-            callback_metrics = self.callback(data, user, active_learner)
+        if self.callback and (iter % self.callback_skip == 0 or not self.__can_continue_exploration(data, user)):
+            callback_metrics = self.callback(iter, data, user, active_learner)
 
             if callback_metrics:
                 metrics.update(callback_metrics)

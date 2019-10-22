@@ -15,6 +15,9 @@ class DualSpaceModel(ActiveLearner):
         self.polytope_model = PolytopeModel()
         self.rng = random.Random(seed)
 
+    def clear(self):
+        self.polytope_model = PolytopeModel()
+
     def fit_data(self, data):
         """
         Fits both active learner and polytope model.
@@ -26,7 +29,6 @@ class DualSpaceModel(ActiveLearner):
 
         unk_idx, unk = data.unknown
         pred = self.polytope_model.predict(unk)
-        print(np.any(pred == -1))
         data.move_to_inferred(unk_idx[pred != -1])
 
     def predict(self, X):
