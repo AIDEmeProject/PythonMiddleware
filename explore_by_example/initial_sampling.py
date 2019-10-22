@@ -1,6 +1,8 @@
 from numpy import arange
 from sklearn.utils import check_random_state, check_array
 
+from .utils import assert_positive_integer
+
 
 class StratifiedSampler:
     """
@@ -13,14 +15,8 @@ class StratifiedSampler:
         :param pos: Number of positive points to sample. Must be non-negative.
         :param neg: Number of negative points to sample. Must be non-negative.
         """
-        self.pos = int(pos)
-        self.neg = int(neg)
-
-        if self.pos < 0 or self.neg < 0:
-            raise ValueError("Found negative sample size. Only non-negative values allowed.")
-
-        if self.pos == self.neg == 0:
-            raise ValueError("Either 'pos' or 'neg' must be positive.")
+        assert_positive_integer(pos, 'pos')
+        assert_positive_integer(neg, 'neg')
 
         self.__random_state = check_random_state(random_state)
 

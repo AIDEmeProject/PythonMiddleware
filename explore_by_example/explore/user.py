@@ -1,7 +1,9 @@
+from ..utils import assert_positive_integer
+
+
 class User:
     def __init__(self, labels, max_iter):
-        if not isinstance(max_iter, int) or max_iter <= 0:
-            raise ValueError("max_iter must be a positive integer, got {0}".format(max_iter))
+        assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
 
         self.labels = labels
         self.__max_iter = max_iter

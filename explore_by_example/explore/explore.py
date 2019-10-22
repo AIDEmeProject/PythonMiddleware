@@ -5,13 +5,13 @@ from sklearn.utils import check_X_y
 from .partitioned import PartitionedDataset
 from .user import User
 
-from ..active_learning.dsm import DualSpaceModel
+from ..utils import assert_positive_integer
 
 
 class PoolBasedExploration:
-    def __init__(self, iters, initial_sampler, subsampling=float('inf'), callback=None, callback_skip=1):
+    def __init__(self, max_iter, initial_sampler, subsampling=float('inf'), callback=None, callback_skip=1):
         """
-            :param iters: number of iterations to run
+            :param max_iter: number of iterations to run
             :param initial_sampler: InitialSampler object
             :param callback: a callback function to be called at the end of every iteration. It must have the
             following signature:
@@ -21,7 +21,11 @@ class PoolBasedExploration:
             The callback can optionally return a dictionary containing new metrics to be included.
             :param callback_skip: compute callback every callback_skip iterations only.
         """
-        self.iters = iters
+        assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
+        assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
+        assert_positive_integer(callback_skip, 'callback_skip')
+
+        self.max_iter = max_iter
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
@@ -49,18 +53,22 @@ class PoolBasedExploration:
         return [self._run(X, y, active_learner) for _ in range(repeat)]
 
     def _run(self, X, y, active_learner):
-        data = PartitionedDataset(X, copy=True)
-        user = User(y, self.iters)
-        active_learner.clear()
+        data, user = self.__initialize(X, y, active_learner)
 
         iter, metrics = 0, []
-        while self.__can_continue_exploration(data, user):
+        while self.__will_continue_exploring(data, user):
             metrics.append(self._run_single_iter(iter, data, user, active_learner))
             iter += 1
 
         return metrics
 
-    def __can_continue_exploration(self, data, user):
+    def __initialize(self, X, y, active_learner):
+        data = PartitionedDataset(X, copy=True)
+        user = User(y, self.max_iter)
+        active_learner.clear()
+        return data, user
+
+    def __will_continue_exploring(self, data, user):
         return user.is_willing and data.unknown_size > 0
 
     def _run_single_iter(self, iter, data, user, active_learner):
@@ -88,7 +96,7 @@ class PoolBasedExploration:
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        if self.callback and (iter % self.callback_skip == 0 or not self.__can_continue_exploration(data, user)):
+        if self.callback and (iter % self.callback_skip == 0 or not self.__will_continue_exploring(data, user)):
             callback_metrics = self.callback(iter, data, user, active_learner)
 
             if callback_metrics:

@@ -46,9 +46,6 @@ class PartitionedDataset:
             self.__move_single(idx, False)
 
     def __move_single(self, idx, to_labeled):
-        if idx < 0 or idx >= self.__size:
-            raise ValueError('Index {0} out of bounds for size {1}'.format(idx, self.__size))
-
         pos = self.__index_to_row[idx]
 
         if pos < self._inferred_start:
