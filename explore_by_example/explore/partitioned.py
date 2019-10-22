@@ -21,6 +21,8 @@ class PartitionedDataset:
 
         self.__labels = []
 
+        self.__previous_inferred_start = 0
+
     def __len__(self):
         return self.__size
 
@@ -32,6 +34,8 @@ class PartitionedDataset:
     # MOVING DATA
     ##################
     def move_to_labeled(self, indexes, labels):
+        self.__previous_inferred_start = self._inferred_start
+
         for idx in indexes:
             self.__move_single(idx, True)
 
@@ -130,6 +134,10 @@ class PartitionedDataset:
     ##################
     # LABELED DATA
     ##################
+    @property
+    def last_labeled_set(self):
+        return self.data[self.__previous_inferred_start:self._inferred_start], self.labels[self.__previous_inferred_start:self._inferred_start]
+
     @property
     def labels(self):
         return np.asarray(self.__labels)

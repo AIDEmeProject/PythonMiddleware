@@ -13,7 +13,6 @@ class DualSpaceModel(ActiveLearner):
         self.active_learner = active_learner
         self.use_al_proba = use_al_proba
         self.polytope_model = PolytopeModel()
-        self.npoints = 0
         self.rng = random.Random(seed)
 
     def fit_data(self, data):
@@ -22,21 +21,13 @@ class DualSpaceModel(ActiveLearner):
         """
         self.active_learner.fit_data(data)
 
-        X, y = data.training_set
-        X_new, y_new = X[self.npoints:], y[self.npoints:]
+        X_new, y_new = data.last_labeled_set
+        self.polytope_model.add_labeled_points(X_new, y_new)
 
-        pred = self.polytope_model.predict(X_new)
-        is_unknown = (pred == -1)
-
-        if np.any(is_unknown):
-            self.polytope_model.add_labeled_points(X_new[is_unknown], y_new[is_unknown])
-
-            # relabel unknown partition
-            unk_idx, unk = data.unknown
-            pred = self.polytope_model.predict(unk)
-            data.move_to_inferred(unk_idx[pred != -1])
-
-        self.npoints = len(y)
+        unk_idx, unk = data.unknown
+        pred = self.polytope_model.predict(unk)
+        print(np.any(pred == -1))
+        data.move_to_inferred(unk_idx[pred != -1])
 
     def predict(self, X):
         """
@@ -67,8 +58,19 @@ class DualSpaceModel(ActiveLearner):
         return self.active_learner.rank(X)
 
     def next_points_to_label(self, data, subsample=None):
-        idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.use_al_proba else data.sample_unknown(subsample)
-        return self._select_next(idx_sample, X_sample)
+        while data.unknown_size > 0:
+            idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.use_al_proba else data.sample_unknown(subsample)
+            idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
+
+            pred = self.polytope_model.predict(X_selected)
+            is_known = (pred != -1)
+
+            if np.any(is_known):
+                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known])
+                self.active_learner.fit_data(data)
+
+            if not np.all(is_known):
+                return [idx for i, idx in enumerate(idx_selected) if not is_known[i]], X_selected[~is_known]
 
 
 class PolytopeModel:

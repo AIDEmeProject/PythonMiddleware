@@ -54,7 +54,6 @@ class PoolBasedExploration:
 
         if self.use_dsm:
             active_learner = DualSpaceModel(active_learner, self.dsm_proba)
-            user.polytope_model = active_learner.polytope_model
 
         metrics = []
         while user.is_willing and data.unknown_size > 0:
@@ -74,7 +73,7 @@ class PoolBasedExploration:
         metrics['get_next_time'] = perf_counter() - t0
 
         # update labeled indexes
-        user_labeled, labels = user.label(idx, X)
+        labels = user.label(idx, X)
         data.move_to_labeled(idx, labels)
 
         metrics['labels'] = labels
@@ -87,7 +86,7 @@ class PoolBasedExploration:
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        if self.callback and user_labeled:
+        if self.callback:
             callback_metrics = self.callback(data, user, active_learner)
 
             if callback_metrics:
