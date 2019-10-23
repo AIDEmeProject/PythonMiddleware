@@ -18,6 +18,8 @@ class StratifiedSampler:
         assert_positive_integer(pos, 'pos')
         assert_positive_integer(neg, 'neg')
 
+        self.pos = pos
+        self.neg = neg
         self.__random_state = check_random_state(random_state)
 
     def __call__(self, y, true_class=1, neg_class=0):

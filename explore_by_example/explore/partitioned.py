@@ -9,7 +9,9 @@ class PartitionedDataset:
     """
 
     def __init__(self, data, copy=False):
-        self.data = data.copy() if copy else data
+        self.data = data
+
+        self.__data = data.copy() if copy else data
 
         self.__size = len(data)
 
@@ -67,7 +69,7 @@ class PartitionedDataset:
         idx_i, idx_j = self.__row_to_index[i], self.__row_to_index[j]
         self.__row_to_index[i], self.__row_to_index[j] = idx_j, idx_i
         self.__index_to_row[idx_i], self.__index_to_row[idx_j] = j, i
-        self.data[[i, j]] = self.data[[j, i]]
+        self.__data[[i, j]] = self.__data[[j, i]]
 
     ##################
     # SIZES
@@ -93,19 +95,19 @@ class PartitionedDataset:
     ##################
     @property
     def labeled(self):
-        return self.__row_to_index[:self._inferred_start], self.data[:self._inferred_start]
+        return self.__row_to_index[:self._inferred_start], self.__data[:self._inferred_start]
 
     @property
     def inferred(self):
-        return self.__row_to_index[self._inferred_start:self._unknown_start], self.data[self._inferred_start:self._unknown_start]
+        return self.__row_to_index[self._inferred_start:self._unknown_start], self.__data[self._inferred_start:self._unknown_start]
 
     @property
     def unknown(self):
-        return self.__row_to_index[self._unknown_start:], self.data[self._unknown_start:]
+        return self.__row_to_index[self._unknown_start:], self.__data[self._unknown_start:]
 
     @property
     def unlabeled(self):
-        return self.__row_to_index[self._inferred_start:], self.data[self._inferred_start:]
+        return self.__row_to_index[self._inferred_start:], self.__data[self._inferred_start:]
 
     ##################
     # SAMPLING
@@ -123,17 +125,17 @@ class PartitionedDataset:
             raise RuntimeError("There are no points to sample from.")
 
         if size >= remaining:
-            return self.__row_to_index[start:], self.data[start:]
+            return self.__row_to_index[start:], self.__data[start:]
 
         row_sample = np.random.choice(np.arange(start, self.__size), size=size, replace=False)
-        return self.__row_to_index[row_sample], self.data[row_sample]
+        return self.__row_to_index[row_sample], self.__data[row_sample]
 
     ##################
     # LABELED DATA
     ##################
     @property
     def last_labeled_set(self):
-        return self.data[self.__previous_inferred_start:self._inferred_start], self.labels[self.__previous_inferred_start:self._inferred_start]
+        return self.__data[self.__previous_inferred_start:self._inferred_start], self.labels[self.__previous_inferred_start:self._inferred_start]
 
     @property
     def labels(self):
@@ -141,4 +143,4 @@ class PartitionedDataset:
 
     @property
     def training_set(self):
-        return self.data[:self._inferred_start], self.labels
+        return self.__data[:self._inferred_start], self.labels

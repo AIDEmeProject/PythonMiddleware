@@ -1,15 +1,15 @@
+import math
 from time import perf_counter
 
 from sklearn.utils import check_X_y
 
 from .partitioned import PartitionedDataset
 from .user import User
-
 from ..utils import assert_positive_integer
 
 
 class PoolBasedExploration:
-    def __init__(self, max_iter, initial_sampler, subsampling=float('inf'), callback=None, callback_skip=1):
+    def __init__(self, max_iter, initial_sampler, subsampling=math.inf, callback=None, callback_skip=1):
         """
             :param max_iter: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -29,8 +29,18 @@ class PoolBasedExploration:
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
-        self.callback = callback
+        self.callbacks = self.__process_callback(callback)
         self.callback_skip = callback_skip
+
+    @staticmethod
+    def __process_callback(callback):
+        if not callback:
+            return []
+
+        if callable(callback):
+            return [callback]
+
+        return callback
 
     def run(self, X, y, active_learner, repeat=1):
         """
@@ -68,9 +78,6 @@ class PoolBasedExploration:
         active_learner.clear()
         return data, user
 
-    def __will_continue_exploring(self, data, user):
-        return user.is_willing and data.unknown_size > 0
-
     def _run_single_iter(self, iter, data, user, active_learner):
         """
             Run a single iteration of the active learning loop:
@@ -96,11 +103,7 @@ class PoolBasedExploration:
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        if self.callback and (iter % self.callback_skip == 0 or not self.__will_continue_exploring(data, user)):
-            callback_metrics = self.callback(iter, data, user, active_learner)
-
-            if callback_metrics:
-                metrics.update(callback_metrics)
+        metrics.update(self.__compute_callback_metrics(iter, data, user, active_learner))
 
         return metrics
 
@@ -120,3 +123,21 @@ class PoolBasedExploration:
             raise RuntimeError("The entire dataset has already been labeled!")
 
         return active_learner.next_points_to_label(data, self.subsampling)
+
+    def __compute_callback_metrics(self, iter, data, user, active_learner):
+        if iter % self.callback_skip != 0 and self.__will_continue_exploring(data, user):
+            return {}
+
+        metrics = {}
+
+        for callback in self.callbacks:
+
+            callback_metrics = callback(iter, data.data, user.labels, active_learner)
+
+            if callback_metrics:
+                metrics.update(callback_metrics)
+
+        return metrics
+
+    def __will_continue_exploring(self, data, user):
+        return user.is_willing and data.unknown_size > 0

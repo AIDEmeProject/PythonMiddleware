@@ -9,10 +9,10 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, use_al_proba=0.5, seed=None):
+    def __init__(self, active_learner, use_al_proba=0.5, seed=None, tol=1e-12):
         self.active_learner = active_learner
         self.use_al_proba = use_al_proba
-        self.polytope_model = PolytopeModel()
+        self.polytope_model = PolytopeModel(tol)
         self.rng = random.Random(seed)
 
     def clear(self):
@@ -38,7 +38,9 @@ class DualSpaceModel(ActiveLearner):
         predictions = self.polytope_model.predict(X)
 
         unknown_mask = (predictions == -1)
-        predictions[unknown_mask] = self.active_learner.predict(X[unknown_mask])
+
+        if np.any(unknown_mask):
+            predictions[unknown_mask] = self.active_learner.predict(X[unknown_mask])
 
         return predictions
 
@@ -76,11 +78,12 @@ class DualSpaceModel(ActiveLearner):
 
 
 class PolytopeModel:
-    def __init__(self):
+    def __init__(self, tol=1e-12):
         self.positive_region = None
         self.negative_regions = []
         self.pos_cache = None
         self.neg_cache = None
+        self.tol = tol
 
     def add_labeled_points(self, X, y):
         """
@@ -118,7 +121,7 @@ class PolytopeModel:
 
         # build positive region if enough points have been found
         if len(self.pos_cache) > X.shape[1]:
-            self.positive_region = ConvexHull(self.pos_cache)
+            self.positive_region = ConvexHull(self.pos_cache, self.tol)
             # self.pos_cache = None
 
     def update_negative_region(self, X):
@@ -126,7 +129,7 @@ class PolytopeModel:
         if self.negative_regions or self.positive_region:
             vertices = self.positive_region.vertices if self.positive_region else self.pos_cache
             for neg_point in X:
-                self.negative_regions.append(ConvexCone(vertices, neg_point))
+                self.negative_regions.append(ConvexCone(vertices, neg_point,  self.tol))
 
             return
 
@@ -139,7 +142,7 @@ class PolytopeModel:
         # if there are at least d positive points, we can start building the negative regions
         if len(self.pos_cache) >= X.shape[1]:
             for neg_point in self.neg_cache:
-                self.negative_regions.append(ConvexCone(self.pos_cache, neg_point))
+                self.negative_regions.append(ConvexCone(self.pos_cache, neg_point, self.tol))
                 # self.neg_cache = None
 
     def predict(self, X):

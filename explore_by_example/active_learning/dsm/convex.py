@@ -6,9 +6,10 @@ class ConvexHull:
     """
     This class represents the convex hull of a finite number of points.
     """
-    def __init__(self, points):
+    def __init__(self, points, tol):
         points = np.asmatrix(points)
         self.hull = scipy.spatial.ConvexHull(points, incremental=True)
+        self.tol = tol
 
     @property
     def npoints(self):
@@ -50,7 +51,7 @@ class ConvexHull:
         """
         points = np.asmatrix(points)
 
-        return (np.max(points.dot(self.hull.equations[:, :-1].T) + self.hull.equations[:, -1], axis=1) <= 0).A1
+        return (np.max(points.dot(self.hull.equations[:, :-1].T) + self.hull.equations[:, -1], axis=1) <= self.tol).A1
 
 
 class ConvexCone:
@@ -58,12 +59,14 @@ class ConvexCone:
     Let H be a convex hull and V any point outside H. The convex cone C = cone(H, V) is a conical collection of points
     which are guaranteed to be outside H.
     """
-    def __init__(self, points, vertex):
+    def __init__(self, points, vertex, tol):
         self.vertex = np.asarray(vertex)
-        self.convex_hull = ConvexHull(np.vstack([points, self.vertex]))
+        self.convex_hull = ConvexHull(np.vstack([points, self.vertex]), tol)
 
         self.vertex_id = self.convex_hull.npoints - 1
         self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
+
+        self.tol = -tol
 
     def add_points(self, points):
         """
@@ -81,5 +84,5 @@ class ConvexCone:
         """
         points = np.asmatrix(points)
 
-        return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= 0).A1
+        return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol).A1
 

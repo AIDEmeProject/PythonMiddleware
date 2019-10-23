@@ -1,9 +1,9 @@
-pyyaml
-pandas
-matplotlib
-scikit-learn
-scipy
 numpy
+scipy
+scikit-learn
+matplotlib
+pandas
+pyyaml
 pystan
 sqlalchemy
 psycopg2
