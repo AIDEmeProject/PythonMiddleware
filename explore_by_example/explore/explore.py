@@ -9,7 +9,8 @@ from ..utils import assert_positive_integer
 
 
 class PoolBasedExploration:
-    def __init__(self, max_iter, initial_sampler, subsampling=math.inf, callback=None, callback_skip=1):
+    def __init__(self, max_iter, initial_sampler, subsampling=math.inf,
+                 callback=None, callback_skip=1, print_callback_result=False):
         """
             :param max_iter: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -31,6 +32,7 @@ class PoolBasedExploration:
 
         self.callbacks = self.__process_callback(callback)
         self.callback_skip = callback_skip
+        self.print_callback_result = print_callback_result
 
     @staticmethod
     def __process_callback(callback):
@@ -132,10 +134,14 @@ class PoolBasedExploration:
 
         for callback in self.callbacks:
 
-            callback_metrics = callback(iter, data.data, user.labels, active_learner)
+            callback_metrics = callback(data.data, user.labels, active_learner)
 
             if callback_metrics:
                 metrics.update(callback_metrics)
+
+        if self.print_callback_result:
+            scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
+            print('iter: {0}, {1}'.format(iter, scores_str))
 
         return metrics
 

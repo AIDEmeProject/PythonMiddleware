@@ -1,2 +1,2 @@
 from .validation import *
-from .metrics import Metric, ClassificationMetric, ThreeSetMetric
+from .metrics import classification_metrics, three_set_metric
