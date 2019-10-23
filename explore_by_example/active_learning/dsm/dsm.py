@@ -9,9 +9,9 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, use_al_proba=0.5, seed=None, tol=1e-12):
+    def __init__(self, active_learner, sample_unknown_proba=0.5, seed=None, tol=1e-12):
         self.active_learner = active_learner
-        self.use_al_proba = use_al_proba
+        self.sample_unknown_proba = sample_unknown_proba
         self.polytope_model = PolytopeModel(tol)
         self.rng = random.Random(seed)
 
@@ -63,7 +63,7 @@ class DualSpaceModel(ActiveLearner):
 
     def next_points_to_label(self, data, subsample=None):
         while data.unknown_size > 0:
-            idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.use_al_proba else data.sample_unknown(subsample)
+            idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.sample_unknown_proba else data.sample_unknown(subsample)
             idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
 
             pred = self.polytope_model.predict(X_selected)
