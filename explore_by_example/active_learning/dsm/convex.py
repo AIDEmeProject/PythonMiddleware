@@ -35,12 +35,6 @@ class ConvexHull:
         """
         return self.hull.equations[[vertex_id in s for s in self.hull.simplices]]
 
-    def copy(self):
-        """
-        :return: a deep copy of the convex hull
-        """
-        return ConvexHull(self.vertices)
-
     def add_points(self, points):
         """
         Adds the points to the convex hull

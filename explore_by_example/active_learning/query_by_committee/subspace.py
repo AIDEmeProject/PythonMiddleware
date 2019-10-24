@@ -46,7 +46,6 @@ class SubspaceLearner(ActiveLearner):
 
         raise ValueError("Expected callable or string, but received a " + type(function))
 
-
     def fit(self, X, y):
         """
         Fit model over labeled data.

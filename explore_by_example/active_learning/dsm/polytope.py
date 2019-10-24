@@ -135,6 +135,15 @@ class NegativeRegion:
         for nr in self.cones:
             nr.add_points_to_hull(pos_points)
 
+        # if positive region has at least a facet, and cache has not been used, build negative cones
+        if self.positive_region.has_facet and self.cache is not None:
+            vertices = self.positive_region.vertices
+
+            for neg_point in self.cache:
+                self.cones.append(ConvexCone(vertices, neg_point, self.tol))
+
+            self.cache = None
+
     def is_inside(self, X):
         if not self.cones:
             return np.full(len(X), False)
@@ -142,7 +151,7 @@ class NegativeRegion:
         return np.any([nr.is_inside(X) for nr in self.cones], axis=0)
 
     def update(self, neg_points):
-        if self.cones or self.positive_region.is_built:
+        if self.positive_region.has_facet:
             vertices = self.positive_region.vertices
 
             for neg_point in neg_points:
@@ -151,14 +160,6 @@ class NegativeRegion:
             return
 
         self.__update_cache(neg_points)
-
-        if self.positive_region.has_facet:
-            vertices = self.positive_region.vertices
-
-            for neg_point in self.cache:
-                self.cones.append(ConvexCone(vertices, neg_point, self.tol))
-
-            self.cache = None
 
     def __update_cache(self, X):
         if self.cache is None:
