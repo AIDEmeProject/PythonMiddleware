@@ -1,12 +1,16 @@
 import numpy as np
 import scipy.spatial
 
+from explore_by_example.utils import assert_positive
+
 
 class ConvexHull:
     """
     This class represents the convex hull of a finite number of points.
     """
-    def __init__(self, points, tol):
+    def __init__(self, points, tol=1e-12):
+        assert_positive(tol, 'tol')
+
         points = np.asmatrix(points)
         self.hull = scipy.spatial.ConvexHull(points, incremental=True)
         self.tol = tol
@@ -59,7 +63,9 @@ class ConvexCone:
     Let H be a convex hull and V any point outside H. The convex cone C = cone(H, V) is a conical collection of points
     which are guaranteed to be outside H.
     """
-    def __init__(self, points, vertex, tol):
+    def __init__(self, points, vertex, tol=1e-12):
+        assert_positive(tol, 'tol')
+
         self.vertex = np.asarray(vertex)
         self.convex_hull = ConvexHull(np.vstack([points, self.vertex]), tol)
 
@@ -68,7 +74,7 @@ class ConvexCone:
 
         self.tol = -tol
 
-    def add_points(self, points):
+    def add_points_to_hull(self, points):
         """
         Add new points to the positive region, updating the negative cone equations
         """
