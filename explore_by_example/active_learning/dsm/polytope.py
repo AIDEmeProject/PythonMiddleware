@@ -1,6 +1,7 @@
 import numpy as np
 
 from .convex import ConvexHull, ConvexCone
+from .one_dim_convex import OneDimensionalConvexHull, OneDimensionalConvexCone
 from explore_by_example.utils import assert_positive
 
 
@@ -102,8 +103,8 @@ class PositiveRegion:
 
         self.__update_cache(pos_points)
 
-        if len(self.cache) > pos_points.shape[1]:
-            self.hull = ConvexHull(self.cache, self.tol)
+        if self.cache.shape[0] > self.cache.shape[1]:
+            self.hull = self.__build_convex_hull()
             self.cache = None
 
     def __update_cache(self, X):
@@ -111,6 +112,9 @@ class PositiveRegion:
             self.cache = X.copy()
         else:
             self.cache = np.vstack([self.cache, X])
+
+    def __build_convex_hull(self):
+        return ConvexHull(self.cache, self.tol) if self.cache.shape[1] > 1 else OneDimensionalConvexHull(self.cache)
 
 
 class NegativeRegion:
@@ -131,6 +135,12 @@ class NegativeRegion:
         self.cones = []
         self.cache = None
 
+    def is_inside(self, X):
+        if not self.cones:
+            return np.full(len(X), False)
+
+        return np.any([nr.is_inside(X) for nr in self.cones], axis=0)
+
     def update_positive_region(self, pos_points):
         for nr in self.cones:
             nr.add_points_to_hull(pos_points)
@@ -140,26 +150,23 @@ class NegativeRegion:
             vertices = self.positive_region.vertices
 
             for neg_point in self.cache:
-                self.cones.append(ConvexCone(vertices, neg_point, self.tol))
+                self.cones.append(self.__build_convex_cone(vertices, neg_point))
 
             self.cache = None
-
-    def is_inside(self, X):
-        if not self.cones:
-            return np.full(len(X), False)
-
-        return np.any([nr.is_inside(X) for nr in self.cones], axis=0)
 
     def update(self, neg_points):
         if self.positive_region.has_facet:
             vertices = self.positive_region.vertices
 
             for neg_point in neg_points:
-                self.cones.append(ConvexCone(vertices, neg_point, self.tol))
+                self.cones.append(self.__build_convex_cone(vertices, neg_point))
 
             return
 
         self.__update_cache(neg_points)
+
+    def __build_convex_cone(self, vertices, neg_point):
+        return ConvexCone(vertices, neg_point, self.tol) if len(neg_point) > 1 else OneDimensionalConvexCone(vertices, neg_point)
 
     def __update_cache(self, X):
         if self.cache is None:
