@@ -33,7 +33,7 @@ class DualSpaceModel(ActiveLearner):
 
         unk_idx, unk = data.unknown
         pred = self.polytope_model.predict(unk)
-        data.move_to_inferred(unk_idx[pred != -1])
+        data.move_to_inferred(unk_idx[pred != 0.5])
 
     def predict(self, X):
         """
@@ -41,7 +41,7 @@ class DualSpaceModel(ActiveLearner):
         """
         predictions = self.polytope_model.predict(X)
 
-        unknown_mask = (predictions == -1)
+        unknown_mask = (predictions == 0.5)
 
         if np.any(unknown_mask):
             predictions[unknown_mask] = self.active_learner.predict(X[unknown_mask])
@@ -52,10 +52,12 @@ class DualSpaceModel(ActiveLearner):
         """
         Predicts probabilities using the polytope model first; unknown labels are predicted via the active learner
         """
-        probas = self.polytope_model.predict_proba(X)
+        probas = self.polytope_model.predict(X)
 
         unknown_mask = (probas == 0.5)
-        probas[unknown_mask] = self.active_learner.predict_proba(X[unknown_mask])
+
+        if np.any(unknown_mask):
+            probas[unknown_mask] = self.active_learner.predict_proba(X[unknown_mask])
 
         return probas
 
@@ -71,7 +73,7 @@ class DualSpaceModel(ActiveLearner):
             idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
 
             pred = self.polytope_model.predict(X_selected)
-            is_known = (pred != -1)
+            is_known = (pred != 0.5)
 
             if np.any(is_known):
                 data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known])

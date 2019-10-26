@@ -30,18 +30,8 @@ class FactorizedPolytopeModel:
 
             :param X: data matrix to predict labels
         """
-        proba = self.predict_proba(X)
-        return np.where(proba != 0.5, proba, -1)
-
-    def predict_proba(self, X):
-        """
-            Predicts the label probabilities of each data point. Returns 1 if point is in positive region, 0 if in negative
-            region, and 0.5 otherwise
-
-            :param X: data matrix to predict labels
-        """
-        prediction = self.polytope_models[0].predict_proba(X[:, self.partition[0]])
+        prediction = self.polytope_models[0].predict(X[:, self.partition[0]])
         for i in range(1, len(self.partition)):
-            np.minimum(prediction, self.polytope_models[i].predict_proba(X[:, self.partition[i]]), out=prediction)
+            np.minimum(prediction, self.polytope_models[i].predict(X[:, self.partition[i]]), out=prediction)
 
         return prediction

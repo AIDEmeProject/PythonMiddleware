@@ -37,25 +37,13 @@ class PolytopeModel:
     def predict(self, X):
         """
             Predicts the label of each data point. Returns 1 if point is in positive region, 0 if in negative region,
-            and -1 otherwise
+            and 0.5 otherwise
 
             :param X: data matrix to predict labels
         """
-        return self.__predict_helper(X, unknown_value=-1.0)
-
-    def predict_proba(self, X):
-        """
-            Predicts the label probabilities of each data point. Returns 1 if point is in positive region, 0 if in negative
-            region, and 0.5 otherwise
-
-            :param X: data matrix to predict labels
-        """
-        return self.__predict_helper(X, unknown_value=0.5)
-
-    def __predict_helper(self, X, unknown_value):
         X = np.atleast_2d(X)
 
-        probas = np.full(shape=(X.shape[0],), fill_value=unknown_value)
+        probas = np.full(shape=(X.shape[0],), fill_value=0.5)
 
         if self.positive_region.is_built:
             probas[self.positive_region.is_inside(X)] = 1.0

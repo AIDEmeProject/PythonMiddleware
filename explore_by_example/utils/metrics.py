@@ -5,7 +5,7 @@ def three_set_metric(X, y, active_learner):
     pred = active_learner.polytope_model.predict(X)
 
     pos = (pred == 1).sum()
-    unknown = (pred == -1).sum()
+    unknown = (pred == 0.5).sum()
     tsm = pos / (pos + unknown)
 
     return {'tsm': tsm}
