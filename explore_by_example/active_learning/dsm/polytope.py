@@ -21,7 +21,7 @@ class PolytopeModel:
             :param X: data matrix
             :param y: labels array. Expects 1 for positive points, and 0 for negative points
         """
-        X, y = np.asmatrix(X), np.asarray(y)
+        X, y = np.atleast_2d(X), np.asarray(y)
 
         positive_mask = (y == 1)
 
@@ -53,7 +53,7 @@ class PolytopeModel:
         return self.__predict_helper(X, unknown_value=0.5)
 
     def __predict_helper(self, X, unknown_value):
-        X = np.asmatrix(X)
+        X = np.atleast_2d(X)
 
         probas = np.full(shape=(X.shape[0],), fill_value=unknown_value)
 

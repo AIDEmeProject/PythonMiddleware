@@ -11,7 +11,7 @@ class ConvexHull:
     def __init__(self, points, tol=1e-12):
         assert_positive(tol, 'tol')
 
-        points = np.asmatrix(points)
+        points = np.atleast_2d(points)
         self.hull = scipy.spatial.ConvexHull(points, incremental=True)
         self.tol = tol
 
@@ -40,16 +40,15 @@ class ConvexHull:
         Adds the points to the convex hull
         :param points: list of points to be added to the convex hull
         """
-        points = np.asmatrix(points)
+        points = np.atleast_2d(points)
         self.hull.add_points(points)
 
     def is_inside(self, points):
         """
         Computes whether each data point is inside the convex hull or not
         """
-        points = np.asmatrix(points)
-
-        return (np.max(points.dot(self.hull.equations[:, :-1].T) + self.hull.equations[:, -1], axis=1) <= self.tol).A1
+        points = np.atleast_2d(points)
+        return (np.max(points.dot(self.hull.equations[:, :-1].T) + self.hull.equations[:, -1], axis=1) <= self.tol)
 
 
 class ConvexCone:
@@ -82,7 +81,7 @@ class ConvexCone:
         """
         Computes whether a point is inside the negative cone or not
         """
-        points = np.asmatrix(points)
+        points = np.atleast_2d(points)
 
-        return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol).A1
+        return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol)
 

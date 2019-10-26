@@ -18,12 +18,12 @@ def classification_metrics(*score_functions):
 
     def compute(X, y, active_learner):
         # when using factorization, we have to condense all partial labels into a single one
-        # if len(y.shape) > 1:
-        #    y = (np.mean(y, axis=1) == 1).astype('float')
+        if len(y.shape) > 1:
+            y = y.all(axis=1).astype('float')
 
         y_pred = active_learner.predict(X)
         cm = sklearn.metrics.confusion_matrix(y, y_pred, labels=[0, 1])
-        return {score : __classification_metrics[score](cm) for score in score_functions}
+        return {score: __classification_metrics[score](cm) for score in score_functions}
 
     return compute
 

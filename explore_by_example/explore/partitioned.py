@@ -43,6 +43,7 @@ class PartitionedDataset:
 
         self.__labels.extend(labels)
 
+
     def move_to_inferred(self, indexes):
         for idx in indexes:
             self.__move_single(idx, False)
@@ -135,12 +136,10 @@ class PartitionedDataset:
     ##################
     @property
     def last_labeled_set(self):
-        return self.__data[self.__previous_inferred_start:self._inferred_start], self.labels[self.__previous_inferred_start:self._inferred_start]
-
-    @property
-    def labels(self):
-        return np.asarray(self.__labels)
+        return self.__data[self.__previous_inferred_start:self._inferred_start], np.array(self.__labels[self.__previous_inferred_start:self._inferred_start])
 
     @property
     def training_set(self):
-        return self.__data[:self._inferred_start], self.labels
+        # TODO: what if we are not using conjunctive property?
+        labels = [1.0*all(lb) if not isinstance(lb, float) else lb for lb in self.__labels]
+        return self.__data[:self._inferred_start], np.array(labels)

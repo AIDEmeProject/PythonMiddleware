@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from .polytope import PolytopeModel
+from .factorization import FactorizedPolytopeModel
 from ..active_learner import ActiveLearner
 
 
@@ -11,10 +12,10 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, sample_unknown_proba=0.5, seed=None, tol=1e-12):
+    def __init__(self, active_learner, sample_unknown_proba=0.5, partition=None, seed=None, tol=1e-12):
         self.active_learner = active_learner
         self.sample_unknown_proba = sample_unknown_proba
-        self.polytope_model = PolytopeModel(tol)
+        self.polytope_model = PolytopeModel(tol) if partition is None else FactorizedPolytopeModel(partition, tol)
         self.rng = random.Random(seed)
 
     def clear(self):
