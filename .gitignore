@@ -1,9 +1,0 @@
-data/
-notebooks/
-/experiments/
-/.env/
-*.pyc
-__pycache__/
-.idea/
-resources/
-run_experiment.py

@@ -3,9 +3,6 @@ import pickle
 
 from pystan import StanModel
 
-from definitions import RESOURCES_DIR
-
-
 class StanLogisticRegressionSampler:
     """
     Logistic regression posterior sampler. Uses pystan library, which is basically a wrapper over the Bayesian modeling
@@ -40,7 +37,7 @@ class StanLogisticRegressionSampler:
         self.thin = thin
         self.sigma = sigma
 
-        model_path = os.path.join(RESOURCES_DIR, 'stan_logreg.pkl')
+        model_path = 'stan_logreg.pkl'
         if os.path.isfile(model_path):
             self.model = pickle.load(open(model_path, 'rb'))
         else:

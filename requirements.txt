@@ -1,9 +1,5 @@
 numpy
 scipy
-scikit-learn
 matplotlib
-pandas
-pyyaml
+scikit-learn
 pystan
-sqlalchemy
-psycopg2
