@@ -16,6 +16,7 @@ class DualSpaceModel(ActiveLearner):
         self.active_learner = active_learner
         self.sample_unknown_proba = sample_unknown_proba
         self.polytope_model = PolytopeModel(tol) if partition is None else FactorizedPolytopeModel(partition, tol)
+        self.factorized = partition is not None
         self.rng = random.Random(seed)
 
     def clear(self):
@@ -26,7 +27,7 @@ class DualSpaceModel(ActiveLearner):
         """
         Fits both active learner and polytope model.
         """
-        self.active_learner.fit_data(data)
+        self.__fit_active_learner(data)
 
         X_new, y_new = data.last_labeled_set
         self.polytope_model.update(X_new, y_new)
@@ -72,12 +73,24 @@ class DualSpaceModel(ActiveLearner):
             idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.sample_unknown_proba else data.sample_unknown(subsample)
             idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
 
-            pred = self.polytope_model.predict(X_selected)
-            is_known = (pred != 0.5)
+            if self.factorized:
+                pred = self.polytope_model.predict_partial(X_selected)
+                is_known = (np.min(pred, axis=1) != 0.5)
+            else:
+                pred = self.polytope_model.predict(X_selected)
+                is_known = (pred != 0.5)
 
             if np.any(is_known):
                 data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known])
-                self.active_learner.fit_data(data)
+                self.__fit_active_learner(data)
 
             if not np.all(is_known):
                 return [idx for i, idx in enumerate(idx_selected) if not is_known[i]], X_selected[~is_known]
+
+    def __fit_active_learner(self, data):
+        X, y = data.training_set
+
+        if self.factorized:
+            y = np.min(y, axis=1)
+
+        self.active_learner.fit(X, y)

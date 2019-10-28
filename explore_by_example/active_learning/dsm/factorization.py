@@ -35,3 +35,11 @@ class FactorizedPolytopeModel:
             np.minimum(prediction, self.polytope_models[i].predict(X[:, self.partition[i]]), out=prediction)
 
         return prediction
+
+    def predict_partial(self, X):
+        partial_labels = np.empty((X.shape[0], len(self.partition)))
+
+        for i, p in enumerate(self.partition):
+            partial_labels[:, i] = self.polytope_models[i].predict(X[:, p])
+
+        return partial_labels

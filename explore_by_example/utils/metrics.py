@@ -11,15 +11,17 @@ def three_set_metric(X, y, active_learner):
     return {'tsm': tsm}
 
 
-def classification_metrics(*score_functions):
+def classification_metrics(*score_functions, labeling_function='AND'):
     diff = set(score_functions) - __classification_metrics.keys()
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
+    if isinstance(labeling_function, str):
+        labeling_function = __labeling_functions.get(labeling_function.upper())
+
     def compute(X, y, active_learner):
-        # when using factorization, we have to condense all partial labels into a single one
-        if len(y.shape) > 1:
-            y = y.all(axis=1).astype('float')
+        if y.ndim > 1:
+            y = labeling_function(y)
 
         y_pred = active_learner.predict(X)
         cm = sklearn.metrics.confusion_matrix(y, y_pred, labels=[0, 1])
@@ -37,6 +39,11 @@ __classification_metrics = {
     'precision': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[0, 1]),
     'recall': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[1, 0]),
     'fscore': lambda cm: true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
+}
+
+__labeling_functions = {
+    'AND': lambda y: y.min(axis=1),
+    'OR': lambda y: y.max(axis=1),
 }
 
 

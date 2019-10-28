@@ -140,6 +140,4 @@ class PartitionedDataset:
 
     @property
     def training_set(self):
-        # TODO: what if we are not using conjunctive property?
-        labels = [1.0*all(lb) if not isinstance(lb, float) else lb for lb in self.__labels]
-        return self.__data[:self._inferred_start], np.array(labels)
+        return self.__data[:self._inferred_start], np.array(self.__labels)
