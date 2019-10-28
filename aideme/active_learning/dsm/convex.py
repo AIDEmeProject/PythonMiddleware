@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.spatial
 
-from explore_by_example.utils import assert_positive
+from aideme.utils import assert_positive
 
 
 class ConvexHull:

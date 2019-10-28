@@ -2,7 +2,7 @@ import numpy as np
 
 from .convex import ConvexHull, ConvexCone
 from .one_dim_convex import OneDimensionalConvexHull, OneDimensionalConvexCone
-from explore_by_example.utils import assert_positive
+from aideme.utils import assert_positive
 
 
 class PolytopeModel:
