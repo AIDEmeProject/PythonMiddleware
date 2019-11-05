@@ -63,7 +63,7 @@ class ConvexCone:
         self.convex_hull = ConvexHull(np.vstack([points, self.vertex]), tol)
 
         self.vertex_id = self.convex_hull.npoints - 1
-        self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
+        self.__update_cone_equations()
 
         self.tol = -tol
 
@@ -72,10 +72,13 @@ class ConvexCone:
         Add new points to the positive region, updating the negative cone equations
         """
         self.convex_hull.add_points(points)  # TODO: can we avoid modifying the entire convex hull every time?
+        self.__update_cone_equations()
+
+    def __update_cone_equations(self):
         self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
 
         if len(self.equations) == 0:
-            raise RuntimeError("Found a positive point inside a negative cone!")
+            raise RuntimeError("Vertex of negative cone cannot be inside positive region.")
 
     def is_inside(self, points):
         """

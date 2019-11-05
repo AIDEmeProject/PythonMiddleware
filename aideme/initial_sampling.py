@@ -31,6 +31,8 @@ class StratifiedSampler:
         :return: index of samples in the array
         """
         y = check_array(y, ensure_2d=False, allow_nd=False)
+
+        # TODO: can we avoid this check ?
         if y.ndim == 2:
             y = y.mean(axis=1)
 

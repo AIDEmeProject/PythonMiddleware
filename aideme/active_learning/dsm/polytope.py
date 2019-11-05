@@ -134,30 +134,29 @@ class NegativeRegion:
             nr.add_points_to_hull(pos_points)
 
         # if positive region has at least a facet, and cache has not been used, build negative cones
-        if self.positive_region.has_facet and self.cache is not None:
-            vertices = self.positive_region.vertices
-
-            for neg_point in self.cache:
-                self.cones.append(self.__build_convex_cone(vertices, neg_point))
-
+        if self.cache is not None and self.positive_region.has_facet:
+            self.__update_cones(self.cache)
             self.cache = None
 
     def update(self, neg_points):
         if self.positive_region.has_facet:
-            vertices = self.positive_region.vertices
+            self.__update_cones(neg_points)
+        else:
+            self.__update_cache(neg_points)
 
-            for neg_point in neg_points:
-                self.cones.append(self.__build_convex_cone(vertices, neg_point))
+    def __update_cones(self, neg_points):
+        vertices = self.positive_region.vertices
 
-            return
-
-        self.__update_cache(neg_points)
+        for neg_point in neg_points:
+            self.cones.append(self.__build_convex_cone(vertices, neg_point))
 
     def __build_convex_cone(self, vertices, neg_point):
         return ConvexCone(vertices, neg_point, self.tol) if len(neg_point) > 1 else OneDimensionalConvexCone(vertices, neg_point)
 
     def __update_cache(self, X):
+        X = X.copy()
+
         if self.cache is None:
-            self.cache = X.copy()
+            self.cache = [x for x in X]
         else:
-            self.cache = np.vstack([self.cache, X])
+            self.cache.extend(X)

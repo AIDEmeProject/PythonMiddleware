@@ -52,7 +52,7 @@ class OneDimensionalConvexCone:
         self.hull.add_points(points)  # TODO: can we avoid modifying the entire convex hull every time?
 
         if self.hull.is_inside(self.vertex):
-            raise RuntimeError("Found negative point inside positive region.")
+            raise RuntimeError("Vertex of negative cone cannot be inside positive region.")
 
     def is_inside(self, points):
         """
