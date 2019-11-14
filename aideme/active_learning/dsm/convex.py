@@ -11,8 +11,7 @@ class ConvexHull:
     def __init__(self, points, tol=1e-12):
         assert_positive(tol, 'tol')
 
-        points = np.atleast_2d(points)
-        self.hull = scipy.spatial.ConvexHull(points, incremental=True)
+        self.hull = scipy.spatial.ConvexHull(np.atleast_2d(points), incremental=True)
         self.tol = tol
 
     @property

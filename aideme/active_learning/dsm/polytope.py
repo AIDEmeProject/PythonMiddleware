@@ -1,6 +1,6 @@
 import numpy as np
 
-from .convex import ConvexHull, ConvexCone
+from .convex import ConvexHull, ConvexCone, ConvexError
 from .one_dim_convex import OneDimensionalConvexHull, OneDimensionalConvexCone
 from aideme.utils import assert_positive
 
@@ -8,31 +8,17 @@ from aideme.utils import assert_positive
 class PolytopeModel:
     def __init__(self, tol=1e-12):
         self.positive_region = PositiveRegion(tol)
-        self.negative_region = NegativeRegion(self.positive_region, tol)
+        self.negative_region = []
+        self.__is_valid = True
+
+    @property
+    def is_valid(self):
+        return self.__is_valid
 
     def clear(self):
         self.positive_region.clear()
-        self.negative_region.clear()
-
-    def update(self, X, y):
-        """
-            Increments the polytope model with new labeled data
-
-            :param X: data matrix
-            :param y: labels array. Expects 1 for positive points, and 0 for negative points
-        """
-        X, y = np.atleast_2d(X), np.asarray(y)
-
-        positive_mask = (y == 1)
-
-        if np.any(positive_mask):
-            pos_points = X[positive_mask]
-            self.positive_region.update(pos_points)
-            self.negative_region.update_positive_region(pos_points)
-
-        negative_mask = ~positive_mask
-        if np.any(negative_mask):
-            self.negative_region.update(X[negative_mask])
+        self.negative_region = []
+        self.__is_valid = True
 
     def predict(self, X):
         """
@@ -43,120 +29,164 @@ class PolytopeModel:
         """
         X = np.atleast_2d(X)
 
-        probas = np.full(shape=(X.shape[0],), fill_value=0.5)
+        probas = np.full(len(X), fill_value=0.5)
 
-        if self.positive_region.is_built:
-            probas[self.positive_region.is_inside(X)] = 1.0
+        if self.__is_valid:
+            if self.positive_region.is_built:
+                probas[self.positive_region.is_inside(X)] = 1.0
 
-        if self.negative_region.is_built:
-            probas[self.negative_region.is_inside(X)] = 0.0
+            for nr in self.negative_region:
+                if nr.is_built:
+                    probas[nr.is_inside(X)] = 0.0
 
         return probas
 
+    def update(self, X, y):
+        """
+        Increments the polytope model with new labeled data
+
+        :param X: data matrix
+        :param y: labels array. Expects 1 for positive points, and 0 for negative points
+        :return: whether update was successful or not
+        """
+        if not self.__is_valid:
+            raise RuntimeError("Cannot update invalid polytope.")
+
+        X, y = np.atleast_2d(X), np.asarray(y)
+
+        try:
+            self.__update_positive(X[y == 1])
+            self.__update_negative(X[y != 1])
+
+        except ConvexError:
+            self.__is_valid = False
+
+        finally:
+            return self.__is_valid
+
+    def __update_positive(self, X):
+        if len(X) > 0:
+            self.positive_region.update(X)
+
+            for nr in self.negative_region:
+                nr.add_points_to_hull(X)
+
+    def __update_negative(self, X):
+        for x in X:
+            cone = NegativeCone(x, self.positive_region._tol)
+            cone.add_points_to_hull(self.positive_region.vertices)
+            self.negative_region.append(cone)
+
 
 class PositiveRegion:
-    def __init__(self, tol):
+    def __init__(self, tol=1e-12):
         assert_positive(tol, 'tol')
 
-        self.hull = None
-        self.cache = None
-        self.tol = tol
+        self._hull = None
+        self._cache = Cache()
+        self._tol = tol
 
     @property
     def is_built(self):
-        return self.hull is not None
-
-    @property
-    def has_facet(self):
-        return self.is_built or self.cache.shape[0] >= self.cache.shape[1]
+        return self._hull is not None
 
     @property
     def vertices(self):
-        return self.cache if self.hull is None else self.hull.vertices
+        return self._cache.data if self._hull is None else self._hull.vertices
 
     def clear(self):
-        self.hull = None
-        self.cache = None
+        self._hull = None
+        self._cache.clear()
 
     def is_inside(self, X):
-        if not self.hull:
+        if not self._hull:
             return np.full(len(X), False)
 
-        return self.hull.is_inside(X)
+        return self._hull.is_inside(X)
 
     def update(self, pos_points):
         if self.is_built:
-            self.hull.add_points(pos_points)
+            self._hull.add_points(pos_points)
             return
 
-        self.__update_cache(pos_points)
+        self._cache.update(pos_points)
 
-        if self.cache.shape[0] > self.cache.shape[1]:
-            self.hull = self.__build_convex_hull()
-            self.cache = None
-
-    def __update_cache(self, X):
-        if self.cache is None:
-            self.cache = X.copy()
-        else:
-            self.cache = np.vstack([self.cache, X])
+        if self._cache.size > self._cache.dim:
+            self._hull = self.__build_convex_hull()
+            self._cache.clear()
 
     def __build_convex_hull(self):
-        return ConvexHull(self.cache, self.tol) if self.cache.shape[1] > 1 else OneDimensionalConvexHull(self.cache)
+        if self._cache.dim > 1:
+            return ConvexHull(self._cache.data, self._tol)
+
+        return OneDimensionalConvexHull(self._cache.data)
 
 
-class NegativeRegion:
-    def __init__(self, positive_region, tol):
+class NegativeCone:
+    def __init__(self, vertex, tol=1e-12):
         assert_positive(tol, 'tol')
 
-        self.positive_region = positive_region
-        self.cones = []
-        self.cache = None
-        self.tol = tol
+        self._vertex = vertex
+        self._cache = Cache()
+        self._cone = None
+        self._tol = tol
 
     @property
     def is_built(self):
-        return len(self.cones) > 0
+        return self._cone is not None
 
     def clear(self):
-        self.positive_region.clear()
-        self.cones = []
-        self.cache = None
+        self._cone = None
+        self._cache.clear()
 
     def is_inside(self, X):
-        if not self.cones:
+        if not self.is_built:
             return np.full(len(X), False)
 
-        return np.any([nr.is_inside(X) for nr in self.cones], axis=0)
+        return self._cone.is_inside(X)
 
-    def update_positive_region(self, pos_points):
-        for nr in self.cones:
-            nr.add_points_to_hull(pos_points)
+    def add_points_to_hull(self, points):
+        points = np.atleast_2d(points)
 
-        # if positive region has at least a facet, and cache has not been used, build negative cones
-        if self.cache is not None and self.positive_region.has_facet:
-            self.__update_cones(self.cache)
-            self.cache = None
+        if points.shape[1] != len(self._vertex):
+            raise ValueError("Bad input dimension: expected {0}, got {1}".format(len(self._vertex), points.shape[1]))
 
-    def update(self, neg_points):
-        if self.positive_region.has_facet:
-            self.__update_cones(neg_points)
+        if self._cone is not None:
+            self._cone.add_points_to_hull(points)
+            return
+
+        self._cache.update(points)
+
+        if self._cache.size >= self._cache.dim:
+            self._cone = self.__build_convex_cone()
+            self._cache.clear()
+
+    def __build_convex_cone(self):
+        if len(self._vertex) > 1:
+            return ConvexCone(self._cache.data, self._vertex, tol=self._tol)
         else:
-            self.__update_cache(neg_points)
+            return OneDimensionalConvexCone(self._cache.data, self._vertex)
 
-    def __update_cones(self, neg_points):
-        vertices = self.positive_region.vertices
 
-        for neg_point in neg_points:
-            self.cones.append(self.__build_convex_cone(vertices, neg_point))
+class Cache:
+    def __init__(self):
+        self.data = None
 
-    def __build_convex_cone(self, vertices, neg_point):
-        return ConvexCone(vertices, neg_point, self.tol) if len(neg_point) > 1 else OneDimensionalConvexCone(vertices, neg_point)
+    @property
+    def size(self):
+        return 0 if self.data is None else self.data.shape[0]
 
-    def __update_cache(self, X):
-        X = X.copy()
+    @property
+    def dim(self):
+        return -1 if self.data is None else self.data.shape[1]
 
-        if self.cache is None:
-            self.cache = [x for x in X]
+    def clear(self):
+        self.data = None
+
+    def update(self, X):
+        X = np.atleast_2d(X)
+
+        if self.data is None:
+            self.data = X.copy()
         else:
-            self.cache.extend(X)
+            self.data = np.vstack([self.data, X])
