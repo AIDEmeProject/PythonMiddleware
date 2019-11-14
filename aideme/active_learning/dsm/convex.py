@@ -16,13 +16,6 @@ class ConvexHull:
         self.tol = tol
 
     @property
-    def npoints(self):
-        """
-        :return: number of points added to the convex hull
-        """
-        return self.hull.npoints
-
-    @property
     def vertices(self):
         """
         :return: numpy array containing all the vertices of the convex hull
@@ -58,11 +51,12 @@ class ConvexCone:
     """
     def __init__(self, points, vertex, tol=1e-12):
         assert_positive(tol, 'tol')
+        points = np.atleast_2d(points)
 
         self.vertex = np.asarray(vertex)
         self.convex_hull = ConvexHull(np.vstack([points, self.vertex]), tol)
 
-        self.vertex_id = self.convex_hull.npoints - 1
+        self.vertex_id = len(points)
         self.__update_cone_equations()
 
         self.tol = -tol
@@ -78,7 +72,7 @@ class ConvexCone:
         self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
 
         if len(self.equations) == 0:
-            raise RuntimeError("Vertex of negative cone cannot be inside positive region.")
+            raise ConvexError("Vertex of negative cone cannot be inside positive region.")
 
     def is_inside(self, points):
         """
@@ -88,3 +82,6 @@ class ConvexCone:
 
         return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol)
 
+
+class ConvexError(Exception):
+    pass
