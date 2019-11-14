@@ -1,4 +1,14 @@
 import numpy as np
+from sklearn.utils import column_or_1d
+
+from .convex import ConvexError
+
+
+def assert_float_or_column_or_1d(points):
+    if isinstance(points, (int, float)):
+        return points
+
+    return column_or_1d(points, warn=False)
 
 
 class OneDimensionalConvexHull:
@@ -21,6 +31,8 @@ class OneDimensionalConvexHull:
         Adds the points to the convex hull
         :param points: list of points to be added to the convex hull
         """
+        points = assert_float_or_column_or_1d(points)
+
         self.left = min(self.left, np.min(points))
         self.right = max(self.right, np.max(points))
 
@@ -28,7 +40,7 @@ class OneDimensionalConvexHull:
         """
         Computes whether each data point is inside the convex hull or not
         """
-        points = np.asarray(points).reshape(-1)
+        points = assert_float_or_column_or_1d(points)
         return np.logical_and(points >= self.left, points <= self.right)
 
 
@@ -41,7 +53,7 @@ class OneDimensionalConvexCone:
         self.hull = OneDimensionalConvexHull(vertices)
 
         if self.hull.is_inside(self.vertex):
-            raise RuntimeError("Vertex of negative cone cannot be inside positive region.")
+            raise ConvexError
 
         self.right_cone = self.vertex > self.hull.right
 
@@ -52,11 +64,11 @@ class OneDimensionalConvexCone:
         self.hull.add_points(points)  # TODO: can we avoid modifying the entire convex hull every time?
 
         if self.hull.is_inside(self.vertex):
-            raise RuntimeError("Vertex of negative cone cannot be inside positive region.")
+            raise ConvexError
 
     def is_inside(self, points):
         """
         Computes whether a point is inside the negative cone or not
         """
-        points = np.asarray(points).reshape(-1)
+        points = assert_float_or_column_or_1d(points)
         return points >= self.vertex if self.right_cone else points <= self.vertex

@@ -72,16 +72,18 @@ class ConvexCone:
         self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
 
         if len(self.equations) == 0:
-            raise ConvexError("Vertex of negative cone cannot be inside positive region.")
+            raise ConvexError
 
     def is_inside(self, points):
         """
         Computes whether a point is inside the negative cone or not
         """
         points = np.atleast_2d(points)
-
         return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol)
 
 
 class ConvexError(Exception):
-    pass
+    def __init__(self, message=None):
+        if not message:
+            message = "Vertex of negative cone cannot be inside positive region."
+        super().__init__(message)
