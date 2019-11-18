@@ -45,3 +45,30 @@ def plot_learner_prediction(X, y, learner, labeled_indexes):
 
     plt.show()
 
+
+def plot_polytope(xlim=None, ylim=None, grid_size=800):
+    def make_plot(X, y, learner):
+        xlims = [X[:, 0].min(), X[:, 0].max()] if xlim is None else xlim
+        ylims = [X[:, 1].min(), X[:, 1].max()] if ylim is None else ylim
+
+        plt.figure(figsize=(10, 8))
+
+        xx, yy = np.meshgrid(np.linspace(xlims[0], xlims[1], grid_size), np.linspace(ylims[0], ylims[1], grid_size))
+        Z = learner.polytope_model.predict(np.c_[xx.ravel(), yy.ravel()])
+
+        # Put the result into a color plot
+        Z = Z.reshape(xx.shape)
+        plt.contourf(xx, yy, Z, alpha=0.5, vmin=0, vmax=1, levels=[0, 0.4, 0.9, 1], colors=['r', 'g', 'b', 'k'])
+
+        # pos = learner.polytope_model.positive_region.vertices
+        # plt.scatter(pos[:, 0], pos[:, 1], c='b', s=50)
+
+        # neg = np.array([x._vertex for x in learner.polytope_model.negative_region])
+        # plt.scatter(neg[:, 0], neg[:, 1], c='r', s=50)
+
+        plt.xlim(xlims)
+        plt.ylim(ylims)
+
+        plt.show()
+
+    return make_plot

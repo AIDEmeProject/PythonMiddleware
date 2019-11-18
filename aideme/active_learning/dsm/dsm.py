@@ -70,7 +70,7 @@ class DualSpaceModel(ActiveLearner):
 
     def next_points_to_label(self, data, subsample=None):
         while data.unknown_size > 0:
-            idx_sample, X_sample = data.sample_unlabeled(subsample) if self.rng.random() < self.sample_unknown_proba else data.sample_unknown(subsample)
+            idx_sample, X_sample = data.sample_unknown(subsample) if self.rng.random() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
             idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
 
             if self.factorized:
@@ -81,7 +81,7 @@ class DualSpaceModel(ActiveLearner):
                 is_known = (pred != 0.5)
 
             if np.any(is_known):
-                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known])
+                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known], 'dsm')
                 self.__fit_active_learner(data)
 
             if not np.all(is_known):

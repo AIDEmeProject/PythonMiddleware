@@ -93,7 +93,7 @@ class PoolBasedExploration:
 
         # update labeled indexes
         labels = user.label(idx, X)
-        data.move_to_labeled(idx, labels)
+        data.move_to_labeled(idx, labels, 'user')
 
         metrics['labels'] = labels
         metrics['labeled_indexes'] = idx

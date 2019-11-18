@@ -22,11 +22,19 @@ class PartitionedDataset:
         self.__index_to_row = {i: i for i in range(self.__size)}
 
         self.__labels = []
+        self.__label_tags = []
 
         self.__previous_inferred_start = 0
 
     def __len__(self):
         return self.__size
+
+    def __repr__(self):
+        return "labeled: {0}, inferred: {1}, unknown: {2}".format(
+            self.__row_to_index[:self._inferred_start],
+            self.__row_to_index[self._inferred_start:self._unknown_start],
+            self.__row_to_index[self._unknown_start:]
+        )
 
     @property
     def indexes(self):
@@ -35,14 +43,14 @@ class PartitionedDataset:
     ##################
     # MOVING DATA
     ##################
-    def move_to_labeled(self, indexes, labels):
+    def move_to_labeled(self, indexes, labels, tag):
         self.__previous_inferred_start = self._inferred_start
 
         for idx in indexes:
             self.__move_single(idx, True)
 
         self.__labels.extend(labels)
-
+        self.__label_tags.extend([tag] * len(labels))
 
     def move_to_inferred(self, indexes):
         for idx in indexes:
@@ -71,6 +79,34 @@ class PartitionedDataset:
         self.__row_to_index[i], self.__row_to_index[j] = idx_j, idx_i
         self.__index_to_row[idx_i], self.__index_to_row[idx_j] = j, i
         self.__data[[i, j]] = self.__data[[j, i]]
+
+    def remove_inferred(self):
+        # flush inferred partition
+        self._unknown_start = self._inferred_start
+
+        labeled_idx, _ = self.labeled
+
+        for idx, tag in zip(labeled_idx, self.__label_tags):
+            if tag != 'user':
+                self.__move_right(idx)
+
+        self.__labels = [lb for lb, tag in zip(self.__labels, self.__label_tags) if tag == 'user']
+        self.__label_tags = ['user'] * len(self.__labels)
+
+    def __move_right(self, idx):
+        pos = self.__index_to_row[idx]
+
+        if pos >= self._unknown_start:
+            raise RuntimeError('Index {0} is already in unknown set.'.format(idx))
+
+        if pos < self._inferred_start:
+            self.__swap(pos, self._inferred_start - 1)
+            pos = self._inferred_start - 1
+            self._inferred_start -= 1
+
+        if pos < self._unknown_start:
+            self.__swap(pos, self._unknown_start - 1)
+            self._unknown_start -= 1
 
     ##################
     # SIZES
