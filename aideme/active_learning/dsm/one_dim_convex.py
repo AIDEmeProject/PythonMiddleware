@@ -24,7 +24,7 @@ class OneDimensionalConvexHull:
         """
         :return: numpy array containing all the vertices of the convex hull
         """
-        return [self.left, self.right]
+        return np.array([self.left, self.right]).reshape(-1, 1)
 
     def add_points(self, points):
         """

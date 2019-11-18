@@ -41,6 +41,7 @@ class DualSpaceModel(ActiveLearner):
         if not is_success:
             warnings.warn("Found conflicting point in polytope model. is_valid = {0}".format(self.polytope_model.is_valid))
             data.remove_inferred()
+            self.__fit_active_learner(data)  # retrain AL since labeled set may have changed
 
             # if polytope became invalid with the last update, skip relabeling
             if not self.polytope_model.is_valid:

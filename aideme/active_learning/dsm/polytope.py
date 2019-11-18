@@ -35,9 +35,9 @@ class PolytopeModel:
             if self.positive_region.is_built:
                 probas[self.positive_region.is_inside(X)] = 1.0
 
-            for nr in self.negative_region:
-                if nr.is_built:
-                    probas[nr.is_inside(X)] = 0.0
+            for cone in self.negative_region:
+                if cone.is_built:
+                    probas[cone.is_inside(X)] = 0.0
 
         return probas
 
@@ -99,7 +99,7 @@ class PositiveRegion:
         self._cache.clear()
 
     def is_inside(self, X):
-        if not self._hull:
+        if not self.is_built:
             return np.full(len(X), False)
 
         return self._hull.is_inside(X)
@@ -126,7 +126,7 @@ class NegativeCone:
     def __init__(self, vertex, tol=1e-12):
         assert_positive(tol, 'tol')
 
-        self._vertex = vertex
+        self._vertex = np.asarray(vertex).reshape(-1)
         self._cache = Cache()
         self._cone = None
         self._tol = tol

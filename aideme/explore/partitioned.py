@@ -84,7 +84,8 @@ class PartitionedDataset:
         # flush inferred partition
         self._unknown_start = self._inferred_start
 
-        labeled_idx, _ = self.labeled
+        # copy labeled indexes slice because we will modify list inplace
+        labeled_idx = self.__row_to_index[:self._inferred_start].copy()
 
         for idx, tag in zip(labeled_idx, self.__label_tags):
             if tag != 'user':
@@ -103,6 +104,7 @@ class PartitionedDataset:
             self.__swap(pos, self._inferred_start - 1)
             pos = self._inferred_start - 1
             self._inferred_start -= 1
+            self.__previous_inferred_start -= 1
 
         if pos < self._unknown_start:
             self.__swap(pos, self._unknown_start - 1)
