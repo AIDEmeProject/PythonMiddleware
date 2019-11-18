@@ -72,3 +72,27 @@ def plot_polytope(xlim=None, ylim=None, grid_size=800):
         plt.show()
 
     return make_plot
+
+
+def plot_polytope_1d(X, y, learner):
+    xx = np.linspace(-2, 2, 1000).reshape(-1, 1)
+
+    fig, axs = plt.subplots(1, 3)
+    fig.set_size_inches(15, 3)
+
+    pred = learner.active_learner.predict(xx)
+    colors = ['r' if lb == 0 else 'b' if lb == 1 else 'g' for lb in pred]
+    axs[0].scatter(xx, [0] * len(xx), c=colors, s=0.5)
+    axs[0].set_title('Active Learner')
+
+    pred = learner.polytope_model.predict(xx)
+    colors = ['r' if lb == 0 else 'b' if lb == 1 else 'g' for lb in pred]
+    axs[1].scatter(xx, [0] * len(xx), c=colors, s=0.5)
+    axs[1].set_title('Polytope Model')
+
+    pred = learner.predict(xx)
+    colors = ['r' if lb == 0 else 'b' if lb == 1 else 'g' for lb in pred]
+    axs[2].scatter(xx, [0] * len(xx), c=colors, s=0.5)
+    axs[2].set_title('Final prediction')
+
+    plt.show()
