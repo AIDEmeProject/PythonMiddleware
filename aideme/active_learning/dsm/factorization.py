@@ -1,12 +1,22 @@
 import numpy as np
 
-from .polytope import PolytopeModel
+from .persistent import PersistentPolytopeModel
 
 
 class FactorizedPolytopeModel:
-    def __init__(self, partition, tol=1e-12):
+    def __init__(self, partition, is_convex_positive_list, tol=1e-12):
+        if is_convex_positive_list is None or isinstance(is_convex_positive_list, bool):
+            is_convex_positive_list = [is_convex_positive_list] * len(partition)
+
+        if len(partition) != len(is_convex_positive_list):
+            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(is_convex_positive_list)))
+
         self.partition = partition
-        self.polytope_models = [PolytopeModel(tol) for _ in partition]
+        self.polytope_models = [PersistentPolytopeModel(flag, tol) for flag in is_convex_positive_list]
+
+    @property
+    def is_valid(self):
+        return any((pol.is_valid for pol in self.polytope_models))
 
     def clear(self):
         for pol in self.polytope_models:
@@ -19,9 +29,10 @@ class FactorizedPolytopeModel:
             :param X: data matrix
             :param y: partial labels matrix. Expects 1 for positive labels, and 0 for negative labels
         """
-        for i, (idx, pol) in enumerate(zip(self.partition, self.polytope_models)):
-            X_subspace, y_subspace = X[:, idx], y[:, i]
-            pol.update(X_subspace, y_subspace)
+        if not self.is_valid:
+            raise RuntimeError("Cannot update invalid polytope.")
+
+        return all(pol.update(X[:, idx], y[:, i]) for i, idx, pol in self.__valid_elements())
 
     def predict(self, X):
         """
@@ -30,16 +41,23 @@ class FactorizedPolytopeModel:
 
             :param X: data matrix to predict labels
         """
-        prediction = self.polytope_models[0].predict(X[:, self.partition[0]])
-        for i in range(1, len(self.partition)):
-            np.minimum(prediction, self.polytope_models[i].predict(X[:, self.partition[i]]), out=prediction)
+        if not self.is_valid:
+            return np.full(len(X), fill_value=0.5)
+
+        prediction = np.full(len(X), fill_value=1.0)
+
+        for i, idx, pol in self.__valid_elements():
+            np.minimum(prediction, pol.predict(X[:, idx]), out=prediction)
 
         return prediction
 
     def predict_partial(self, X):
-        partial_labels = np.empty((X.shape[0], len(self.partition)))
+        partial_labels = np.full((X.shape[0], len(self.partition)), fill_value=0.5)
 
-        for i, p in enumerate(self.partition):
-            partial_labels[:, i] = self.polytope_models[i].predict(X[:, p])
+        for i, idx, pol in self.__valid_elements():
+            partial_labels[:, i] = pol.predict(X[:, idx])
 
         return partial_labels
+
+    def __valid_elements(self):
+        return ((i, idx, pol) for i, (idx, pol) in enumerate(zip(self.partition, self.polytope_models)) if pol.is_valid)
