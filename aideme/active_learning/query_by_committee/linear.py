@@ -22,7 +22,7 @@ class BayesianLogisticRegression:
         better performance under these assumptions.
     """
 
-    def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100.0, rounding=True):
+    def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100, rounding=True):
         """
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not

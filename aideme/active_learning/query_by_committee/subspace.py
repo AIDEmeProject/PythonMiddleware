@@ -4,7 +4,7 @@ from ..active_learner import ActiveLearner
 
 
 class SubspaceLearner(ActiveLearner):
-    def __init__(self, partition, learners, label_function='AND', probability_function='min', ranking_function='SQUARE'):
+    def __init__(self, partition, learners, label_function='AND', probability_function='MIN', ranking_function='SQUARE'):
         if len(partition) != len(learners):
             raise ValueError("Partition and learners must have the same size")
 
@@ -17,23 +17,23 @@ class SubspaceLearner(ActiveLearner):
     @classmethod
     def __get_ranking_connector(cls, ranking_function):
         return cls.__get_function(ranking_function, {
-            'SUM': lambda score: np.sum(score, axis=1),
-            'SQUARE': lambda score: np.sum(np.square(score), axis=1),
+            'SUM': lambda score: np.sum(score, axis=0),
+            'SQUARE': lambda score: np.sum(np.square(score), axis=0),
         })
 
     @classmethod
     def __get_label_connector(cls, label_function):
         return cls.__get_function(label_function, {
-            'AND': lambda ys: np.all(ys, axis=1).astype('float'),
-            'OR': lambda ys: np.any(ys, axis=1).astype('float'),
+            'AND': lambda ys: np.all(ys, axis=0).astype('float'),
+            'OR': lambda ys: np.any(ys, axis=0).astype('float'),
         })
 
     @classmethod
     def __get_proba_connector(cls, probability_function):
         return cls.__get_function(probability_function, {
-            'MIN': lambda ps: np.min(ps, axis=1),
-            'MAX': lambda ps: np.max(ps, axis=1),
-            'MEAN': lambda ps: np.mean(ps, axis=1),
+            'MIN': lambda ps: np.min(ps, axis=0),
+            'MAX': lambda ps: np.max(ps, axis=0),
+            'MEAN': lambda ps: np.mean(ps, axis=0),
         })
 
     @staticmethod
@@ -63,10 +63,7 @@ class SubspaceLearner(ActiveLearner):
         :param X: data matrix
         :return: class labels
         """
-        return self.label_function(self._predict_all(X))
-
-    def _predict_all(self, X):
-        return np.array([learner.predict(X[:, idx]) for (idx, learner) in zip(self.partition, self.learners)]).T
+        return self.label_function(self.predict_all(X))
 
     def predict_proba(self, X):
         """
@@ -75,10 +72,7 @@ class SubspaceLearner(ActiveLearner):
         :param X: data matrix
         :return: positive class probability
         """
-        return self.probability_function(self._predict_proba_all(X))
-
-    def _predict_proba_all(self, X):
-        return np.array([learner.predict_proba(X[:, idx]) for (idx, learner) in zip(self.partition, self.learners)]).T
+        return self.probability_function(self.predict_proba_all(X))
 
     def rank(self, X):
         """
@@ -88,7 +82,21 @@ class SubspaceLearner(ActiveLearner):
         :param X: data matrix
         :return: scores array
         """
-        return self.ranking_function(self._rank_all(X))
+        return self.ranking_function(self.rank_all(X))
 
-    def _rank_all(self, X):
-        return np.array([learner.rank(X[:, idx]) for (idx, learner) in zip(self.partition, self.learners)]).T
+    def predict_all(self, X):
+        return self.__compute_over_all_subspaces(X, (l.predict for l in self.learners))
+
+    def predict_proba_all(self, X):
+        return self.__compute_over_all_subspaces(X, (l.predict_proba for l in self.learners))
+
+    def rank_all(self, X):
+        return self.__compute_over_all_subspaces(X, (l.rank for l in self.learners))
+
+    def __compute_over_all_subspaces(self, X, funcs):
+        values = np.empty( (len(self.partition), len(X)) )
+
+        for i, (idx, func) in enumerate(zip(self.partition, funcs)):
+            values[i] = func(X[:, idx])
+
+        return values
