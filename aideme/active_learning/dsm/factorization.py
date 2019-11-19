@@ -1,18 +1,18 @@
 import numpy as np
 
-from .persistent import PersistentPolytopeModel
+from .persistent import PolytopeModel
 
 
 class FactorizedPolytopeModel:
     def __init__(self, partition, is_convex_positive_list, tol=1e-12):
-        if is_convex_positive_list is None or isinstance(is_convex_positive_list, bool):
+        if isinstance(is_convex_positive_list, str):
             is_convex_positive_list = [is_convex_positive_list] * len(partition)
 
         if len(partition) != len(is_convex_positive_list):
             raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(is_convex_positive_list)))
 
         self.partition = partition
-        self.polytope_models = [PersistentPolytopeModel(flag, tol) for flag in is_convex_positive_list]
+        self.polytope_models = [PolytopeModel(flag, tol) for flag in is_convex_positive_list]
 
     @property
     def is_valid(self):

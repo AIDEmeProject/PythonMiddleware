@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-from .persistent import PersistentPolytopeModel
+from .persistent import PolytopeModel
 from .factorization import FactorizedPolytopeModel
 from ..active_learner import ActiveLearner
 
@@ -13,10 +13,10 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, sample_unknown_proba=0.5, partition=None, is_positive_convex=None, seed=None, tol=1e-12):
+    def __init__(self, active_learner, sample_unknown_proba=0.5, partition=None, mode='persist', seed=None, tol=1e-12):
         self.active_learner = active_learner
         self.sample_unknown_proba = sample_unknown_proba
-        self.polytope_model = PersistentPolytopeModel(is_positive_convex, tol) if partition is None else FactorizedPolytopeModel(partition, is_positive_convex, tol)
+        self.polytope_model = PolytopeModel(mode, tol) if partition is None else FactorizedPolytopeModel(partition, mode, tol)
         self.factorized = partition is not None
         self.rng = random.Random(seed)
 

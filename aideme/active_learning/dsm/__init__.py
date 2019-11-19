@@ -1,5 +1,4 @@
 from .dsm import DualSpaceModel
-from .polytope import PolytopeModel, PositiveRegion, NegativeCone
-from .convex import ConvexError
+from .persistent import PolytopeModel
 
-__all__ = ['DualSpaceModel', 'PolytopeModel', 'ConvexError', 'PositiveRegion', 'NegativeCone']
+__all__ = ['DualSpaceModel', 'PolytopeModel']

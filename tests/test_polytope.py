@@ -1,13 +1,11 @@
 import pytest
 
-import numpy as np
-
-from aideme.active_learning.dsm import *
+from aideme.active_learning.dsm.polytope import *
 
 
 class TestPolytopeModel:
     def setup(self):
-        self.pol = PolytopeModel()
+        self.pol = Polytope()
 
     def test_is_valid_is_the_beginning(self):
         assert self.pol.is_valid

@@ -5,7 +5,7 @@ from .one_dim_convex import OneDimensionalConvexHull, OneDimensionalConvexCone
 from aideme.utils import assert_positive
 
 
-class PolytopeModel:
+class Polytope:
     def __init__(self, tol=1e-12):
         self.positive_region = PositiveRegion(tol)
         self.negative_region = []

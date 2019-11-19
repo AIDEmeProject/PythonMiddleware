@@ -1,28 +1,32 @@
 import numpy as np
 
-from .polytope import PolytopeModel
+from .polytope import Polytope
 
 
-class PersistentPolytopeModel:
-    def __init__(self, is_positive_convex=None, tol=1e-12):
+class PolytopeModel:
+    def __init__(self, mode='persist', tol=1e-12):
         """
-        :param is_positive_convex: flag telling where to build polytope model. There are three possible cases:
-                1) True: assume positive region is convex
-                2) False: assume negative region is convex
-                3) None: run both options above in parallel until one of the polytopes becomes invalid.
+        :param mode: flag specifying the type of polytope to build. There are four possible cases:
+                1) 'positive': assume positive region is convex
+                2) 'negative': assume negative region is convex
+                3) 'persist': run both options above in parallel until one of the polytopes becomes invalid.
+                4) 'categorical': special polytope for the case where all attributes are categorical.
 
         :param tol: polytope model tolerance
         """
-        self._pol = self.__get_polytope(is_positive_convex, tol)
+        self._pol = self.__get_polytope(mode, tol)
 
-    def __get_polytope(self, is_positive_convex, tol):
-        if is_positive_convex is None:
+    @staticmethod
+    def __get_polytope(mode, tol):
+        if mode == 'positive':
+            return Polytope(tol)
+        if mode == 'negative':
+            return FlippedPolytope(tol)
+        if mode == 'persist':
             return PersistentPolytope(tol)
-
-        if is_positive_convex:
-            return PolytopeModel(tol)
-
-        return FlippedPolytope(tol)
+        if mode == 'categorical':
+            return CategoricalPolytope()
+        raise ValueError('Unknown mode {0}. Available values are: {1}'.format(mode, ['categorical', 'negative', 'persist', 'positive']))
 
     @property
     def is_valid(self):
@@ -62,7 +66,7 @@ class FlippedPolytope:
         """
         :param tol: polytope model tolerance
         """
-        self._pol = PolytopeModel(tol)
+        self._pol = Polytope(tol)
 
     @property
     def is_valid(self):
@@ -97,7 +101,7 @@ class PersistentPolytope:
         """
         :param tol: polytope model tolerance
         """
-        self._pol = PolytopeModel(tol)
+        self._pol = Polytope(tol)
         self._flipped = FlippedPolytope(tol)
 
     @property
@@ -141,3 +145,67 @@ class PersistentPolytope:
             return self._pol.update(X, y)
 
         return self._flipped.update(X, y)
+
+
+class CategoricalPolytope:
+    """
+    Special polytope for the case where all attributes are assumed to be categorical. It simply memorizes the positive and
+    negative values seen so far.
+    """
+    def __init__(self):
+        self._pos_classes = set()
+        self._neg_classes = set()
+        self.__is_valid = True
+
+    @property
+    def is_valid(self):
+        return self.__is_valid
+
+    def clear(self):
+        self._pos_classes = set()
+        self._neg_classes = set()
+        self.__is_valid = True
+
+    def predict(self, X):
+        """
+        :param X: data array to predict labels.
+        :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
+        """
+        if not self.__is_valid:
+            return np.full(len(X), fill_value=0.5)
+
+        return np.fromiter((self.__predict_single(x) for x in X), np.float)
+
+    def __predict_single(self, x):
+        x = tuple(x)
+
+        if x in self._pos_classes:
+            return 1.0
+
+        if x in self._neg_classes:
+            return 0.0
+
+        return 0.5
+
+    def update(self, X, y):
+        """
+        Increments the polytopes with new labeled data.
+
+        :param X: data matrix
+        :param y: labels array. Expects 1 for positive points, and 0 for negative points
+        :return: whether update was successful or not
+        """
+        if not self.is_valid:
+            raise RuntimeError("Attempting to update invalid polytope.")
+
+        for pt, lb in zip(X, y):
+            pt = tuple(pt)  # convert to tuple because numpy arrays are not hashable
+
+            if lb == 1:
+                self._pos_classes.add(pt)
+            else:
+                self._neg_classes.add(pt)
+
+        self.__is_valid = len(self._pos_classes & self._neg_classes) == 0
+
+        return self.__is_valid
