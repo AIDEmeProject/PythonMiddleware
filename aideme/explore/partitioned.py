@@ -8,9 +8,9 @@ class PartitionedDataset:
                    i >= unknown_start -> unknown partition
     """
 
-    def __init__(self, data, copy=False):
+    def __init__(self, data,data_bis=None, copy=False):
         self.data = data
-
+        self.data_bis = data_bis
         self.__data = data.copy() if copy else data
 
         self.__size = len(data)
@@ -67,6 +67,7 @@ class PartitionedDataset:
 
         if pos >= self._unknown_start:
             self.__swap(pos, self._unknown_start)
+            
             pos = self._unknown_start
             self._unknown_start += 1
 
@@ -79,6 +80,8 @@ class PartitionedDataset:
         self.__row_to_index[i], self.__row_to_index[j] = idx_j, idx_i
         self.__index_to_row[idx_i], self.__index_to_row[idx_j] = j, i
         self.__data[[i, j]] = self.__data[[j, i]]
+        if self.data_bis is not None:
+            self.data_bis[[i,j]] = self.data_bis[[j,i]]
 
     def remove_inferred(self):
         # flush inferred partition
@@ -178,4 +181,28 @@ class PartitionedDataset:
 
     @property
     def training_set(self):
-        return self.__data[:self._inferred_start], np.array(self.__labels)
+        if self.data_bis is not None:
+            step=0.01
+            n = 20
+#             liste_true = []
+#             for x in range(self._inferred_start):
+#                 if self.__labels[x]:
+#                     liste_true.append(x)
+#             true_label = [self.__labels[true] for true in liste_true]
+#             true_data = np.array([self.__data[true] for true in liste_true])
+#             true_data_bis = np.array([self.data_bis[true] for true in liste_true])
+#             print(np.append(np.append(self.__data[:self._inferred_start],                                                              true_data_bis,axis=0),                                                                  0.5*(true_data+true_data_bis),axis=0),                                                        np.append(np.append(np.array(self.__labels),np.array(true_label),       axis=0),np.array(true_label),axis=0))
+#             return np.append(self.__data[:self._inferred_start],                                                              true_data_bis,axis=0),                                                        np.append(np.array(self.__labels),np.array(true_label),       axis=0)
+#             a =np.append(self.__data[:self._inferred_start],self.data_bis[:self._inferred_start],axis=0)
+#             b = np.append(a,(0.95*self.__data[:self._inferred_start]+0.05*self.data_bis[:self._inferred_start]),axis=0)
+#             c = np.append(b,(0.9*self.__data[:self._inferred_start]+0.1*self.data_bis[:self._inferred_start]),axis=0)
+            y = np.append(np.array(self.__labels),np.array(self.__labels))
+            x = np.append(self.__data[:self._inferred_start],self.data_bis[:self._inferred_start],axis=0)
+            for i in range(n):
+                x = np.append(x, (1-i*step)*self.__data[:self._inferred_start]+i*step*self.data_bis[:self._inferred_start],axis=0)
+            for i in range(n):            
+                y = np.append(y, np.array(self.__labels),axis=0)
+            
+            return x,y
+        else:
+            return self.__data[:self._inferred_start], np.array(self.__labels)

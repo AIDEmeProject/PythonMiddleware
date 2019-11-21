@@ -102,16 +102,18 @@ class DualSpaceModel(ActiveLearner):
                 is_known = (np.min(pred, axis=1) != 0.5)
             else:
                 pred = self.polytope_model.predict(X_selected)
-                is_known = (pred != 0.5)
-
+                is_known = (pred != 0.5)            
             if np.any(is_known):
                 data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known], 'dsm')
+                
                 self.__fit_active_learner(data)
 
             if not np.all(is_known):
+                
                 return [idx for i, idx in enumerate(idx_selected) if not is_known[i]], X_selected[~is_known]
 
     def __fit_active_learner(self, data):
+        
         X, y = data.training_set
 
         if self.factorized:

@@ -44,7 +44,7 @@ class PoolBasedExploration:
 
         return callback
 
-    def run(self, X, y, active_learner, repeat=1):
+    def run(self, X, y, active_learner,X_bis = None, repeat=1):
         """
             Run the Active Learning model over data, for a given number of iterations.
 
@@ -59,13 +59,13 @@ class PoolBasedExploration:
                     - Timing measurements (fit, select next point, ...)
                     - Any metrics returned by the callback function
         """
-        X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
-                         copy=False, force_all_finite=True)
+        X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,copy=False, force_all_finite=True)
+        if X_bis is not None:
+            X_bis, y = check_X_y(X_bis, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,copy=False, force_all_finite=True)
+        return [self._run(X,X_bis, y, active_learner) for _ in range(repeat)]
 
-        return [self._run(X, y, active_learner) for _ in range(repeat)]
-
-    def _run(self, X, y, active_learner):
-        data, user = self.__initialize(X, y, active_learner)
+    def _run(self, X,X_bis, y, active_learner):
+        data, user = self.__initialize(X,X_bis, y, active_learner)
 
         iter, metrics = 0, []
         while self.__will_continue_exploring(data, user):
@@ -74,8 +74,8 @@ class PoolBasedExploration:
 
         return metrics
 
-    def __initialize(self, X, y, active_learner):
-        data = PartitionedDataset(X, copy=True)
+    def __initialize(self, X,X_bis, y, active_learner):
+        data = PartitionedDataset(X,X_bis, copy=True)
         user = User(y, self.max_iter)
         active_learner.clear()
         return data, user
@@ -93,6 +93,8 @@ class PoolBasedExploration:
 
         # update labeled indexes
         labels = user.label(idx, X)
+
+        
         data.move_to_labeled(idx, labels, 'user')
 
         metrics['labels'] = labels
@@ -131,7 +133,7 @@ class PoolBasedExploration:
             return {}
 
         metrics = {}
-
+        
         for callback in self.callbacks:
 
             callback_metrics = callback(data.data, user.labels, active_learner)
