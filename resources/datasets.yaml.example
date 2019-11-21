@@ -1,0 +1,26 @@
+################################################################################################################################
+# DATASET CONFIGURATION EXAMPLE
+#
+# This file contains examples of how to configure a dataset profile for running experiments.
+
+# Each dataset is defined by three components:
+#
+#   1) Tag: a string value representing the dataset. It must be unique across all datasets.
+#
+#   2) Source tag: the tag of the data source where the data is located, as defined in the sources.yaml file
+#
+#   3) Metadata: any extra information necessary for identifying the dataset. For example, it can be the database and
+#                table names of the dataset in a Postgres database.
+#
+# Some examples of how these configurations look like can be found below.
+#
+# IMPORTANT: this is simply a example configuration. Our system will look for a 'datasets.yaml' file for the real configurations.
+# Simply rename this file or create a new one, whichever suits you best.
+################################################################################################################################
+
+# Cars dataset example
+cars:
+  source: postgres  # data is on Postgres table
+  database: cars_database  # database name
+  table: cars_table  # database table name
+  key: car_id  # column to use as id for vehicles. Values are assumed to be unique.

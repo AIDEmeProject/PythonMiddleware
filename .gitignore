@@ -1,1 +1,13 @@
+# jupyter notebook cache
 .ipynb_checkpoints/
+
+# pytest cache
+tests/.pytest_cache/
+
+# configuration files
+resources/sources.yaml
+resources/datasets.yaml
+resources/tasks.yaml
+
+# experiments result folder
+experiments/

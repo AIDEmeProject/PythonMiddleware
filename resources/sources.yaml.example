@@ -1,0 +1,14 @@
+################################################################################################################################
+# SOURCES CONFIGURATION EXAMPLE
+#
+# This file contains all configurations related to the available data sources, i.e. where to look for data when running
+# experiments. Right now we support two data sources: a Postgres database, and CSV files.
+#
+# Some examples of how these configurations look like can be found below.
+#
+# IMPORTANT: this is simply a example configuration. Our system will look for a 'sources.yaml' file for the real configurations.
+# Simply rename this file or create a new one, whichever suits you best.
+################################################################################################################################
+
+# Postgres connection configuration example
+postgres: "postgresql://{username}:{password}@{url}:{port}"

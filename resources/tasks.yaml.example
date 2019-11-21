@@ -1,0 +1,30 @@
+################################################################################################################################
+# TASKS CONFIGURATION EXAMPLE
+#
+# This file contains examples of how to configure data exploration tasks to be run.
+
+# Each task is defined by several components:
+#
+#   1) Tag: a string value representing the task. It must be unique across all tasks.
+#
+#   2) Data metadata: information on dataset to run, which columns to use, and user's true query.
+#
+#   3) Preprocessing info: you can specify a list of preprocessing jobs to be run on the data before the data exploration
+#                          begins. Each job will be executed in the order given.
+#
+# Some examples of how these configurations look like can be found below.
+#
+# IMPORTANT: this is simply a example configuration. Our system will look for a 'datasets.yaml' file for the real configurations.
+# Simply rename this file or create a new one, whichever suits you best.
+################################################################################################################################
+
+task_name:
+  data:
+    name: sdss_1_percent
+    columns:
+      - rowc
+      - colc
+    predicate: "rowc > 662.5 AND rowc < 702.5 AND colc > 991.5 AND colc < 1053.5"
+
+  preprocessing:
+    - "standardize"
