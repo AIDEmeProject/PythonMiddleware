@@ -1,0 +1,31 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    simple:
+        format: "%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s"
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+        stream: ext://sys.stdout
+
+    task_file_handler:
+        class: logging.FileHandler
+        level: INFO
+        formatter: simple
+        filename: task.log
+        encoding: utf8
+        mode: w
+
+loggers:
+    task:
+        level: INFO
+        handlers: [task_file_handler]
+        propagate: no
+
+root:
+    level: ERROR
+    handlers: [console]
+
