@@ -1,7 +1,8 @@
 import numpy as np
 
-from ..active_learner import ActiveLearner
 from .base import KernelQueryByCommittee
+from .categorical import CategoricalActiveLearner
+from ..active_learner import ActiveLearner
 from ..svm import SimpleMargin
 
 
@@ -70,6 +71,10 @@ class SubspaceLearner(ActiveLearner):
 
         raise ValueError("Expected callable or string, but received a " + type(function))
 
+    def clear(self):
+        for learner in self.learners:
+            learner.clear()
+
     def fit(self, X, y):
         """
         Fit model over labeled data.
@@ -77,6 +82,7 @@ class SubspaceLearner(ActiveLearner):
         :param X: data matrix
         :param y: labels array
         """
+        # TODO: how to implement an equivalent version of the fit_data() method?
         for i, (idx, learner) in enumerate(zip(self.partition, self.learners)):
             learner.fit(X[:, idx], y[:, i])
 
@@ -130,10 +136,13 @@ class SubspaceLearner(ActiveLearner):
 
 
 class SubspatialVersionSpace(SubspaceLearner):
-    def __init__(self, partition, label_function='AND', loss='GREEDY',
+    def __init__(self, partition, label_function='AND', loss='GREEDY', categorical=None,
                  sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100, rounding=True, add_intercept=True,
                  kernel='rbf', gamma=None, degree=3, coef0=0.):
         """
+        :param categorical: indexes of partitions to treat as purely categorical ones. A special categorical AL can be
+        trained in these cases, which usually improves the overall performance.
+
         :param label_function: Possible values are
                 - 'AND': assume conjunctive connector, i.e. return 1 iff all partial labels are 1
                 - 'OR': assume disjunction connector, i.e. return 1 iff any partial label is 1
@@ -146,11 +155,19 @@ class SubspatialVersionSpace(SubspaceLearner):
                 - 'PRODUCT': | (prod_k p_k) - 0.5 |. This assumes assumes either 'AND' label function or 'PROD' probability function
                 - Any callable computing the final ranks from a matrix of partial probabilities (n_partitions x n_points)
         """
+        if categorical is None:
+            categorical = []
+
+        valid_idx = range(len(partition))
+        if not set(categorical).issubset(valid_idx):
+            raise ValueError("Invalid indexes found in 'categorical' parameter.")
+
         learners = [
+            CategoricalActiveLearner() if i in categorical else
             KernelQueryByCommittee(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling, warmup=warmup,
                                    thin=thin, sigma=sigma, rounding=rounding,
                                    kernel=kernel, gamma=gamma, degree=degree, coef0=coef0)
-            for _ in partition
+            for i in valid_idx
         ]
 
         label_function, probability_function = self.__get_proba_functions(label_function)
