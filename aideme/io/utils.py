@@ -1,6 +1,5 @@
-from os.path import join
-
-from yaml import safe_load
+import os
+import yaml
 
 from definitions import RESOURCES_DIR
 
@@ -13,8 +12,8 @@ def get_config_from_resources(config, section=None):
     :param section: section to read
     :return: configuration as dict
     """
-    path = join(RESOURCES_DIR, config + '.yaml')
+    path = os.path.join(RESOURCES_DIR, config + '.yaml')
 
     with open(path, 'r') as file:
-        config = safe_load(file)
+        config = yaml.safe_load(file)
         return config[section] if section else config

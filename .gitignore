@@ -11,3 +11,6 @@ resources/tasks.yaml
 
 # experiments result folder
 experiments/
+
+# datasets folder
+data/
