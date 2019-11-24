@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.special import expit
-from sklearn.utils import check_X_y, check_array
 from sklearn.utils.validation import check_is_fitted
 
 from .sampling import StanLogisticRegressionSampler, HitAndRunSampler

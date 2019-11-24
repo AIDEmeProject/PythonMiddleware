@@ -4,15 +4,15 @@ from .persistent import PolytopeModel
 
 
 class FactorizedPolytopeModel:
-    def __init__(self, partition, is_convex_positive_list, tol=1e-12):
-        if isinstance(is_convex_positive_list, str):
-            is_convex_positive_list = [is_convex_positive_list] * len(partition)
+    def __init__(self, partition, mode_list, tol=1e-12):
+        if isinstance(mode_list, str):
+            mode_list = [mode_list] * len(partition)
 
-        if len(partition) != len(is_convex_positive_list):
-            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(is_convex_positive_list)))
+        if len(partition) != len(mode_list):
+            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(mode_list)))
 
         self.partition = partition
-        self.polytope_models = [PolytopeModel(flag, tol) for flag in is_convex_positive_list]
+        self.polytope_models = [PolytopeModel(mode, tol) for mode in mode_list]
 
     @property
     def is_valid(self):

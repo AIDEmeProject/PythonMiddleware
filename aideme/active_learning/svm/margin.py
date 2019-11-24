@@ -19,7 +19,8 @@ class SimpleMargin(UncertaintySampler):
     as most informative point.
     """
     def __init__(self, C=1.0, kernel='rbf', gamma='auto'):
-        UncertaintySampler.__init__(self, SVC(C=C, kernel=kernel, gamma=gamma, decision_function_shape='ovo'))
+        clf = SVC(C=C, kernel=kernel, gamma=gamma, decision_function_shape='ovo')
+        super().__init__(clf)
 
     def predict_proba(self, X):
         return expit(self.clf.decision_function(X))

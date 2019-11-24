@@ -10,5 +10,5 @@ from .dsm import DualSpaceModel
 __all__ = [
     'ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin', 'DualSpaceModel',
     'LinearQueryByCommittee', 'KernelQueryByCommittee', 'EntropyReductionLearner',
-    'SubspaceLearner', 'SubspatialVersionSpace', 'SubspatialSimpleMargin'
+    'SubspatialVersionSpace', 'SubspatialSimpleMargin'
 ]

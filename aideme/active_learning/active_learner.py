@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class ActiveLearner:
     """
     Pool-based Active Learning base class. It performs two main tasks:
@@ -76,3 +77,12 @@ class ActiveLearner:
         min_row = np.arange(len(X))[ranks == ranks.min()]
         chosen_row = np.random.choice(min_row)
         return [idx[chosen_row]], X[[chosen_row]]
+
+    def set_factorization_structure(self, **factorization_info):
+        """
+        Tells the Active Learner to consider a new factorization structure, provided it can support such information
+
+        :param partition: new attributes partitioning
+        :param kwargs: any extra factorization information the AL may rely on
+        """
+        pass

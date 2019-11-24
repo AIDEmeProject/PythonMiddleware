@@ -7,11 +7,11 @@ from ..svm import SimpleMargin
 
 
 class SubspaceLearner(ActiveLearner):
-    def __init__(self, partition, learners, label_function='AND', probability_function='MIN', ranking_function='SQUARE'):
+    def __init__(self, base_learner, partition=None, label_function='AND', probability_function='MIN', ranking_function='SQUARE'):
         """
-        :param partition: attribute partitioning into subspaces
+        :param base_learner: a Factory method for ActiveLearner objects.
 
-        :param learners: list of AL to run in each subspace
+        :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
 
         :param label_function: Possible values are
                 - None: make predictions by evaluating self.predict_proba(X) > 0.5
@@ -30,14 +30,16 @@ class SubspaceLearner(ActiveLearner):
                 - 'SQUARE': return the squared sum of partial ranks
                 - Any callable computing the final ranks from a matrix of partial ranks (n_partitions x n_points)
         """
-        if len(partition) != len(learners):
-            raise ValueError("Partition and learners must have the same size")
-
-        self.partition = partition
-        self.learners = learners
+        self.base_learner = base_learner
         self.label_function = self.__get_label_connector(label_function)
         self.probability_function = self.__get_proba_connector(probability_function)
         self.ranking_function = self.__get_ranking_connector(ranking_function)
+        self.partition = partition if partition else [slice(None)]
+        self.set_factorization_structure()
+
+    def set_factorization_structure(self, **factorization_info):
+        self.partition = factorization_info.get('partition', self.partition)
+        self.learners = [self.base_learner.clone() for _ in self.partition]
 
     @classmethod
     def __get_label_connector(cls, connection):
@@ -136,12 +138,13 @@ class SubspaceLearner(ActiveLearner):
 
 
 class SubspatialVersionSpace(SubspaceLearner):
-    def __init__(self, partition, label_function='AND', loss='GREEDY', categorical=None,
+    def __init__(self, partition=None, categorical=None, label_function='AND', loss='GREEDY',
                  sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100, rounding=True, add_intercept=True,
                  kernel='rbf', gamma=None, degree=3, coef0=0.):
         """
-        :param categorical: indexes of partitions to treat as purely categorical ones. A special categorical AL can be
-        trained in these cases, which usually improves the overall performance.
+        :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
+
+        :param categorical: default 'is subspace categorical' flags list. If None, an all false list is assumed.
 
         :param label_function: Possible values are
                 - 'AND': assume conjunctive connector, i.e. return 1 iff all partial labels are 1
@@ -155,25 +158,31 @@ class SubspatialVersionSpace(SubspaceLearner):
                 - 'PRODUCT': | (prod_k p_k) - 0.5 |. This assumes assumes either 'AND' label function or 'PROD' probability function
                 - Any callable computing the final ranks from a matrix of partial probabilities (n_partitions x n_points)
         """
-        if categorical is None:
-            categorical = []
 
-        valid_idx = range(len(partition))
-        if not set(categorical).issubset(valid_idx):
-            raise ValueError("Invalid indexes found in 'categorical' parameter.")
-
-        learners = [
-            CategoricalActiveLearner() if i in categorical else
-            KernelQueryByCommittee(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling, warmup=warmup,
-                                   thin=thin, sigma=sigma, rounding=rounding,
-                                   kernel=kernel, gamma=gamma, degree=degree, coef0=coef0)
-            for i in valid_idx
-        ]
+        base_learner = Cloneable(
+            KernelQueryByCommittee,
+            n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
+            warmup=warmup, thin=thin, sigma=sigma, rounding=rounding,
+            kernel=kernel, gamma=gamma, degree=degree, coef0=coef0
+        )
 
         label_function, probability_function = self.__get_proba_functions(label_function)
 
-        super().__init__(partition=partition, learners=learners, label_function=label_function,
+        super().__init__(base_learner=base_learner, partition=partition, label_function=label_function,
                          probability_function=probability_function, ranking_function=self.__get_loss_function(loss))
+
+        self.set_factorization_structure(categorical=categorical)
+
+    def set_factorization_structure(self, **factorization_info):
+        super().set_factorization_structure(**factorization_info)
+
+        categorical = factorization_info.get('categorical', None)
+
+        if categorical:
+            if len(categorical) != len(self.partition):
+                raise ValueError("'categorical' and 'partition' parameters have incompatible lengths.")
+
+            self.learners = [CategoricalActiveLearner() if flag else learner for learner, flag in zip(self.learners, categorical)]
 
     @staticmethod
     def __get_proba_functions(label_function):
@@ -204,14 +213,24 @@ class SubspatialVersionSpace(SubspaceLearner):
 
 
 class SubspatialSimpleMargin(SubspaceLearner):
-    def __init__(self, partition, label_function='AND', C=1.0, kernel='rbf', gamma='auto'):
+    def __init__(self, partition=None, label_function='AND', C=1.0, kernel='rbf', gamma='auto'):
         """
+        :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
+
         :param label_function: Possible values are
                 - 'AND': assume conjunctive connector, i.e. return 1 iff all partial labels are 1
                 - 'OR': assume disjunction connector, i.e. return 1 iff any partial label is 1
                 - Any callable computing the final labels from a matrix of partial labels (n_partitions x n_points)
         """
-        learners = [SimpleMargin(C=C, kernel=kernel, gamma=gamma) for _ in partition]
-
-        super().__init__(partition=partition, learners=learners,
+        base_learner = Cloneable(SimpleMargin, C=C, kernel=kernel, gamma=gamma)
+        super().__init__(base_learner=base_learner, partition=partition,
                          label_function=label_function, probability_function=None, ranking_function='SUM')
+
+
+class Cloneable:
+    def __init__(self, klass, **params):
+        self.klass = klass
+        self.params = params
+
+    def clone(self):
+        return self.klass(**self.params)

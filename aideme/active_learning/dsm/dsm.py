@@ -13,17 +13,46 @@ class DualSpaceModel(ActiveLearner):
     Dual Space model
     """
 
-    def __init__(self, active_learner, sample_unknown_proba=0.5, partition=None, mode='persist', seed=None, tol=1e-12):
+    def __init__(self, active_learner, sample_unknown_proba=0.5, partition=None, mode='persist', tol=1e-12):
         self.active_learner = active_learner
         self.sample_unknown_proba = sample_unknown_proba
-        self.polytope_model = PolytopeModel(mode, tol) if partition is None else FactorizedPolytopeModel(partition, mode, tol)
-        self.factorized = partition is not None
-        self.rng = random.Random(seed)
+        self.__partition = partition
+        self.__mode = mode
+        self.__tol = tol
+        self.set_factorization_structure()
 
     def clear(self):
         self.active_learner.clear()
         self.polytope_model.clear()
-        # TODO: should we reset the random state?
+
+    def set_factorization_structure(self, **factorization_info):
+        partition = factorization_info.get('partition', self.__partition)
+        mode = factorization_info.get('mode', self.__mode)
+
+        if not partition:
+            self.polytope_model = PolytopeModel(mode, self.__tol)
+            self.factorized = False
+
+        else:
+            size = len(partition)
+            categorical = factorization_info.get('categorical', [False] * size)
+
+            if len(categorical) != size:
+                raise ValueError("'categorical' and 'partition' parameters have incompatible lengths.")
+
+            if isinstance(mode, str):
+                mode = [mode] * size
+
+            if len(mode) != size:
+                raise ValueError("'mode' and 'partition' parameters have incompatible lengths.")
+
+
+            for i, cat in enumerate(categorical):
+                if cat:
+                    mode[i] = 'categorical'
+
+            self.polytope_model = FactorizedPolytopeModel(partition, mode, self.__tol)
+            self.factorized = True
 
     def fit_data(self, data):
         """
@@ -94,7 +123,7 @@ class DualSpaceModel(ActiveLearner):
             return self.active_learner.next_points_to_label(data=data, subsample=subsample)
 
         while data.unknown_size > 0:
-            idx_sample, X_sample = data.sample_unknown(subsample) if self.rng.random() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
+            idx_sample, X_sample = data.sample_unknown(subsample) if random.random() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
             idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
 
             if self.factorized:
