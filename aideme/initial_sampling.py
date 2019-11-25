@@ -9,7 +9,7 @@ class StratifiedSampler:
         Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
         of labels.
     """
-    def __init__(self, pos, neg, random_state=None):
+    def __init__(self, pos, neg, assert_neg_all_subspaces=False, random_state=None):
         """
 
         :param pos: Number of positive points to sample. Must be non-negative.
@@ -20,6 +20,7 @@ class StratifiedSampler:
 
         self.pos = pos
         self.neg = neg
+        self.assert_neg_all_subspaces = assert_neg_all_subspaces
         self.__random_state = check_random_state(random_state)
 
     def __call__(self, y, true_class=1, neg_class=0):
@@ -34,7 +35,7 @@ class StratifiedSampler:
 
         # TODO: can we avoid this check ?
         if y.ndim == 2:
-            y = y.mean(axis=1)
+            y = y.mean(axis=1) if self.assert_neg_all_subspaces else y.min(axis=1)
 
         idx = arange(len(y))
         pos_samples = self.__random_state.choice(idx[y == true_class], size=self.pos, replace=False)

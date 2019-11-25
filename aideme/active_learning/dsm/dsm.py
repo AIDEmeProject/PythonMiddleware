@@ -3,12 +3,12 @@ import warnings
 
 import numpy as np
 
-from .persistent import PolytopeModel
 from .factorization import FactorizedPolytopeModel
-from ..active_learner import ActiveLearner
+from .persistent import PolytopeModel
+from ..active_learner import FactorizedActiveLearner
 
 
-class DualSpaceModel(ActiveLearner):
+class DualSpaceModel(FactorizedActiveLearner):
     """
     Dual Space model
     """
