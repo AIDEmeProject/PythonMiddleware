@@ -78,6 +78,8 @@ class ActiveLearner:
         chosen_row = np.random.choice(min_row)
         return [idx[chosen_row]], X[[chosen_row]]
 
+
+class FactorizedActiveLearner(ActiveLearner):
     def set_factorization_structure(self, **factorization_info):
         """
         Tells the Active Learner to consider a new factorization structure, provided it can support such information

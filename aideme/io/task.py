@@ -5,7 +5,7 @@ from .preprocessing import preprocess
 from .utils import get_config_from_resources
 
 
-def read_task(tag, distinct=False, get_raw=False):
+def read_task(tag, distinct=False, get_raw=False, read_factorization=False):
     task_config = get_config_from_resources('tasks', tag)
 
     # read data
@@ -25,8 +25,8 @@ def read_task(tag, distinct=False, get_raw=False):
     # factorization
     output = {'data': data, 'labels': labels}
 
-    if 'factorization' in task_config:
-        output.update(read_factorization_information(task_config['factorization'], dataset_config['tag'], data))
+    if read_factorization and 'factorization' in task_config:
+        output['factorization_info'] = read_factorization_information(task_config['factorization'], dataset_config['tag'], data)
 
     return output
 

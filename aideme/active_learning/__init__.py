@@ -1,4 +1,4 @@
-from .active_learner import ActiveLearner
+from .active_learner import ActiveLearner, FactorizedActiveLearner
 from .query_by_committee import *
 from .random import RandomSampler
 from .svm import *
@@ -8,7 +8,7 @@ from .dsm import DualSpaceModel
 
 
 __all__ = [
-    'ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin', 'DualSpaceModel',
-    'LinearQueryByCommittee', 'KernelQueryByCommittee', 'EntropyReductionLearner',
+    'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
+    'DualSpaceModel', 'LinearQueryByCommittee', 'KernelQueryByCommittee', 'EntropyReductionLearner',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin'
 ]

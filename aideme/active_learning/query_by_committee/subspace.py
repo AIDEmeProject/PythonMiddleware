@@ -2,11 +2,11 @@ import numpy as np
 
 from .base import KernelQueryByCommittee
 from .categorical import CategoricalActiveLearner
-from ..active_learner import ActiveLearner
+from ..active_learner import FactorizedActiveLearner
 from ..svm import SimpleMargin
 
 
-class SubspaceLearner(ActiveLearner):
+class SubspaceLearner(FactorizedActiveLearner):
     def __init__(self, base_learner, partition=None, label_function='AND', probability_function='MIN', ranking_function='SQUARE'):
         """
         :param base_learner: a Factory method for ActiveLearner objects.

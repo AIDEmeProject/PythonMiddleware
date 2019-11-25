@@ -12,7 +12,7 @@ class Experiment:
         self.logger = ExperimentLogger()
         self.dir_manager = ExperimentDirManager()
         self.plotter = ExperimentPlotter(self.dir_manager)
-        self.email = EmailSender()
+        #self.email = EmailSender()
 
     @classmethod
     def __check_tags(cls, ls):
@@ -33,13 +33,24 @@ class Experiment:
 
         for data_tag, task_tag in datasets:
             # get data and user
-            X, y = read_task(task_tag, distinct=True)
+            read_factorization = any((l.factorized for l in learners))
+            task = read_task(task_tag, distinct=True, read_factorization=read_factorization)
 
-            for learner_tag, learner in learners:
+            X, y, factorization_info = task['data'], task['labels'], task.get('factorization_info', {})
+
+            for l in learners:
+                learner_tag, learner, factorized = l.tag, l.learner, l.factorized
+
                 # if learners failed previously, skip it
                 if learner_tag in self.skip_list:
                     self.logger.skip()
                     continue
+
+                labels = y
+                if factorized:
+                    factorization_info = task.get('factorization_info', {})
+                    labels = factorization_info['partial_labels']
+                    learner.set_factorization_structure(**factorization_info)
 
                 # add learner folder
                 data_folder = self.dir_manager.get_data_folder(data_tag, learner_tag)
@@ -51,7 +62,7 @@ class Experiment:
                         self.logger.begin(data_tag, learner_tag, i+1)
 
                         # run task
-                        metrics = explore.run(X, y, learner)
+                        metrics = explore.run(X, labels, learner, repeat=1)[0]
 
                         # persist run
                         filename = "run{0}_raw.tsv".format(i+1)
@@ -62,7 +73,7 @@ class Experiment:
                     # if error occurred, log error and add learner to skip list
                     self.logger.error(e)
                     self.skip_list.append(learner_tag)
-                    self.email.send_error_email(data_tag, learner_tag, e)
+                    #self.email.send_error_email(data_tag, learner_tag, e)
 
                 finally:
                     pass  # continue to next tasks
@@ -71,4 +82,4 @@ class Experiment:
 
         # log experiment end
         self.logger.end()
-        self.email.send_end_email(self.logger.end_message())
+        #self.email.send_end_email(self.logger.end_message())
