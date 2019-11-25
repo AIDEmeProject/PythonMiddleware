@@ -1,1 +1,14 @@
 .ipynb_checkpoints/
+
+# data folder
+data/
+
+# experiments folder
+experiments/
+
+# resources folder (only for experiments/ branch)
+resources/
+
+# ignore all jupyter notebooks except for the example.ipynb
+*.ipynb
+!example.ipynb
