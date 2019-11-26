@@ -11,7 +11,7 @@ class EntropyReductionLearner(ActiveLearner):
 
     def __init__(self, background_sample_size=float('inf'), n_samples=8, add_intercept=True, sampling='deterministic',
                  warmup=100, thin=1, sigma=100.0, rounding=True,
-                 kernel='linear', gamma=None, degree=3, coef0=0):
+                 kernel='rbf', gamma=None, degree=3, coef0=0):
         self.kernel_logreg = KernelLogisticRegression(
             n_samples=n_samples, add_intercept=add_intercept,
             sampling=sampling, warmup=warmup, thin=thin, sigma=sigma, rounding=rounding,

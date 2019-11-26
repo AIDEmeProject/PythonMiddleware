@@ -14,7 +14,7 @@ class KernelLogisticRegression:
     """
 
     def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100.0, rounding=True,
-                       kernel='linear', gamma=None, degree=3, coef0=0.):
+                       kernel='rbf', gamma=None, degree=3, coef0=0.):
         self.logreg = BayesianLogisticRegression(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
                                                  warmup=warmup, thin=thin, sigma=sigma, rounding=rounding)
         self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
