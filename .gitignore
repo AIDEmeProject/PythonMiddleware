@@ -14,3 +14,7 @@ experiments/
 
 # datasets folder
 data/
+
+# ignore all jupyter notebooks except for the example.ipynb
+*.ipynb
+!example.ipynb

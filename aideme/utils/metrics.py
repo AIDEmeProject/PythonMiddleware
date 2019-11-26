@@ -1,7 +1,11 @@
-import sklearn.metrics
+import sklearn
+from ..active_learning import DualSpaceModel
 
 
 def three_set_metric(X, y, active_learner):
+    if not isinstance(active_learner, DualSpaceModel):
+        return {}
+
     pred = active_learner.polytope_model.predict(X)
 
     pos = (pred == 1).sum()
