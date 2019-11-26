@@ -29,22 +29,14 @@ class tag:
         return 3
 
 def get_user_study(ls):
-    datasets_list = []
-    for i in ls:
-        num = str(i)
-        if i < 10:
-            num = '0' + num
+    assert set(ls).issubset(range(1, 19))
 
-        datasets_list.append(('User Study Query ' + num, 'user_study_' + num))
-    return datasets_list
+    process = lambda x: str(x) if x >= 10 else '0' + str(x)
+    return [('User Study Query ' + num, 'user_study_' + num) for num in map(process, ls)]
 
-def get_sdss(queries, sels):
-    ls = []
-    for query in queries:
-        for sel in sels:
-            ls.append(("SDSS Query {0} - {1}% selectivity".format(query, sel), "sdss_Q{0}_{1}%".format(query, sel)))
-
-    return ls
+def get_sdss(queries):
+    assert set(queries).issubset(range(1, 12))
+    return [("SDSS Query {}".format(q), "sdss_q{}".format(q)) for q in queries]
 
 # DATASETS
 datasets_list = get_user_study([2])  # range(1,13)
@@ -52,25 +44,25 @@ datasets_list = get_user_study([2])  # range(1,13)
 
 # LEARNERS
 active_learners_list = [
-    #("Simple Margin", SimpleMargin(C=1e7)),
-    ("DSM Fact", DualSpaceModel(SimpleMargin(C=1024), mode='persist')),
-    ("DSM no Fact", DualSpaceModel(SimpleMargin(C=1024), mode='persist'), False),
-    #("Kernel QBC", KernelQueryByCommittee(n_samples=32, warmup=1000, thin=100, sampling='deterministic', rounding=True, kernel='rbf')),
+    ("Simple Margin C=1e7", SimpleMargin(C=1e7)),
+    ("DSM C=1024 m=persist", DualSpaceModel(SimpleMargin(C=1024), mode='persist')),
+    #("DSM no Fact", DualSpaceModel(SimpleMargin(C=1e7), mode='persist'), False),
+    ("Version Space ss=16 w=1000 t=100", KernelQueryByCommittee(n_samples=16, warmup=1000, thin=100, rounding=True)),
+    ("Fact VS GREEDY ss=8 w=100 t=10", SubspatialVersionSpace(loss='GREEDY', n_samples=8, warmup=100, thin=10, rounding=True)),
     #("Bayesian Kernel QBC", KernelQueryByCommittee(gamma=0.5, n_samples=32, warmup=100, thin=1, sampling='bayesian', sigma=10000.0, kernel='rbf')),
 ]
 
 # RUN PARAMS
-TIMES = 5
-NUMBER_OF_ITERATIONS = 50
+TIMES = 10
+NUMBER_OF_ITERATIONS = 100
 SUBSAMPLING = float('inf')  # 50000, float('inf')
 INITIAL_SAMPLER = StratifiedSampler(pos=1, neg=1, assert_neg_all_subspaces=False)
 CALLBACK = [
     classification_metrics('fscore'),
-    #three_set_metric,
+    three_set_metric,
 ]
 CALLBACK_SKIP = 10
 PRINT_CALLBACK_RESULT = False
-
 
 # run experiment
 active_learners_list = [tag(*elem) for elem in active_learners_list]
