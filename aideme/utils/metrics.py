@@ -1,9 +1,8 @@
 import sklearn
-from ..active_learning import DualSpaceModel
 
 
 def three_set_metric(X, y, active_learner):
-    if not isinstance(active_learner, DualSpaceModel):
+    if not hasattr(active_learner, 'polytope_model'):
         return {}
 
     pred = active_learner.polytope_model.predict(X)
