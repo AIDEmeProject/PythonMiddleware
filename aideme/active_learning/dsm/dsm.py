@@ -140,6 +140,8 @@ class DualSpaceModel(FactorizedActiveLearner):
             if not np.all(is_known):
                 return [idx for i, idx in enumerate(idx_selected) if not is_known[i]], X_selected[~is_known]
 
+        return self.active_learner.next_points_to_label(data=data, subsample=subsample)
+
     def __fit_active_learner(self, data):
         X, y = data.training_set
 
