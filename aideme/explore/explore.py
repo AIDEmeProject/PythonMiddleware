@@ -10,7 +10,8 @@ from ..utils import assert_positive_integer
 
 class PoolBasedExploration:
     def __init__(self, max_iter, initial_sampler, subsampling=math.inf,
-                 callback=None, callback_skip=1, print_callback_result=False):
+                 callback=None, callback_skip=1, print_callback_result=False,
+                 convergence_criteria=None):
         """
             :param max_iter: number of iterations to run
             :param initial_sampler: InitialSampler object
@@ -30,12 +31,13 @@ class PoolBasedExploration:
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
-        self.callbacks = self.__process_callback(callback)
+        self.callbacks = self.__process_function(callback)
         self.callback_skip = callback_skip
         self.print_callback_result = print_callback_result
+        self.convergence_criteria = self.__process_function(convergence_criteria)
 
     @staticmethod
-    def __process_callback(callback):
+    def __process_function(callback):
         if not callback:
             return []
 
@@ -67,12 +69,13 @@ class PoolBasedExploration:
     def _run(self, X, y, active_learner):
         data, user = self.__initialize(X, y, active_learner)
 
-        iter, metrics = 0, []
-        while self.__will_continue_exploring(data, user):
-            metrics.append(self._run_single_iter(iter, data, user, active_learner))
+        iter, iter_metrics, metrics = 0, [], {}
+        while self.__will_continue_exploring(data, user, metrics):
+            metrics = self._run_single_iter(iter, data, user, active_learner)
+            iter_metrics.append(metrics)
             iter += 1
 
-        return metrics
+        return iter_metrics
 
     def __initialize(self, X, y, active_learner):
         data = PartitionedDataset(X, copy=True)
@@ -105,9 +108,16 @@ class PoolBasedExploration:
 
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        metrics.update(self.__compute_callback_metrics(iter, data, user, active_learner))
+        # compute callback metrics
+        if iter % self.callback_skip == 0 or not self.__will_continue_exploring(data, user, metrics):
+            callback_metrics = self.__compute_callback_metrics(data, user, active_learner)
+            self.__print_metrics(iter, {'points': X, 'labels': labels , **callback_metrics})
+            metrics.update(callback_metrics)
 
         return metrics
+
+    def __will_continue_exploring(self, data, user, metrics):
+        return user.is_willing and all((not criterion(data, metrics) for criterion in self.convergence_criteria))
 
     def _get_next_point_to_label(self, data, user, active_learner):
         """
@@ -126,10 +136,7 @@ class PoolBasedExploration:
 
         return active_learner.next_points_to_label(data, self.subsampling)
 
-    def __compute_callback_metrics(self, iter, data, user, active_learner):
-        if iter % self.callback_skip != 0 and self.__will_continue_exploring(data, user):
-            return {}
-
+    def __compute_callback_metrics(self, data, user, active_learner):
         metrics = {}
 
         for callback in self.callbacks:
@@ -139,11 +146,9 @@ class PoolBasedExploration:
             if callback_metrics:
                 metrics.update(callback_metrics)
 
+        return metrics
+
+    def __print_metrics(self, iter, metrics):
         if self.print_callback_result:
             scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
             print('iter: {0}, {1}'.format(iter, scores_str))
-
-        return metrics
-
-    def __will_continue_exploring(self, data, user):
-        return user.is_willing and data.unknown_size > 0
