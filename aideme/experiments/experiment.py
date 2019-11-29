@@ -47,8 +47,7 @@ class Experiment:
                     continue
 
                 labels = y
-                if factorized:
-                    factorization_info = task.get('factorization_info', {})
+                if factorized and factorization_info:
                     labels = factorization_info['partial_labels']
                     learner.set_factorization_structure(**factorization_info)
 
