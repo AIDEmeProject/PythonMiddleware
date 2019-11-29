@@ -2,7 +2,7 @@ from aideme.active_learning import *
 from aideme.experiments import Experiment
 from aideme.explore import PoolBasedExploration
 from aideme.initial_sampling import StratifiedSampler
-from aideme.utils.metrics import *
+from aideme.utils import *
 
 class tag:
     def __init__(self, tag, learner, factorize=True):
@@ -60,6 +60,10 @@ INITIAL_SAMPLER = StratifiedSampler(pos=1, neg=1, assert_neg_all_subspaces=False
 CALLBACK = [
     classification_metrics('fscore'),
     three_set_metric,
+]
+CONVERGENCE_CRITERIA = [
+    #metric_reached_threshold('fscore', 0.9),
+    #all_points_are_known,
 ]
 CALLBACK_SKIP = 10
 PRINT_CALLBACK_RESULT = False
