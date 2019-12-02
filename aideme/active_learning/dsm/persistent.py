@@ -264,22 +264,30 @@ class MultiSetPolytope:
             raise RuntimeError("Attempting to update invalid polytope.")
 
         for pt, lb in zip(X, y):
-            idx = {i for i, ind in enumerate(pt) if ind > 0}
+            if not self.__update_single(pt, lb):
+                self.__is_valid = False
+                return False
 
-            if lb == 1:
-                self.__is_valid = self.__update_positive_set(idx)
-            else:
-                idx -= self._pos_indexes
+        return True
 
-                if len(idx) == 1:
-                    self.__is_valid = self.__update_negative_set(idx)
-                else:
-                    self._neg_point_cache.append(idx)
+    def __update_single(self, pt, lb):
+        """
+        Increments polytope with a single point.
+        :param pt: data point
+        :param lb: data point label
+        :return: whether update was successful or not
+        """
+        idx = {i for i, ind in enumerate(pt) if ind > 0}
 
-            if not self.__is_valid:
-                break
+        if lb == 1:
+            return self.__update_positive_set(idx)
 
-        return self.__is_valid
+        idx -= self._pos_indexes
+        if len(idx) == 1:
+            return self.__update_negative_set(idx)
+
+        self._neg_point_cache.append(idx)
+        return True
 
     def __update_positive_set(self, idx):
         """
