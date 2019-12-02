@@ -236,21 +236,20 @@ class MultiSetPolytope:
         :param X: data array to predict labels.
         :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
         """
+        pred = np.full(len(X), fill_value=0.5)
+
         if not self.__is_valid:
-            return np.full(len(X), fill_value=0.5)
+            return pred
 
-        return np.fromiter((self.__predict_single(x) for x in X), np.float)
+        if self._pos_indexes:
+            pos = list(self._pos_indexes)
+            pred[X[:, pos].sum(axis=1) == X.sum(axis=1)] = 1.0
 
-    def __predict_single(self, x):
-        idx = {i for i, ind in enumerate(x) if ind > 0}
+        if self._neg_indexes:
+            neg = list(self._neg_indexes)
+            pred[X[:, neg].any(axis=1)] = 0.0
 
-        if self._pos_indexes.issuperset(idx):
-            return 1.0
-
-        if len(self._neg_indexes.intersection(idx)) > 0:
-            return 0.0
-
-        return 0.5
+        return pred
 
     def update(self, X, y):
         """
