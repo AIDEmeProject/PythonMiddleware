@@ -242,7 +242,7 @@ class MultiSetPolytope:
         return np.fromiter((self.__predict_single(x) for x in X), np.float)
 
     def __predict_single(self, x):
-        idx = np.arange(len(x))[x == 1]
+        idx = {i for i, ind in enumerate(x) if ind > 0}
 
         if self._pos_indexes.issuperset(idx):
             return 1.0
@@ -275,6 +275,9 @@ class MultiSetPolytope:
                     self.__is_valid = self.__update_negative_set(idx)
                 else:
                     self._neg_point_cache.append(idx)
+
+            if not self.__is_valid:
+                break
 
         return self.__is_valid
 
