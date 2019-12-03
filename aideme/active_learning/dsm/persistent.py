@@ -11,6 +11,7 @@ class PolytopeModel:
                 2) 'negative': assume negative region is convex
                 3) 'persist': run both options above in parallel until one of the polytopes becomes invalid.
                 4) 'categorical': special polytope for the case where all attributes are categorical.
+                5) 'multiset': special polytope for the case where attributes come from a multi-set encoding.
 
         :param tol: polytope model tolerance
         """
@@ -26,7 +27,9 @@ class PolytopeModel:
             return PersistentPolytope(tol)
         if mode == 'categorical':
             return CategoricalPolytope()
-        raise ValueError('Unknown mode {0}. Available values are: {1}'.format(mode, ['categorical', 'negative', 'persist', 'positive']))
+        if mode == 'multiset':
+            return MultiSetPolytope()
+        raise ValueError('Unknown mode {0}. Available values are: {1}'.format(mode, ['categorical', 'multiset', 'negative', 'persist', 'positive']))
 
     @property
     def is_valid(self):
@@ -209,3 +212,123 @@ class CategoricalPolytope:
         self.__is_valid = len(self._pos_classes & self._neg_classes) == 0
 
         return self.__is_valid
+
+
+class MultiSetPolytope:
+    def __init__(self):
+        self._pos_indexes = set()
+        self._neg_indexes = set()
+        self._neg_point_cache = []
+        self.__is_valid = True
+
+    @property
+    def is_valid(self):
+        return self.__is_valid
+
+    def clear(self):
+        self._pos_indexes = set()
+        self._neg_indexes = set()
+        self._neg_point_cache = []
+        self.__is_valid = True
+
+    def predict(self, X):
+        """
+        :param X: data array to predict labels.
+        :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
+        """
+        pred = np.full(len(X), fill_value=0.5)
+
+        if not self.__is_valid:
+            return pred
+
+        if self._pos_indexes:
+            pos = list(self._pos_indexes)
+            pred[X[:, pos].sum(axis=1) == X.sum(axis=1)] = 1.0
+
+        if self._neg_indexes:
+            neg = list(self._neg_indexes)
+            pred[X[:, neg].any(axis=1)] = 0.0
+
+        return pred
+
+    def update(self, X, y):
+        """
+        Increments the polytopes with new labeled data.
+
+        :param X: data matrix. We expect it to be a 0-1 encoding of the multi-set.
+        :param y: labels array. Expects 1 for positive points, and 0 for negative points
+        :return: whether update was successful or not
+        """
+        if not self.is_valid:
+            raise RuntimeError("Attempting to update invalid polytope.")
+
+        for pt, lb in zip(X, y):
+            if not self.__update_single(pt, lb):
+                self.__is_valid = False
+                return False
+
+        return True
+
+    def __update_single(self, pt, lb):
+        """
+        Increments polytope with a single point.
+        :param pt: data point
+        :param lb: data point label
+        :return: whether update was successful or not
+        """
+        idx = {i for i, ind in enumerate(pt) if ind > 0}
+
+        if lb == 1:
+            return self.__update_positive_set(idx)
+
+        idx -= self._pos_indexes
+        if len(idx) == 1:
+            return self.__update_negative_set(idx)
+
+        self._neg_point_cache.append(idx)
+        return True
+
+    def __update_positive_set(self, idx):
+        """
+        Adds new indexes to the positive set. Also, removes the new positive indexes from each negative point in the cache.
+
+        :param idx: set of new positive indexes
+        """
+        if not idx:
+            return True
+
+        if len(idx & self._neg_indexes) > 0:
+            return False
+
+        self._pos_indexes.update(idx)
+
+        new_neg = set()
+
+        for cache in self._neg_point_cache:
+            cache.difference_update(idx)
+
+            if len(cache) == 0:
+                return False
+
+            elif len(cache) == 1:
+                new_neg.update(cache)
+
+        return self.__update_negative_set(new_neg)
+
+    def __update_negative_set(self, idx):
+        """
+        Adds new indexes to the negative set. Also, if a cached negative points contains any of the new negative indexes,
+        it will also be removed from cache since no inference can be done on its values.
+
+        :param idx: set of new negative indexes
+        """
+        if not idx:
+            return True
+
+        if len(idx & self._pos_indexes) > 0:
+            return False
+
+        self._neg_indexes.update(idx)
+        self._neg_point_cache = [neg_idx for neg_idx in self._neg_point_cache if len(idx & neg_idx) == 0]
+
+        return True

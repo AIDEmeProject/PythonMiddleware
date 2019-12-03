@@ -1,70 +1,109 @@
 import numpy as np
 
+from ..dsm.persistent import CategoricalPolytope, MultiSetPolytope
 from ..active_learner import ActiveLearner
 
 
-class CategoricalActiveLearner(ActiveLearner):
+class PolytopeLearner(ActiveLearner):
     """
-    Special AL for the case where all attributes are assumed to be categorical. It simply memorizes the positive and
-    negative values seen so far.
+    Special AL where predictions are simply based over a polytope model instance.
     """
-    def __init__(self):
-        self._pos_classes = set()
-        self._neg_classes = set()
+    def __init__(self, pol):
+        self.pol = pol
 
     def clear(self):
-        self._pos_classes = set()
-        self._neg_classes = set()
-
-    def predict(self, X):
         """
-        :return: 1.0 for x in positive set, 0.0 otherwise
+        Clears polytope model
         """
-        return self.__apply_function_over_data(X, self.__predict_single)
+        self.pol.clear()
 
-    def __predict_single(self, x):
-        return 1.0 if tuple(x) in self._pos_classes else 0.0
-
-    def predict_proba(self, X):
+    def fit_data(self, data):
         """
-        :return: 1.0 for x in positive set, 0.0 for x in negative set, 0.5 otherwise
+        Updates the polytope model with the last user labeled data.
+        :param data: PartitionedDataset instance
         """
-        return self.__apply_function_over_data(X, self.__predict_proba_single)
-
-    def __predict_proba_single(self, x):
-        x = tuple(x)
-        return 1.0 if x in self._pos_classes else 0.0 if x in self._neg_classes else 0.5
-
-    def rank(self, X):
-        """
-        :return: 0.0 for x in positive or negative sets, 0.5 otherwise
-        """
-        return self.__apply_function_over_data(X, self.__rank_single)
-
-    def __rank_single(self, x):
-        x = tuple(x)
-        return 0.0 if (x in self._pos_classes or x in self._neg_classes) else 0.5
-
-    def __apply_function_over_data(self, X, function):
-        return np.fromiter((function(x) for x in X), np.float)
+        X_new, y_new = data.last_labeled_set
+        self.__update_polytope(X_new, y_new)
 
     def fit(self, X, y):
         """
-        Fits the categorical classifier over the labeled data. It simply memorizes the positive and negative values seen
-        so far.
-
+        Similar to fit_data, but polytope model is cleared before fitting.
         :param X: data matrix
-        :param y: labels array. Expects 1 for positive points, and 0 for negative points
+        :param y: labels
         """
-        self.clear()  # TODO: can we avoid calling clear?
+        self.clear()
+        self.__update_polytope(X, y)
 
-        for pt, lb in zip(X, y):
-            pt = tuple(pt)  # convert to tuple because numpy arrays are not hashable
+    def __update_polytope(self, X_new, y_new):
+        self.pol.update(X_new, y_new)
 
-            if lb == 1:
-                self._pos_classes.add(pt)
-            else:
-                self._neg_classes.add(pt)
+        if not self.pol.is_valid:
+            raise RuntimeError('Found conflicting labels in polytope: {}'.format(self.pol))
 
-        if len(self._pos_classes & self._neg_classes) > 0:
-            raise ValueError("Found conflicting labels for categories {0}".format(self._pos_classes & self._neg_classes))
+    def predict(self, X):
+        """
+        Returns the most probable label. 0.5 probabilities are treated as negative labels.
+        :param X: data matrix to compute labels
+        :return: numpy array containing labels for each data point
+        """
+        return (self.predict_proba(X) > 0.5).astype('float')
+
+    def predict_proba(self, X):
+        """
+        :param X: data matrix
+        :return: polytope predictions for eac data point x in X
+        """
+        return self.pol.predict(X)
+
+    def rank(self, X):
+        """
+        :param X: data matrix
+        :return: 0 for points in positive or negative regions, 0.5 otherwise
+        """
+        return np.abs(self.predict_proba(X) - 0.5)
+
+
+class CategoricalActiveLearner(PolytopeLearner):
+    """
+    Special AL for the case where all attributes are categorical. It simply memorizes the positive and negative values
+    seen so far.
+    """
+    def __init__(self):
+        super().__init__(CategoricalPolytope())
+
+
+class MultiSetActiveLearner(PolytopeLearner):
+    """
+    Special AL for the case where all attributes are come from a multi-set feature. It simply memorizes the positive
+    values seen so far, and negative points are cached until there is only one element left, which will assumed to be
+    negative.
+    """
+
+    def __init__(self):
+        super().__init__(MultiSetPolytope())
+        self.__n_samples = 50
+
+    def predict_proba(self, X):
+        S = np.empty((self.__n_samples, X.shape[1]))
+
+        i = 0
+        while i < self.__n_samples:
+            new_samples = self.__sample(self.__n_samples - i, X.shape[1])
+            new_i = i + len(new_samples)
+            S[i:new_i] = new_samples
+            i = new_i
+
+        return np.mean(X.dot(S.T) == X.sum(axis=1).reshape(-1, 1), axis=1)
+
+    def __sample(self, n_samples, dim):
+        S = np.random.randint(0, 2, size=(n_samples, dim))
+
+        S[:, list(self.pol._pos_indexes)] = 1.0
+        S[:, list(self.pol._neg_indexes)] = 0.0
+
+        is_valid = np.full(n_samples, fill_value=True)
+        for idx in self.pol._neg_point_cache:
+            flags = S[:, list(idx)].sum(axis=1) < len(idx)
+            np.logical_and(is_valid, flags, out=is_valid)
+
+        return S[is_valid, :]

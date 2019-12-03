@@ -35,21 +35,12 @@ class DualSpaceModel(FactorizedActiveLearner):
 
         else:
             size = len(partition)
-            categorical = factorization_info.get('categorical', [False] * size)
-
-            if len(categorical) != size:
-                raise ValueError("'categorical' and 'partition' parameters have incompatible lengths.")
 
             if isinstance(mode, str):
                 mode = [mode] * size
 
             if len(mode) != size:
                 raise ValueError("'mode' and 'partition' parameters have incompatible lengths.")
-
-
-            for i, cat in enumerate(categorical):
-                if cat:
-                    mode[i] = 'categorical'
 
             self.polytope_model = FactorizedPolytopeModel(partition, mode, self.__tol)
             self.factorized = True
