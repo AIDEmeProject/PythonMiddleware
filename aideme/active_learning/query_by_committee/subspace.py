@@ -1,7 +1,7 @@
 import numpy as np
 
 from .base import KernelQueryByCommittee
-from .categorical import CategoricalActiveLearner
+from .categorical import CategoricalActiveLearner, MultiSetActiveLearner
 from ..active_learner import FactorizedActiveLearner
 from ..svm import SimpleMargin
 
@@ -138,13 +138,19 @@ class SubspaceLearner(FactorizedActiveLearner):
 
 
 class SubspatialVersionSpace(SubspaceLearner):
-    def __init__(self, partition=None, categorical=None, label_function='AND', loss='GREEDY',
+    def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
                  sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100, rounding=True, add_intercept=True,
                  kernel='rbf', gamma=None, degree=3, coef0=0.):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
 
-        :param categorical: default 'is subspace categorical' flags list. If None, an all false list is assumed.
+        :param mode: list of flags specifying the type of version space algorithm to use in each subspace. There are
+        three possible cases:
+                1) 'numerical': usual VS algorithm over numerical data
+                2) 'categorical': special VS for the case where all attributes are categorical.
+                3) 'multiset': special VS for the case where attributes come from a multi-set encoding.
+
+        If a single string value is specified, the same mode will be assumed for all subspaces.
 
         :param label_function: Possible values are
                 - 'AND': assume conjunctive connector, i.e. return 1 iff all partial labels are 1
@@ -168,21 +174,36 @@ class SubspatialVersionSpace(SubspaceLearner):
 
         label_function, probability_function = self.__get_proba_functions(label_function)
 
+        self.__mode = mode
+
         super().__init__(base_learner=base_learner, partition=partition, label_function=label_function,
                          probability_function=probability_function, ranking_function=self.__get_loss_function(loss))
-
-        self.set_factorization_structure(categorical=categorical)
 
     def set_factorization_structure(self, **factorization_info):
         super().set_factorization_structure(**factorization_info)
 
-        categorical = factorization_info.get('categorical', None)
+        size = len(self.partition)
+        mode = factorization_info.get('mode', self.__mode)
 
-        if categorical:
-            if len(categorical) != len(self.partition):
-                raise ValueError("'categorical' and 'partition' parameters have incompatible lengths.")
+        if isinstance(mode, str):
+            mode = [mode] * size
 
-            self.learners = [CategoricalActiveLearner() if flag else learner for learner, flag in zip(self.learners, categorical)]
+        if len(mode) != size:
+            raise ValueError("'mode' and 'partition' parameters have incompatible lengths.")
+
+        self.learners = [self.__get_learner(m, learner) for m, learner in zip(mode, self.learners)]
+
+    @staticmethod
+    def __get_learner(mode, learner):
+        mode = mode.upper()
+        if mode == 'NUMERICAL':
+            return learner
+        if mode == 'CATEGORICAL':
+            return CategoricalActiveLearner()
+        if mode == 'MULTISET':
+            return MultiSetActiveLearner()
+
+        raise ValueError("Unknown mode {}. Possible values are 'numerical', 'categorical', and 'multiset'.")
 
     @staticmethod
     def __get_proba_functions(label_function):

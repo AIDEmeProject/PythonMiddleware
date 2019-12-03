@@ -60,7 +60,7 @@ class PolytopeLearner(ActiveLearner):
         :param X: data matrix
         :return: 0 for points in positive or negative regions, 0.5 otherwise
         """
-        return np.where(self.predict_proba(X) == 0.5, 0.5, 0)
+        return np.abs(self.predict_proba(X) - 0.5)
 
 
 class CategoricalActiveLearner(PolytopeLearner):
@@ -72,11 +72,38 @@ class CategoricalActiveLearner(PolytopeLearner):
         super().__init__(CategoricalPolytope())
 
 
-class MultiSetActiveLearner(ActiveLearner):
+class MultiSetActiveLearner(PolytopeLearner):
     """
     Special AL for the case where all attributes are come from a multi-set feature. It simply memorizes the positive
     values seen so far, and negative points are cached until there is only one element left, which will assumed to be
     negative.
     """
+
     def __init__(self):
         super().__init__(MultiSetPolytope())
+        self.__n_samples = 50
+
+    def predict_proba(self, X):
+        S = np.empty((self.__n_samples, X.shape[1]))
+
+        i = 0
+        while i < self.__n_samples:
+            new_samples = self.__sample(self.__n_samples - i, X.shape[1])
+            new_i = i + len(new_samples)
+            S[i:new_i] = new_samples
+            i = new_i
+
+        return np.mean(X.dot(S.T) == X.sum(axis=1).reshape(-1, 1), axis=1)
+
+    def __sample(self, n_samples, dim):
+        S = np.random.randint(0, 2, size=(n_samples, dim))
+
+        S[:, list(self.pol._pos_indexes)] = 1.0
+        S[:, list(self.pol._neg_indexes)] = 0.0
+
+        is_valid = np.full(n_samples, fill_value=True)
+        for idx in self.pol._neg_point_cache:
+            flags = S[:, list(idx)].sum(axis=1) < len(idx)
+            np.logical_and(is_valid, flags, out=is_valid)
+
+        return S[is_valid, :]
