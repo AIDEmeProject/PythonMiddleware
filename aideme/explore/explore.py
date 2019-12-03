@@ -99,6 +99,7 @@ class PoolBasedExploration:
         data.move_to_labeled(idx, labels, 'user')
 
         metrics['labels'] = labels
+        metrics['labeled_data'] = X
         metrics['labeled_indexes'] = idx
 
         # fit active learning model
@@ -111,7 +112,7 @@ class PoolBasedExploration:
         # compute callback metrics
         if iter % self.callback_skip == 0 or not self.__will_continue_exploring(data, user, metrics):
             callback_metrics = self.__compute_callback_metrics(data, user, active_learner)
-            self.__print_metrics(iter, {'points': X, 'labels': labels , **callback_metrics})
+            self.__print_metrics(iter, callback_metrics)
             metrics.update(callback_metrics)
 
         return metrics
