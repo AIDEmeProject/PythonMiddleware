@@ -5,10 +5,11 @@ from .svm import *
 from .uncertainty import UncertaintySampler
 from .entropy_reduction import EntropyReductionLearner
 from .dsm import DualSpaceModel
+from .nlp import TwoStepsLearner
 
 
 __all__ = [
     'ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin', 'DualSpaceModel',
     'LinearQueryByCommittee', 'KernelQueryByCommittee', 'EntropyReductionLearner',
-    'SubspatialVersionSpace', 'SubspatialSimpleMargin'
+    'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner'
 ]
