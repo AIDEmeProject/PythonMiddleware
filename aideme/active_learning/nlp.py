@@ -1,3 +1,5 @@
+import numpy as np
+
 from aideme.active_learning.active_learner import FactorizedActiveLearner
 from aideme.utils import assert_positive_integer
 
@@ -14,10 +16,9 @@ class TwoStepsLearner(FactorizedActiveLearner):
 
     def __init__(self, al_struct, al_text, switch_iter, text_column_start):
         """
-
         :param al_struct: Active Learner to run over structured data
         :param al_text: Active Learner to run over text data
-        :param switch_iter:
+        :param switch_iter: iteration to switch from structured data exploration to text data exploration
         :param text_column_start: column index where
         """
         self._al_struct = al_struct
@@ -59,34 +60,26 @@ class TwoStepsLearner(FactorizedActiveLearner):
     def get_text_labels(self, y):
         return y[:, -1]
 
-    def fit(self, X, y):
-        """
-        :param X: data matrix. We assume that all text columns are located at the end
-        :param y: labels matrix. Last column are assumed to be the text labels
-        :return:
-        """
-        self.__iteration = len(X)  # TODO: not exactly precise because of initial sampling...
+    def fit_data(self, data):
+        self.__iteration = data.labeled_size
 
         if self.is_struct_phase:
-            X_struct, y_struct = self.get_struct_data(X), self.get_struct_labels(y)
-            self._al_struct.fit(X_struct, y_struct)
+            col_slice = slice(0, self.__text_column_start)
+            lb_slice = slice(0, -1)
+            self._al_struct.fit_data(data.select_cols(col_slice, lb_slice))
 
         else:
-            X_text, y_text = self.get_text_data(X), self.get_text_labels(y)
-            self._al_text.fit(X_text, y_text)
+            if self.__labels_cache is None:
+                self.__update_cache(data.data)
+
+            col_slice = slice(self.__text_column_start, None)
+            lb_slice = -1
+            self._al_text.fit_data(data.select_cols(col_slice, lb_slice))
 
     def predict(self, X):
-        if self.is_text_phase and self.__mask_cache is None:
-            self.__labels_cache = self._al_struct.predict(self.get_struct_data(X))
-            self.__mask_cache = (self.__labels_cache == 1)
-            self.__X_text = self.get_text_data(X[self.__mask_cache])
-
         return self.__compute(X, self._al_struct.predict, self._al_text.predict, self.__labels_cache)
 
     def predict_proba(self, X):
-        if self.is_text_phase and self.__probas_cache is None:
-            self.__probas_cache = self._al_struct.predict_proba(self.get_struct_data(X))
-
         return self.__compute(X, self._al_struct.predict_proba, self._al_text.predict_proba, self.__probas_cache)
 
     def __compute(self, X, f_struct, f_text, cache):
@@ -97,15 +90,17 @@ class TwoStepsLearner(FactorizedActiveLearner):
         values[self.__mask_cache] = f_text(self.__X_text)
         return values
 
-    def rank(self, X):
-        if self.is_struct_phase:
-            return self._al_struct.rank(self.get_struct_data(X))
-
-        return self._al_text.rank(self.__X_text)
+    def __update_cache(self, X):
+        self.__labels_cache = self._al_struct.predict(self.get_struct_data(X))
+        self.__probas_cache = self._al_struct.predict_proba(self.get_struct_data(X))
+        self.__mask_cache = (self.__labels_cache == 1)
+        self.__X_text = self.get_text_data(X[self.__mask_cache])
 
     def next_points_to_label(self, data, subsample=None):
         if self.is_struct_phase:
             col_slice = slice(0, self.__text_column_start)
-            return self._al_struct.next_points_to_label(data.select_cols(col_slice), subsample)
+            lb_slice = slice(0, -1)
+            return self._al_struct.next_points_to_label(data.select_cols(col_slice, lb_slice), subsample)
 
-        return self._al_text.next_points_to_label(self.__X_text, subsample)
+        idx = np.where(self.__mask_cache)[0]
+        return self._al_text._select_next(idx, self.__X_text)

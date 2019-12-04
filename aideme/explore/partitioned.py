@@ -36,18 +36,15 @@ class PartitionedDataset:
             self._row_to_index[self._unknown_start:]
         )
 
-    def select_cols(self, cols):
-        dataset = PartitionedDataset(self.data[:, cols], copy=False)
-        dataset._data = self._data[:, cols]
+    def select_cols(self, data_cols, lb_cols):
+        dataset = PartitionedDataset(self.data[:, data_cols], copy=False)
+        dataset._data = self._data[:, data_cols]
         dataset._row_to_index = self._row_to_index
         dataset._inferred_start = self._inferred_start
         dataset._unknown_start = self._unknown_start
-
         dataset._index_to_row = self._index_to_row
-
-        dataset._labels = self._labels
+        dataset._labels = [lb[lb_cols] for lb in self._labels]
         dataset._label_tags = self._label_tags
-
         dataset._previous_inferred_start = self._previous_inferred_start
         return dataset
 
