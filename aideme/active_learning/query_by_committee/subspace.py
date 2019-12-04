@@ -38,8 +38,8 @@ class SubspaceLearner(FactorizedActiveLearner):
         self.set_factorization_structure()
 
     def set_factorization_structure(self, **factorization_info):
-        self.partition = factorization_info.get('partition', self.partition)
-        self.learners = [self.base_learner.clone() for _ in self.partition]
+        partition = factorization_info.get('partition', self.partition)
+        self.learners = [self.base_learner.clone() for _ in partition]
 
     @classmethod
     def __get_label_connector(cls, connection):
