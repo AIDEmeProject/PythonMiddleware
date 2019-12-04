@@ -160,21 +160,24 @@ class PartitionedDataset:
     # SAMPLING
     ##################
     def sample_unknown(self, subsample=float('inf')):
-        return self.__subsample(subsample, self._unknown_start)
+        return self.__subsample(subsample, self._unknown_start, self.__size)
+
+    def sample_inferred(self, subsample=float('inf')):
+        return self.__subsample(subsample, self._inferred_start, self._unknown_start)
 
     def sample_unlabeled(self, subsample=float('inf')):
-        return self.__subsample(subsample, self._inferred_start)
+        return self.__subsample(subsample, self._inferred_start, self.__size)
 
-    def __subsample(self, size, start):
-        remaining = self.__size - start
+    def __subsample(self, size, start, stop):
+        remaining = stop - start
 
         if remaining == 0:
             raise RuntimeError("There are no points to sample from.")
 
         if size >= remaining:
-            return self._row_to_index[start:], self._data[start:]
+            return self._row_to_index[start:stop], self._data[start:stop]
 
-        row_sample = np.random.choice(np.arange(start, self.__size), size=size, replace=False)
+        row_sample = np.random.choice(np.arange(start, stop), size=size, replace=False)
         return self._row_to_index[row_sample], self._data[row_sample]
 
     ##################

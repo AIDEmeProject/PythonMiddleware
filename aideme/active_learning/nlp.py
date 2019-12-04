@@ -21,9 +21,11 @@ class TwoStepsLearner(FactorizedActiveLearner):
         :param switch_iter: iteration to switch from structured data exploration to text data exploration
         :param text_column_start: column index where
         """
+        assert_positive_integer(switch_iter, 'switch_iter')
+
         self._al_struct = al_struct
         self._al_text = al_text
-        self.__switch_iter = assert_positive_integer(switch_iter, 'switch_iter')
+        self.__switch_iter = switch_iter
         self.__text_column_start = text_column_start
         self.__iteration = 0
         self.__labels_cache = None
@@ -72,6 +74,11 @@ class TwoStepsLearner(FactorizedActiveLearner):
             if self.__labels_cache is None:
                 self.__update_cache(data.data)
 
+                mask = self.__mask_cache.copy()
+                mask[data.labeled[0]] = False  # remove labeled points
+                idx = np.arange(len(data.data))[mask]
+                data.move_to_inferred(idx)
+
             col_slice = slice(self.__text_column_start, None)
             lb_slice = -1
             self._al_text.fit_data(data.select_cols(col_slice, lb_slice))
@@ -102,5 +109,5 @@ class TwoStepsLearner(FactorizedActiveLearner):
             lb_slice = slice(0, -1)
             return self._al_struct.next_points_to_label(data.select_cols(col_slice, lb_slice), subsample)
 
-        idx = np.where(self.__mask_cache)[0]
-        return self._al_text._select_next(idx, self.__X_text)
+        idx, X = data.sample_inferred(subsample)
+        return self._al_text._select_next(idx, self.get_text_data(X))
