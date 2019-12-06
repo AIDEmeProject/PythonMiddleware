@@ -38,8 +38,8 @@ class SubspaceLearner(FactorizedActiveLearner):
         self.set_factorization_structure()
 
     def set_factorization_structure(self, **factorization_info):
-        partition = factorization_info.get('partition', self.partition)
-        self.learners = [self.base_learner.clone() for _ in partition]
+        self.partition = factorization_info.get('partition', self.partition)
+        self.learners = [self.base_learner.clone() for _ in self.partition]
 
     @classmethod
     def __get_label_connector(cls, connection):
@@ -196,7 +196,7 @@ class SubspatialVersionSpace(SubspaceLearner):
     @staticmethod
     def __get_learner(mode, learner):
         mode = mode.upper()
-        if mode == 'NUMERICAL':
+        if mode in ('NUMERICAL', 'POSITIVE', 'NEGATIVE', 'PERSIST'):  # TODO: remove this coupling with DSM options
             return learner
         if mode == 'CATEGORICAL':
             return CategoricalActiveLearner()
