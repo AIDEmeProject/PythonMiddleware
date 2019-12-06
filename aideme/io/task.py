@@ -42,35 +42,38 @@ def read_positive_indexes(labels_config, dataset_tag):
 
 
 def read_factorization_information(factorization_config, dataset_tag, data):
-        feature_groups, subpredicates = factorization_config['feature_groups'], factorization_config['subpredicates']
-        categorical = factorization_config.get('categorical', [False] * len(feature_groups))
+    output = {}
 
-        if len(feature_groups) != len(subpredicates):
-            raise ValueError("Incompatible sizes of 'feature_groups' and 'subpredicates': {} != {}.".format(len(feature_groups), len(subpredicates)))
+    feature_groups, subpredicates = factorization_config['feature_groups'], factorization_config['subpredicates']
 
-        if len(categorical) != len(feature_groups):
-            raise ValueError("Incompatible size for 'categorical': found {}, but expected {}".format(len(categorical), len(subpredicates)))
+    if len(feature_groups) != len(subpredicates):
+        raise ValueError("Incompatible sizes of 'feature_groups' and 'subpredicates': {} != {}.".format(len(feature_groups), len(subpredicates)))
 
-        for i, (gr, pred) in enumerate(zip(feature_groups, subpredicates)):
-            if all(col not in pred for col in gr):
-                raise ValueError('Found disjoint feature group and subpredicate in partition #{}.'.format(i))
+    for i, (gr, pred) in enumerate(zip(feature_groups, subpredicates)):
+        if all(col not in pred for col in gr):
+            raise ValueError('Found disjoint feature group and subpredicate in partition #{}.'.format(i))
 
-        # partition
-        partition = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
+    # mode
+    if 'mode' in factorization_config:
+        mode = factorization_config['mode']
 
-        # partial labels
-        partial_labels_dict = {}
-        for i, predicate in enumerate(subpredicates):
-            positive_indexes = query_keys_matching_predicate(dataset_tag, predicate)
-            partial_labels_dict[i] = indexes_to_labels(positive_indexes, data.index)
+        if len(mode) != len(feature_groups):
+            raise ValueError("Incompatible sizes of 'feature_groups' and 'mode': {} != {}.".format(len(feature_groups), len(mode)))
 
-        partial_labels = pd.DataFrame.from_dict(partial_labels_dict)
+        output['mode'] = mode
 
-        return {
-            'partition': partition,
-            'partial_labels': partial_labels,
-            'categorical': categorical,
-        }
+    # partition
+    output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
+
+    # partial labels
+    partial_labels_dict = {}
+    for i, predicate in enumerate(subpredicates):
+        positive_indexes = query_keys_matching_predicate(dataset_tag, predicate)
+        partial_labels_dict[i] = indexes_to_labels(positive_indexes, data.index)
+
+    output['partial_labels'] = pd.DataFrame.from_dict(partial_labels_dict)
+
+    return output
 
 
 def indexes_to_labels(positive_indexes, all_indexes):
