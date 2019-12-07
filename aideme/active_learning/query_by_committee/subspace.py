@@ -34,11 +34,23 @@ class SubspaceLearner(FactorizedActiveLearner):
         self.label_function = self.__get_label_connector(label_function)
         self.probability_function = self.__get_proba_connector(probability_function)
         self.ranking_function = self.__get_ranking_connector(ranking_function)
-        self.partition = partition if partition else [slice(None)]
-        self.set_factorization_structure()
+        self.__set_partition(partition)
 
     def set_factorization_structure(self, **factorization_info):
-        self.partition = factorization_info.get('partition', self.partition)
+        """
+        Updates the attribute partitioning.
+
+        :param factorization_info: is expected to contain the key 'partition' with the new attribute partitioning. If
+        not present, a single partition will be assumed.
+        """
+        partition = factorization_info.get('partition', None)
+        self.__set_partition(partition)
+
+    def __set_partition(self, partition):
+        if not partition:
+            partition = [slice(None)]
+
+        self.partition = partition
         self.learners = [self.base_learner.clone() for _ in self.partition]
 
     @classmethod
@@ -174,16 +186,25 @@ class SubspatialVersionSpace(SubspaceLearner):
 
         label_function, probability_function = self.__get_proba_functions(label_function)
 
-        self.__mode = mode
-
-        super().__init__(base_learner=base_learner, partition=partition, label_function=label_function,
+        super().__init__(base_learner=base_learner, label_function=label_function,
                          probability_function=probability_function, ranking_function=self.__get_loss_function(loss))
 
+        self.set_factorization_structure(partition=partition, mode=mode)
+
     def set_factorization_structure(self, **factorization_info):
+        """
+        Updates the attribute partitioning and modes for each subspace.
+
+        :param factorization_info: is expected contain two keys:
+
+            - 'partition': the new factorization structure
+            - 'mode': the list of modes to be used in each subspace. If it is a string, the same mode will be assumed in
+            all subspaces.
+        """
         super().set_factorization_structure(**factorization_info)
 
         size = len(self.partition)
-        mode = factorization_info.get('mode', self.__mode)
+        mode = factorization_info['mode']
 
         if isinstance(mode, str):
             mode = [mode] * size

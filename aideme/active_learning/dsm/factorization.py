@@ -4,15 +4,15 @@ from .persistent import PolytopeModel
 
 
 class FactorizedPolytopeModel:
-    def __init__(self, partition, mode_list, tol=1e-12):
-        if isinstance(mode_list, str):
-            mode_list = [mode_list] * len(partition)
+    def __init__(self, partition, modes, tol=1e-12):
+        if isinstance(modes, str):
+            modes = [modes] * len(partition)
 
-        if len(partition) != len(mode_list):
-            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(mode_list)))
+        if len(partition) != len(modes):
+            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(modes)))
 
         self.partition = partition
-        self.polytope_models = [PolytopeModel(mode, tol) for mode in mode_list]
+        self.polytope_models = [PolytopeModel(mode, tol) for mode in modes]
 
     @property
     def is_valid(self):

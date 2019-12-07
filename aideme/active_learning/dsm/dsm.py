@@ -16,32 +16,22 @@ class DualSpaceModel(FactorizedActiveLearner):
     def __init__(self, active_learner, sample_unknown_proba=0.5, partition=None, mode='persist', tol=1e-12):
         self.active_learner = active_learner
         self.sample_unknown_proba = sample_unknown_proba
-        self.__partition = partition
-        self.__mode = mode
         self.__tol = tol
-        self.set_factorization_structure()
+        self.set_factorization_structure(partition=partition, mode=mode)
 
     def clear(self):
         self.active_learner.clear()
         self.polytope_model.clear()
 
     def set_factorization_structure(self, **factorization_info):
-        partition = factorization_info.get('partition', self.__partition)
-        mode = factorization_info.get('mode', self.__mode)
+        partition = factorization_info.get('partition', None)
+        mode = factorization_info['mode']
 
         if not partition:
             self.polytope_model = PolytopeModel(mode, self.__tol)
             self.factorized = False
 
         else:
-            size = len(partition)
-
-            if isinstance(mode, str):
-                mode = [mode] * size
-
-            if len(mode) != size:
-                raise ValueError("'mode' and 'partition' parameters have incompatible lengths.")
-
             self.polytope_model = FactorizedPolytopeModel(partition, mode, self.__tol)
             self.factorized = True
 
