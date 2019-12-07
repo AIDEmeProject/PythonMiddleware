@@ -70,5 +70,5 @@ PRINT_CALLBACK_RESULT = False
 
 # run experiment
 active_learners_list = [tag(*elem) for elem in active_learners_list]
-explore = PoolBasedExploration(NUMBER_OF_ITERATIONS, INITIAL_SAMPLER, SUBSAMPLING, CALLBACK, CALLBACK_SKIP, PRINT_CALLBACK_RESULT)
+explore = PoolBasedExploration(NUMBER_OF_ITERATIONS, INITIAL_SAMPLER, SUBSAMPLING, CALLBACK, CALLBACK_SKIP, PRINT_CALLBACK_RESULT, CONVERGENCE_CRITERIA)
 Experiment().run(datasets_list, active_learners_list, times=TIMES, explore=explore)
