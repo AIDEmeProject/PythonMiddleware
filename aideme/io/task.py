@@ -53,6 +53,9 @@ def read_factorization_information(factorization_config, dataset_tag, data):
         if all(col not in pred for col in gr):
             raise ValueError('Found disjoint feature group and subpredicate in partition #{}.'.format(i))
 
+    # partition
+    output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
+
     # mode
     if 'mode' in factorization_config:
         mode = factorization_config['mode']
@@ -62,18 +65,23 @@ def read_factorization_information(factorization_config, dataset_tag, data):
 
         output['mode'] = mode
 
-    # partition
-    output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
-
     # partial labels
-    partial_labels_dict = {}
-    for i, predicate in enumerate(subpredicates):
-        positive_indexes = query_keys_matching_predicate(dataset_tag, predicate)
-        partial_labels_dict[i] = indexes_to_labels(positive_indexes, data.index)
-
+    indexes = read_partial_positive_indexes(factorization_config, dataset_tag)
+    partial_labels_dict = {i: indexes_to_labels(idx, data.index) for i, idx in enumerate(indexes)}
     output['partial_labels'] = pd.DataFrame.from_dict(partial_labels_dict)
 
     return output
+
+
+def read_partial_positive_indexes(factorization_config, dataset_tag):
+    if 'partial_positive_indexes' in factorization_config:
+        return factorization_config['partial_positive_indexes']
+
+    elif 'subpredicates' in factorization_config:
+        predicates = factorization_config['subpredicates']
+        return [query_keys_matching_predicate(dataset_tag, p) for p in predicates]
+
+    raise RuntimeError("Missing 'subpredicates' or 'partial_positive_indexes' from factorization config.")
 
 
 def indexes_to_labels(positive_indexes, all_indexes):
