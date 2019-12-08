@@ -98,7 +98,7 @@ class PoolBasedExploration:
         labels = user.label(idx, X)
         data.move_to_labeled(idx, labels, 'user')
 
-        metrics['labels'] = labels
+        metrics['labels'] = labels.tolist()
         metrics['labeled_indexes'] = idx
 
         # fit active learning model
