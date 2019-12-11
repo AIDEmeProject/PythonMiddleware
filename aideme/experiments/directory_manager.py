@@ -43,7 +43,8 @@ class DataFolder:
         avg, count = 0., 0
 
         for run in self.get_raw_runs():
-            avg += run.drop(['labels', 'labeled_indexes'], axis=1)
+            to_keep = [col for col, tp in zip(run.columns, run.dtypes) if tp != 'object']
+            avg += run[to_keep]
             count += 1
 
         if count > 0:
