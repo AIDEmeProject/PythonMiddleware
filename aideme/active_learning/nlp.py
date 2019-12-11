@@ -74,14 +74,23 @@ class TwoStepsLearner(FactorizedActiveLearner):
             if self.__labels_cache is None:
                 self.__update_cache(data.data)
 
-                mask = self.__mask_cache.copy()
+                mask = ~self.__mask_cache.copy()
                 mask[data.labeled[0]] = False  # remove labeled points
                 idx = np.arange(len(data.data))[mask]
+
                 data.move_to_inferred(idx)
 
-            col_slice = slice(self.__text_column_start, None)
-            lb_slice = -1
-            self._al_text.fit_data(data.select_cols(col_slice, lb_slice))
+            # col_slice = slice(self.__text_column_start, None)
+            # lb_slice = -1
+
+            X, y = data.training_set
+            X_text = self.get_text_data(X)
+            y_text = self.get_text_labels(y)
+
+            idx = [i for i in range(len(X)) if y_text[i] == 1 or i <= 1 or i >= self.__switch_iter]
+
+            self._al_text.fit(X_text[idx], y_text[idx])
+            # self._al_text.fit_data(data.select_cols(col_slice, lb_slice))
 
     def predict(self, X):
         return self.__compute(X, self._al_struct.predict, self._al_text.predict, self.__labels_cache)
@@ -109,5 +118,5 @@ class TwoStepsLearner(FactorizedActiveLearner):
             lb_slice = slice(0, -1)
             return self._al_struct.next_points_to_label(data.select_cols(col_slice, lb_slice), subsample)
 
-        idx, X = data.sample_inferred(subsample)
+        idx, X = data.sample_unknown(subsample)
         return self._al_text._select_next(idx, self.get_text_data(X))
