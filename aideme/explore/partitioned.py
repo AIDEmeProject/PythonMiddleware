@@ -162,9 +162,6 @@ class PartitionedDataset:
     def sample_unknown(self, subsample=float('inf')):
         return self.__subsample(subsample, self._unknown_start, self.__size)
 
-    def sample_inferred(self, subsample=float('inf')):
-        return self.__subsample(subsample, self._inferred_start, self._unknown_start)
-
     def sample_unlabeled(self, subsample=float('inf')):
         return self.__subsample(subsample, self._inferred_start, self.__size)
 
