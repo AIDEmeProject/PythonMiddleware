@@ -80,9 +80,6 @@ class TwoStepsLearner(FactorizedActiveLearner):
 
                 data.move_to_inferred(idx)
 
-            # col_slice = slice(self.__text_column_start, None)
-            # lb_slice = -1
-
             X, y = data.training_set
             X_text = self.get_text_data(X)
             y_text = self.get_text_labels(y)
@@ -90,7 +87,6 @@ class TwoStepsLearner(FactorizedActiveLearner):
             idx = [i for i in range(len(X)) if y_text[i] == 1 or i <= 1 or i >= self.__switch_iter]
 
             self._al_text.fit(X_text[idx], y_text[idx])
-            # self._al_text.fit_data(data.select_cols(col_slice, lb_slice))
 
     def predict(self, X):
         return self.__compute(X, self._al_struct.predict, self._al_text.predict, self.__labels_cache)
