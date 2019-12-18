@@ -1,14 +1,3 @@
-"""
-All functions in the module are possible criteria for stopping the exploration process. A valid "convergence criteria"
-is any function with the following signature:
-
-    def convergence_criteria(data, metrics):
-        return True if exploration can stop, False otherwise
-
-Here, 'data' is a PartitionedDataset instance containing the current data partition, and 'metrics' is the dictionary
-of all callback_metrics which have been computed in this iteration.
-"""
-
 #  Copyright (c) 2019 École Polytechnique
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
@@ -26,11 +15,38 @@ of all callback_metrics which have been computed in this iteration.
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-def all_points_are_known(data, metrics):
+"""
+All functions in the module are possible criteria for stopping the exploration process. A valid "convergence criteria"
+is any function with the following signature:
+
+    def convergence_criteria(iteration, metrics):
+        return True if exploration can stop, False otherwise
+
+Here, 'iteration' is an Iteration instance containing the current state of the AL exploration (i.e. data and learner),
+and 'metrics' is the dictionary of all callback_metrics which have been computed in this iteration.
+"""
+
+from .validation import assert_positive_integer
+
+
+def max_iter_reached(max_iter):
+    """
+    :param max_iter: number of iterations after which we stop the exploration process. Must be a positive integer.
+    :return: a convergence criteria which stops the exploration process after the specified number of iterations
+    """
+    assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
+
+    def converged(iteration, metrics):
+        return iteration.iter > max_iter
+
+    return converged
+
+
+def all_points_are_known(iteration, metrics):
     """
     :return: whether no points remain in the unknown partition
     """
-    return data.unknown_size == 0
+    return iteration.data.unknown_size == 0
 
 
 def metric_reached_threshold(metric, threshold):
@@ -42,7 +58,7 @@ def metric_reached_threshold(metric, threshold):
     :param threshold:
     :return: a convergence criteria
     """
-    def converged(data, metrics):
+    def converged(iteration, metrics):
         if metric not in metrics:
             return False
 

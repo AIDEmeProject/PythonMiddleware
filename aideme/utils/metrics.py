@@ -18,7 +18,10 @@
 import sklearn
 
 
-def three_set_metric(X, y, active_learner):
+def three_set_metric(iteration, y=None):
+    X = iteration.data.data
+    active_learner = iteration.active_learner
+
     if not hasattr(active_learner, 'polytope_model'):
         return {}
 
@@ -39,11 +42,11 @@ def classification_metrics(*score_functions, labeling_function='AND'):
     if isinstance(labeling_function, str):
         labeling_function = __labeling_functions.get(labeling_function.upper())
 
-    def compute(X, y, active_learner):
+    def compute(iteration, y):
         if y.ndim > 1:
             y = labeling_function(y)
 
-        y_pred = active_learner.predict(X)
+        y_pred = iteration.predict_labels()
         cm = sklearn.metrics.confusion_matrix(y, y_pred, labels=[0, 1])
         return {score: __classification_metrics[score](cm) for score in score_functions}
 
