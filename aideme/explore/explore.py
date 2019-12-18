@@ -148,7 +148,7 @@ class Iteration:
         return self.__iter
 
     def clear(self):
-        # TODO: clear data
+        self.data.clear(copy=True)
         self.active_learner.clear()
         self.__iter = 0
 

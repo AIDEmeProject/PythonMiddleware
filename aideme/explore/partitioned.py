@@ -27,21 +27,8 @@ class PartitionedDataset:
 
     def __init__(self, data, copy=False):
         self.data = data
-
-        self._data = data.copy() if copy else data
-
         self.__size = len(data)
-
-        self._row_to_index = np.arange(self.__size)
-        self._inferred_start = 0
-        self._unknown_start = 0
-
-        self._index_to_row = {i: i for i in range(self.__size)}
-
-        self._labels = []
-        self._label_tags = []
-
-        self._previous_inferred_start = 0
+        self.clear(copy)
 
     def __len__(self):
         return self.__size
@@ -52,6 +39,19 @@ class PartitionedDataset:
             self._row_to_index[self._inferred_start:self._unknown_start],
             self._row_to_index[self._unknown_start:]
         )
+
+    def clear(self, copy=False):
+        self._data = self.data.copy() if copy else self.data  # TODO: can we avoid copying?
+        self._row_to_index = np.arange(self.__size)
+        self._inferred_start = 0
+        self._unknown_start = 0
+
+        self._index_to_row = {i: i for i in range(self.__size)}
+
+        self._labels = []
+        self._label_tags = []
+
+        self._previous_inferred_start = 0
 
     def select_cols(self, data_cols, lb_cols):
         dataset = PartitionedDataset(self.data[:, data_cols], copy=False)
