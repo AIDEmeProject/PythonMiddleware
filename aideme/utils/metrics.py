@@ -18,7 +18,7 @@
 import sklearn
 
 
-def three_set_metric(iteration, user=None):
+def three_set_metric(iteration, user):
     X = iteration.data.data
     active_learner = iteration.active_learner
 
@@ -34,25 +34,17 @@ def three_set_metric(iteration, user=None):
     return {'tsm': tsm}
 
 
-def classification_metrics(*score_functions, labeling_function='AND'):
+def classification_metrics(*score_functions, X_test=None, y_test=None):
     diff = set(score_functions) - __classification_metrics.keys()
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    if isinstance(labeling_function, str):
-        labeling_function = __labeling_functions.get(labeling_function.upper())
-
     def compute(iteration, user):
-        if not hasattr(user, 'labels'):
-            return {}
+        X = X_test if X_test is not None else iteration.data.data
+        y_true = y_test if y_test is not None else user.final_labels
 
-        y = user.labels
-
-        if y.ndim > 1:
-            y = labeling_function(y)  # TODO: can we avoid passing a labeling function?
-
-        y_pred = iteration.predict_labels()
-        cm = sklearn.metrics.confusion_matrix(y, y_pred, labels=[0, 1])
+        y_pred = iteration.active_learner.predict(X)
+        cm = sklearn.metrics.confusion_matrix(y_true, y_pred, labels=[0, 1])
         return {score: __classification_metrics[score](cm) for score in score_functions}
 
     return compute
@@ -68,12 +60,6 @@ __classification_metrics = {
     'recall': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[1, 0]),
     'fscore': lambda cm: true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
 }
-
-__labeling_functions = {
-    'AND': lambda y: y.min(axis=1),
-    'OR': lambda y: y.max(axis=1),
-}
-
 
 def true_divide(x, y):
     return 0 if y == 0 else x / y

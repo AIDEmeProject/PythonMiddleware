@@ -37,7 +37,7 @@ def max_iter_reached(max_iter):
     assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
 
     def converged(iteration, metrics):
-        return iteration.iter > max_iter
+        return iteration.iter >= max_iter
 
     return converged
 

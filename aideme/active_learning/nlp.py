@@ -97,7 +97,7 @@ class TwoStepsLearner(FactorizedActiveLearner):
 
                 data.move_to_inferred(idx)
 
-            X, y = data.training_set
+            X, y = data.training_set(partial=True)
             X_text = self.get_text_data(X)
             y_text = self.get_text_labels(y)
 

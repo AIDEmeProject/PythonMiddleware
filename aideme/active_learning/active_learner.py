@@ -37,7 +37,7 @@ class ActiveLearner:
 
         :param data: PartitionedDataset object
         """
-        X, y = data.training_set
+        X, y = data.training_set()
         self.fit(X, y)
 
     def fit(self, X, y):
@@ -97,6 +97,10 @@ class ActiveLearner:
 
 
 class FactorizedActiveLearner(ActiveLearner):
+    def fit_data(self, data):
+        X, y = data.training_set(partial=True)
+        self.fit(X, y)
+
     def set_factorization_structure(self, **factorization_info):
         """
         Tells the Active Learner to consider a new factorization structure, provided it can support such information

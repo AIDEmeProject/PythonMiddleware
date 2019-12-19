@@ -39,7 +39,7 @@ class PolytopeLearner(ActiveLearner):
         Updates the polytope model with the last user labeled data.
         :param data: PartitionedDataset instance
         """
-        X_new, y_new = data.last_labeled_set
+        X_new, y_new = data.last_labeled_set()
         self.__update_polytope(X_new, y_new)
 
     def fit(self, X, y):

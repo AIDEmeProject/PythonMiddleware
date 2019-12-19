@@ -23,12 +23,11 @@ from .utils import assert_positive_integer
 
 class StratifiedSampler:
     """
-        Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
-        of labels.
+    Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
+    of labels.
     """
-    def __init__(self, pos, neg, y, assert_neg_all_subspaces=False, random_state=None):
+    def __init__(self, pos, neg, neg_in_all_subspaces=False, random_state=None):
         """
-
         :param pos: Number of positive points to sample. Must be non-negative.
         :param neg: Number of negative points to sample. Must be non-negative.
         """
@@ -37,21 +36,23 @@ class StratifiedSampler:
 
         self.pos = pos
         self.neg = neg
-
-        if y.ndim == 2:  # TODO: how to get the correct labels in the non-conjunctive case?
-            y = y.mean(axis=1) if assert_neg_all_subspaces else y.min(axis=1)
-        self.mask = (y == 1)
-
+        self.__neg_in_all_subspaces = neg_in_all_subspaces
         self.__random_state = check_random_state(random_state)
 
-    def __call__(self, data):
+    def __call__(self, data, user):
         """
         True label is assumed to be 1.
         :return: index of samples in the array
         """
+        pos_mask = (user.final_labels == 1)
+
+        neg_mask = ~pos_mask
+        if self.__neg_in_all_subspaces:
+            neg_mask[user.partial_labels.max(axis=1) == 0] = False
+
         idx = np.arange(len(data))
-        pos_samples = self.__random_state.choice(idx[self.mask], size=self.pos, replace=False)
-        neg_samples = self.__random_state.choice(idx[~self.mask], size=self.neg, replace=False)
+        pos_samples = self.__random_state.choice(idx[pos_mask], size=self.pos, replace=False)
+        neg_samples = self.__random_state.choice(idx[neg_mask], size=self.neg, replace=False)
 
         return list(pos_samples) + list(neg_samples)
 
@@ -63,7 +64,7 @@ class FixedSampler:
     def __init__(self, indexes):
         self.indexes = indexes.copy()
 
-    def __call__(self, data):
+    def __call__(self, data, user):
         return self.indexes
 
 
@@ -76,5 +77,5 @@ class RandomInitialSampler:
         assert_positive_integer(sample_size, 'sample_size')
         self.sample_size = sample_size
 
-    def __call__(self, data):
+    def __call__(self, data, user):
         return data.sample_unlabeled(self.sample_size)[0]

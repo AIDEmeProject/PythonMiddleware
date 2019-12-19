@@ -61,7 +61,7 @@ class DualSpaceModel(FactorizedActiveLearner):
         if not self.polytope_model.is_valid:
             return
 
-        X_new, y_new = data.last_labeled_set
+        X_new, y_new = data.last_labeled_set(partial=self.factorized)
         is_success = self.polytope_model.update(X_new, y_new)
 
         # if conflicting points were found, the inferred partition has to be relabeled and labeled points checked
@@ -125,14 +125,17 @@ class DualSpaceModel(FactorizedActiveLearner):
             idx_selected, X_selected = self.active_learner._select_next(idx_sample, X_sample)
 
             if self.factorized:
-                pred = self.polytope_model.predict_partial(X_selected)
-                is_known = (np.min(pred, axis=1) != 0.5)
+                pred_part = self.polytope_model.predict_partial(X_selected)
+                pred = pred_part.min(axis=1)
+
             else:
                 pred = self.polytope_model.predict(X_selected)
-                is_known = (pred != 0.5)
+                pred_part = pred.reshape(-1, 1)
+
+            is_known = (pred != 0.5)
 
             if np.any(is_known):
-                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known], 'dsm')
+                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred_part[is_known], pred[is_known], 'dsm')
                 self.__fit_active_learner(data)
 
             if not np.all(is_known):
@@ -141,9 +144,5 @@ class DualSpaceModel(FactorizedActiveLearner):
         return self.active_learner.next_points_to_label(data=data, subsample=subsample)
 
     def __fit_active_learner(self, data):
-        X, y = data.training_set
-
-        if self.factorized:
-            y = np.min(y, axis=1)
-
+        X, y = data.training_set()
         self.active_learner.fit(X, y)

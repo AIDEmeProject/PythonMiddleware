@@ -15,6 +15,9 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+import math
+import numpy as np
+
 from ..utils import assert_positive_integer
 
 
@@ -23,25 +26,73 @@ class User:
     def is_willing(self):
         raise NotImplementedError
 
+    def clear(self):
+        pass
+
     def label(self, idx, X):
         raise NotImplementedError
 
 
 class DummyUser(User):
-    def __init__(self, labels, max_iter):
+    def __init__(self, final_labels, partial_labels=None, max_iter=math.inf):
         assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
 
-        self.labels = labels
+        self.final_labels = np.ravel(final_labels)
+        self.partial_labels = self.__get_partial_labels(partial_labels)
+
         self.__max_iter = max_iter
         self.__num_labeled_points = 0
 
-    def __repr__(self):
-        return 'User num_labeled_points={0} max_iter={1}'.format(self.__num_labeled_points, self.__max_iter)
+    def __get_partial_labels(self, partial_labels):
+        if partial_labels is None:
+            return self.final_labels.reshape(-1, 1)
+
+        partial_labels = np.atleast_2d(partial_labels)
+        if len(partial_labels) != len(self.final_labels):
+            raise ValueError("Partial and final labels have incompatible lengths: {} != {}".format(len(partial_labels), len(self.final_labels)))
+        return partial_labels
 
     @property
     def is_willing(self):
         return self.__num_labeled_points <= self.__max_iter
 
+    def clear(self):
+        self.__num_labeled_points = 0
+
     def label(self, idx, X):
         self.__num_labeled_points += len(idx)
-        return self.labels[idx]
+        return self.partial_labels[idx], self.final_labels[idx]
+
+
+class CommandLineUser(User):
+    @property
+    def is_willing(self):
+        val = input("Continue (y/n): ")
+        while val not in ['y', 'n']:
+            val = input("Continue (y/n): ")
+
+        return True if val == 'y' else False
+
+    def label(self, idx, pts):
+        is_valid, labels = self.__is_valid_input(pts)
+        while not is_valid:
+            is_valid, labels = self.__is_valid_input(pts)
+        return labels
+
+    @staticmethod
+    def __is_valid_input(pts):
+        s = input("Give the labels for the following points: {}\n".format(pts.tolist()))
+        expected_size = len(pts)
+
+        if not set(s).issubset({' ', '0', '1'}):
+            print("Invalid character in labels. Only 0, 1 and ' ' are permitted.\n")
+            return False, None
+
+        vals = s.split()
+        if len(vals) != expected_size:
+            print('Incorrect number of labels: got {} but expected {}\n'.format(len(vals), expected_size))
+            return False, None
+
+        print()
+        return True, [int(x) for x in vals]
+

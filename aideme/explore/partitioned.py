@@ -49,6 +49,7 @@ class PartitionedDataset:
         self._index_to_row = {i: i for i in range(self.__size)}
 
         self._labels = []
+        self._partial = []
         self._label_tags = []
 
         self._previous_inferred_start = 0
@@ -68,13 +69,14 @@ class PartitionedDataset:
     ##################
     # MOVING DATA
     ##################
-    def move_to_labeled(self, indexes, labels, tag):
+    def move_to_labeled(self, indexes, partial, labels, tag):
         self._previous_inferred_start = self._inferred_start
 
         for idx in indexes:
             self.__move_single(idx, True)
 
         self._labels.extend(labels)
+        self._partial.extend(partial)
         self._label_tags.extend([tag] * len(labels))
 
     def move_to_inferred(self, indexes):
@@ -117,6 +119,7 @@ class PartitionedDataset:
                 self.__move_right(idx)
 
         self._labels = [lb for lb, tag in zip(self._labels, self._label_tags) if tag == 'user']
+        self._partial = [lb for lb, tag in zip(self._partial, self._label_tags) if tag == 'user']
         self._label_tags = ['user'] * len(self._labels)
 
     def __move_right(self, idx):
@@ -197,14 +200,18 @@ class PartitionedDataset:
     ##################
     # LABELED DATA
     ##################
-    @property
-    def last_labeled_set(self):
-        return self._data[self._previous_inferred_start:self._inferred_start], np.array(self._labels[self._previous_inferred_start:self._inferred_start])
+    def last_labeled_set(self, partial=False):
+        labels = self.partial if partial else self.labels
+        return self._data[self._previous_inferred_start:self._inferred_start], labels[self._previous_inferred_start:self._inferred_start]
 
-    @property
-    def training_set(self):
-        return self._data[:self._inferred_start], self.labels
+    def training_set(self, partial=False):
+        labels = self.partial if partial else self.labels
+        return self._data[:self._inferred_start], labels
 
     @property
     def labels(self):
         return np.array(self._labels)
+
+    @property
+    def partial(self):
+        return np.array(self._partial)

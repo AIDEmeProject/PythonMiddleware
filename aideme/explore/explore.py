@@ -18,15 +18,12 @@
 import math
 from time import perf_counter
 
-from sklearn.utils import check_X_y
-
 from .partitioned import PartitionedDataset
-from .user import User, DummyUser
 from ..utils import assert_positive_integer
 
 
 class PoolBasedExploration:
-    def __init__(self, max_iter=math.inf, initial_sampler=None, subsampling=math.inf,
+    def __init__(self, initial_sampler=None, subsampling=math.inf,
                  callback=None, callback_skip=1, print_callback_result=False,
                  convergence_criteria=None):
         """
@@ -39,11 +36,9 @@ class PoolBasedExploration:
             The callback can optionally return a dictionary containing new metrics to be included.
             :param callback_skip: compute callback every callback_skip iterations only.
         """
-        assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
         assert_positive_integer(callback_skip, 'callback_skip')
 
-        self.max_iter = max_iter
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
@@ -62,12 +57,12 @@ class PoolBasedExploration:
 
         return callback
 
-    def run(self, X, y, active_learner, repeat=1):
+    def run(self, X, user, active_learner, repeat=1):
         """
             Run the Active Learning model over data, for a given number of iterations.
 
             :param X: data matrix
-            :param y: labels array
+            :param user: user instance
             :param active_learner: Active Learning algorithm to run
             :param repeat: repeat exploration this number of times
             :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
@@ -77,25 +72,21 @@ class PoolBasedExploration:
                     - Timing measurements (fit, select next point, ...)
                     - Any metrics returned by the callback function
         """
-        if not isinstance(y, User):
-            X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
-                         copy=False, force_all_finite=True)
-            y = DummyUser(y, self.max_iter)
-
         data = PartitionedDataset(X, copy=True)
         iteration = Iteration(data, active_learner, self.initial_sampler, self.subsampling)
 
-        return [self._run(iteration, y) for _ in range(repeat)]
+        return [self._run(iteration, user) for _ in range(repeat)]
 
     def _run(self, iteration, user):
         iteration.clear()
+        user.clear()
 
         iter_metrics, metrics = [], {}
-        idx = iteration.initial_sampling_advance(metrics)
+        idx = iteration.initial_sampling_advance(user, metrics)
 
         while user.is_willing and not self.__converged(iteration, metrics):
-            labels = user.label(idx, iteration.data.data[idx])
-            idx, metrics = iteration.advance(idx, labels)
+            partial_labels, final_labels = user.label(idx, iteration.data.data[idx])
+            idx, metrics = iteration.advance(idx, partial_labels, final_labels, user)
 
             if iteration.is_exploration_phase and self.__is_callback_computation_iter(iteration):
                 metrics.update(self.__get_callback_metrics(iteration, user))
@@ -156,10 +147,7 @@ class Iteration:
 
     @property
     def is_exploration_phase(self):
-        labels = self.data.labels
-        if labels.ndim == 2:  # TODO: can we get the final labels automatically?
-            labels = labels.min(axis=1)
-        return self.initial_sampler is None or 0 < labels.sum() < self.data.labeled_size
+        return self.initial_sampler is None or 0 < self.data.labels.sum() < self.data.labeled_size
 
     @property
     def is_initial_sampling_phase(self):
@@ -170,18 +158,19 @@ class Iteration:
         self.active_learner.clear()
         self.__iter = 0
 
-    def advance(self, new_idx, new_labels):
+    def advance(self, new_idx, partial_labels, final_labels, user):
         metrics = {}
 
         metrics['phase'] = 'exploration' if self.is_exploration_phase else 'initial_sampling'
 
         # update partitions
-        self.data.move_to_labeled(new_idx, new_labels, 'user')
+        self.data.move_to_labeled(new_idx, partial_labels, final_labels, 'user')
         metrics['labeled_indexes'] = new_idx
-        metrics['labels'] = list(new_labels)
+        metrics['final_labels'] = list(final_labels)
+        metrics['partial_labels'] = partial_labels.tolist()
 
         # get next to labels
-        idx = self.initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.exploration_advance(metrics)
+        idx = self.initial_sampling_advance(user, metrics) if self.is_initial_sampling_phase else self.exploration_advance(metrics)
 
         # update iteration counter
         if metrics['phase'] == 'exploration':
@@ -203,9 +192,9 @@ class Iteration:
 
         return idx
 
-    def initial_sampling_advance(self, metrics):
+    def initial_sampling_advance(self, user, metrics):
         t0 = perf_counter()
-        idx = self.initial_sampler(self.data)
+        idx = self.initial_sampler(self.data, user)
         metrics['iter_time'] = perf_counter() - t0
 
         return idx
