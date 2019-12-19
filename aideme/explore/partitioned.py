@@ -203,4 +203,8 @@ class PartitionedDataset:
 
     @property
     def training_set(self):
-        return self._data[:self._inferred_start], np.array(self._labels)
+        return self._data[:self._inferred_start], self.labels
+
+    @property
+    def labels(self):
+        return np.array(self._labels)

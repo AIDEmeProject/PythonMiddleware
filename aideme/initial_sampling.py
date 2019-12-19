@@ -15,8 +15,8 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from numpy import arange
-from sklearn.utils import check_random_state, check_array
+import numpy as np
+from sklearn.utils import check_random_state
 
 from .utils import assert_positive_integer
 
@@ -26,7 +26,7 @@ class StratifiedSampler:
         Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
         of labels.
     """
-    def __init__(self, pos, neg, assert_neg_all_subspaces=False, random_state=None):
+    def __init__(self, pos, neg, y, assert_neg_all_subspaces=False, random_state=None):
         """
 
         :param pos: Number of positive points to sample. Must be non-negative.
@@ -37,36 +37,44 @@ class StratifiedSampler:
 
         self.pos = pos
         self.neg = neg
-        self.assert_neg_all_subspaces = assert_neg_all_subspaces
+
+        if y.ndim == 2:  # TODO: how to get the correct labels in the non-conjunctive case?
+            y = y.mean(axis=1) if assert_neg_all_subspaces else y.min(axis=1)
+        self.mask = (y == 1)
+
         self.__random_state = check_random_state(random_state)
 
-    def __call__(self, y, true_class=1, neg_class=0):
+    def __call__(self, data):
         """
-        Call the sampling procedure over the input array.
-
-        :param y: array-like collection of labels
-        :param true_class: class to be considered positive. Default to 1.0.
+        True label is assumed to be 1.
         :return: index of samples in the array
         """
-        y = check_array(y, ensure_2d=False, allow_nd=False)
-
-        # TODO: can we avoid this check ?
-        if y.ndim == 2:
-            y = y.mean(axis=1) if self.assert_neg_all_subspaces else y.min(axis=1)
-
-        idx = arange(len(y))
-        pos_samples = self.__random_state.choice(idx[y == true_class], size=self.pos, replace=False)
-        neg_samples = self.__random_state.choice(idx[y == neg_class], size=self.neg, replace=False)
+        idx = np.arange(len(data))
+        pos_samples = self.__random_state.choice(idx[self.mask], size=self.pos, replace=False)
+        neg_samples = self.__random_state.choice(idx[~self.mask], size=self.neg, replace=False)
 
         return list(pos_samples) + list(neg_samples)
 
 
 class FixedSampler:
     """
-        Dummy sampler which returns a specified selection of indexes.
+    Dummy sampler which returns a specified selection of indexes.
     """
     def __init__(self, indexes):
         self.indexes = indexes.copy()
 
-    def __call__(self, y):
+    def __call__(self, data):
         return self.indexes
+
+
+class RandomInitialSampler:
+    """
+    Samples a random batch of unlabeled points.
+    """
+
+    def __init__(self, sample_size):
+        assert_positive_integer(sample_size, 'sample_size')
+        self.sample_size = sample_size
+
+    def __call__(self, data):
+        return data.sample_unlabeled(self.sample_size)[0]

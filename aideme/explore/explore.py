@@ -21,15 +21,16 @@ from time import perf_counter
 from sklearn.utils import check_X_y
 
 from .partitioned import PartitionedDataset
+from .user import User, DummyUser
 from ..utils import assert_positive_integer
 
 
 class PoolBasedExploration:
-    def __init__(self, initial_sampler, subsampling=math.inf,
+    def __init__(self, max_iter=math.inf, initial_sampler=None, subsampling=math.inf,
                  callback=None, callback_skip=1, print_callback_result=False,
                  convergence_criteria=None):
         """
-            :param initial_sampler: InitialSampler object
+            :param initial_sampler: InitialSampler object. If None, no initial sampling will be done.
             :param callback: a callback function to be called at the end of every iteration. It must have the
             following signature:
 
@@ -38,9 +39,11 @@ class PoolBasedExploration:
             The callback can optionally return a dictionary containing new metrics to be included.
             :param callback_skip: compute callback every callback_skip iterations only.
         """
+        assert_positive_integer(max_iter, 'max_iter', allow_inf=True)
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
         assert_positive_integer(callback_skip, 'callback_skip')
 
+        self.max_iter = max_iter
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
@@ -74,41 +77,44 @@ class PoolBasedExploration:
                     - Timing measurements (fit, select next point, ...)
                     - Any metrics returned by the callback function
         """
-        X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
+        if not isinstance(y, User):
+            X, y = check_X_y(X, y, dtype="numeric", ensure_2d=True, multi_output=True, y_numeric=False,
                          copy=False, force_all_finite=True)
+            y = DummyUser(y, self.max_iter)
 
         data = PartitionedDataset(X, copy=True)
-        iteration = Iteration(data, active_learner, self.subsampling)
+        iteration = Iteration(data, active_learner, self.initial_sampler, self.subsampling)
 
         return [self._run(iteration, y) for _ in range(repeat)]
 
-    def _run(self, iteration, y):
+    def _run(self, iteration, user):
         iteration.clear()
 
-        idx = self.initial_sampler(y)
+        iter_metrics, metrics = [], {}
+        idx = iteration.initial_sampling_advance(metrics)
 
-        iter_metrics, metrics, converged = [], {}, False
-        while not self.__converged(iteration, metrics):
-            idx, metrics = iteration.advance(idx, y[idx])
+        while user.is_willing and not self.__converged(iteration, metrics):
+            labels = user.label(idx, iteration.data.data[idx])
+            idx, metrics = iteration.advance(idx, labels)
 
-            if self.__is_callback_computation_iter(iteration):
-                metrics.update(self.__get_callback_metrics(iteration, y))
+            if iteration.is_exploration_phase and self.__is_callback_computation_iter(iteration):
+                metrics.update(self.__get_callback_metrics(iteration, user))
 
             iter_metrics.append(metrics)
 
-        if not self.__is_callback_computation_iter(iteration):
-            metrics.update(self.__get_callback_metrics(iteration, y))
+        if iteration.is_exploration_phase and not self.__is_callback_computation_iter(iteration):
+            metrics.update(self.__get_callback_metrics(iteration, user))
 
         return iter_metrics
 
     def __is_callback_computation_iter(self, iteration):
-        return (iteration.iter - 1) % self.callback_skip == 0
+        return iteration.iter % self.callback_skip == 0
 
-    def __get_callback_metrics(self, iteration, y):
+    def __get_callback_metrics(self, iteration, user):
         metrics = {}
 
         for callback in self.callbacks:
-            callback_metrics = callback(iteration, y)
+            callback_metrics = callback(iteration, user)
 
             if callback_metrics:
                 metrics.update(callback_metrics)
@@ -124,11 +130,12 @@ class PoolBasedExploration:
 
 
 class Iteration:
-    def __init__(self, data, active_learner, subsampling=math.inf):
+    def __init__(self, data, active_learner, initial_sampler, subsampling=math.inf):
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
 
         self.data = data
         self.active_learner = active_learner
+        self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
         self.__iter = 0
@@ -147,18 +154,42 @@ class Iteration:
     def iter(self):
         return self.__iter
 
+    @property
+    def is_exploration_phase(self):
+        labels = self.data.labels
+        if labels.ndim == 2:  # TODO: can we get the final labels automatically?
+            labels = labels.min(axis=1)
+        return self.initial_sampler is None or 0 < labels.sum() < self.data.labeled_size
+
+    @property
+    def is_initial_sampling_phase(self):
+        return not self.is_exploration_phase
+
     def clear(self):
         self.data.clear(copy=True)
         self.active_learner.clear()
         self.__iter = 0
 
     def advance(self, new_idx, new_labels):
-        metrics = {}  # TODO: add 'iter': self.__iter ?
+        metrics = {}
 
+        metrics['phase'] = 'exploration' if self.is_exploration_phase else 'initial_sampling'
+
+        # update partitions
         self.data.move_to_labeled(new_idx, new_labels, 'user')
         metrics['labeled_indexes'] = new_idx
-        metrics['labels'] = new_labels.tolist()
+        metrics['labels'] = list(new_labels)
 
+        # get next to labels
+        idx = self.initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.exploration_advance(metrics)
+
+        # update iteration counter
+        if metrics['phase'] == 'exploration':
+            self.__iter += 1
+
+        return idx, metrics
+
+    def exploration_advance(self, metrics):
         # fit active learning model
         t0 = perf_counter()
         self._fit()
@@ -168,13 +199,16 @@ class Iteration:
         t0 = perf_counter()
         idx, _ = self._get_next_point_to_label()
         metrics['get_next_time'] = perf_counter() - t0
-
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
-        # update iteration counter
-        self.__iter += 1
+        return idx
 
-        return idx, metrics
+    def initial_sampling_advance(self, metrics):
+        t0 = perf_counter()
+        idx = self.initial_sampler(self.data)
+        metrics['iter_time'] = perf_counter() - t0
+
+        return idx
 
     def predict_labels(self):
         return self.active_learner.predict(self.data.data)

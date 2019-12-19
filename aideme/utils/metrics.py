@@ -18,7 +18,7 @@
 import sklearn
 
 
-def three_set_metric(iteration, y=None):
+def three_set_metric(iteration, user=None):
     X = iteration.data.data
     active_learner = iteration.active_learner
 
@@ -42,9 +42,14 @@ def classification_metrics(*score_functions, labeling_function='AND'):
     if isinstance(labeling_function, str):
         labeling_function = __labeling_functions.get(labeling_function.upper())
 
-    def compute(iteration, y):
+    def compute(iteration, user):
+        if not hasattr(user, 'labels'):
+            return {}
+
+        y = user.labels
+
         if y.ndim > 1:
-            y = labeling_function(y)
+            y = labeling_function(y)  # TODO: can we avoid passing a labeling function?
 
         y_pred = iteration.predict_labels()
         cm = sklearn.metrics.confusion_matrix(y, y_pred, labels=[0, 1])
