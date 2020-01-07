@@ -135,7 +135,7 @@ class DualSpaceModel(FactorizedActiveLearner):
             is_known = (pred != 0.5)
 
             if np.any(is_known):
-                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred_part[is_known], pred[is_known], 'dsm')
+                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known], pred_part[is_known], 'dsm')
                 self.__fit_active_learner(data)
 
             if not np.all(is_known):

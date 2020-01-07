@@ -18,7 +18,10 @@
 import sklearn
 
 
-def three_set_metric(iteration, user):
+def three_set_metric(iteration):
+    """
+    :return: TSM score, which is a lower bound for F-score. Only available when running the DualSpaceModel.
+    """
     X = iteration.data.data
     active_learner = iteration.active_learner
 
@@ -34,17 +37,23 @@ def three_set_metric(iteration, user):
     return {'tsm': tsm}
 
 
-def classification_metrics(*score_functions, X_test=None, y_test=None):
+def classification_metrics(y_test, *score_functions, X_test=None):
+    """
+    :param y_test: true labels of test set
+    :param score_functions: list of metrics to be computed. Available metrics are: 'true_positive', 'false_positive',
+    'true_negative', 'false_negative', 'accuracy', 'precision', 'recall', 'fscore'
+    :param X_test: an optional test set. If None, the entire dataset will be used.
+    :return: all classification scores
+    """
     diff = set(score_functions) - __classification_metrics.keys()
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(iteration, user):
+    def compute(iteration):
         X = X_test if X_test is not None else iteration.data.data
-        y_true = y_test if y_test is not None else user.final_labels
-
         y_pred = iteration.active_learner.predict(X)
-        cm = sklearn.metrics.confusion_matrix(y_true, y_pred, labels=[0, 1])
+
+        cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])
         return {score: __classification_metrics[score](cm) for score in score_functions}
 
     return compute

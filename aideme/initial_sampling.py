@@ -26,7 +26,7 @@ class StratifiedSampler:
     Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
     of labels.
     """
-    def __init__(self, pos, neg, neg_in_all_subspaces=False, random_state=None):
+    def __init__(self, pos_idx, neg_idx, pos=1, neg=1, random_state=None):
         """
         :param pos: Number of positive points to sample. Must be non-negative.
         :param neg: Number of negative points to sample. Must be non-negative.
@@ -34,25 +34,41 @@ class StratifiedSampler:
         assert_positive_integer(pos, 'pos')
         assert_positive_integer(neg, 'neg')
 
+        self.__assert_list_is_big_enough(pos_idx, pos)
+        self.__assert_list_is_big_enough(neg_idx, neg)
+
         self.pos = pos
         self.neg = neg
-        self.__neg_in_all_subspaces = neg_in_all_subspaces
+        self.pos_idx = pos_idx
+        self.neg_idx = neg_idx
         self.__random_state = check_random_state(random_state)
 
-    def __call__(self, data, user):
+    def __assert_list_is_big_enough(self, ls, sample_size):
+        if sample_size > len(ls):
+            raise ValueError("Index list is too small for requested sample size: {} < {}".format(len(ls), sample_size))
+
+    @staticmethod
+    def from_user(user, pos=1, neg=1, neg_in_all_subspaces=False, random_state=None):
+        size = len(user.final_labels)
+        idx = np.arange(size)
+
+        pos_mask = (user.final_labels == 1)
+        pos_idx = idx[pos_mask]
+
+        neg_mask = ~pos_mask
+        if neg_in_all_subspaces:
+            neg_mask = (user.partial_labels.max(axis=1) == 0)
+        neg_idx = idx[neg_mask]
+
+        return StratifiedSampler(pos_idx, neg_idx, pos, neg, random_state)
+
+    def __call__(self, data):
         """
         True label is assumed to be 1.
         :return: index of samples in the array
         """
-        pos_mask = (user.final_labels == 1)
-
-        neg_mask = ~pos_mask
-        if self.__neg_in_all_subspaces:
-            neg_mask[user.partial_labels.max(axis=1) == 0] = False
-
-        idx = np.arange(len(data))
-        pos_samples = self.__random_state.choice(idx[pos_mask], size=self.pos, replace=False)
-        neg_samples = self.__random_state.choice(idx[neg_mask], size=self.neg, replace=False)
+        pos_samples = self.__random_state.choice(self.pos_idx, size=self.pos, replace=False)
+        neg_samples = self.__random_state.choice(self.neg_idx, size=self.neg, replace=False)
 
         return list(pos_samples) + list(neg_samples)
 
@@ -64,7 +80,7 @@ class FixedSampler:
     def __init__(self, indexes):
         self.indexes = indexes.copy()
 
-    def __call__(self, data, user):
+    def __call__(self, data):
         return self.indexes
 
 
@@ -77,5 +93,5 @@ class RandomInitialSampler:
         assert_positive_integer(sample_size, 'sample_size')
         self.sample_size = sample_size
 
-    def __call__(self, data, user):
+    def __call__(self, data):
         return data.sample_unlabeled(self.sample_size)[0]

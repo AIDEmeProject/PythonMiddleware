@@ -69,7 +69,7 @@ class PartitionedDataset:
     ##################
     # MOVING DATA
     ##################
-    def move_to_labeled(self, indexes, partial, labels, tag):
+    def move_to_labeled(self, indexes, labels, partial, tag='user'):
         self._previous_inferred_start = self._inferred_start
 
         for idx in indexes:
