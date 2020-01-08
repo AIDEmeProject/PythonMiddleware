@@ -19,7 +19,7 @@ import math
 from time import perf_counter
 
 from .partitioned import PartitionedDataset
-from ..utils import assert_positive_integer
+from ..utils.validation import assert_positive_integer, process_callback
 
 
 class PoolBasedExploration:
@@ -27,14 +27,13 @@ class PoolBasedExploration:
                  callback=None, callback_skip=1, print_callback_result=False,
                  convergence_criteria=None):
         """
-            :param initial_sampler: InitialSampler object. If None, no initial sampling will be done.
-            :param callback: a callback function to be called at the end of every iteration. It must have the
-            following signature:
+        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done.
+        :param callback: a callback function to be called at the end of every iteration. It must have the
+        following signature:
+                          callback(manager), where manager is a ExplorationManager object
 
-                              callback(data, user, active_learner)
-
-            The callback can optionally return a dictionary containing new metrics to be included.
-            :param callback_skip: compute callback every callback_skip iterations only.
+        The callback can optionally return a dictionary containing new metrics to be included.
+        :param callback_skip: compute callback every callback_skip iterations only.
         """
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
         assert_positive_integer(callback_skip, 'callback_skip')
@@ -42,20 +41,10 @@ class PoolBasedExploration:
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
-        self.callbacks = self.__process_function(callback)
+        self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
         self.print_callback_result = print_callback_result
-        self.convergence_criteria = self.__process_function(convergence_criteria)
-
-    @staticmethod
-    def __process_function(callback):
-        if not callback:
-            return []
-
-        if callable(callback):
-            return [callback]
-
-        return callback
+        self.convergence_criteria = process_callback(convergence_criteria)
 
     def run(self, X, user, active_learner, repeat=1):
         """
@@ -73,7 +62,11 @@ class PoolBasedExploration:
                     - Any metrics returned by the callback function
         """
         data = PartitionedDataset(X, copy=True)
-        iteration = ExplorationManager(data, active_learner, self.initial_sampler, self.subsampling)
+        iteration = ExplorationManager(
+            data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,
+            callback=self.callbacks, callback_skip=self.callback_skip, print_callback_result=self.print_callback_result,
+            convergence_criteria=self.convergence_criteria
+        )
 
         return [self._run(iteration, user) for _ in range(repeat)]
 
@@ -81,68 +74,38 @@ class PoolBasedExploration:
         iteration.clear()
         user.clear()
 
-        iter_metrics, metrics = [], {}
-        idx = iteration.initial_sampling_advance(metrics)
+        idx, metrics, converged = iteration.advance()
 
-        while user.is_willing and not self.__converged(iteration, metrics):
+        iter_metrics = []
+        while not converged:
             partial_labels, final_labels = user.label(idx, iteration.data.data[idx])
-            idx, metrics = iteration.advance(idx, final_labels, partial_labels)
-
-            if iteration.is_exploration_phase and self.__is_callback_computation_iter(iteration):
-                metrics.update(self.__get_callback_metrics(iteration))
-
+            idx, metrics, converged = iteration.advance(idx, final_labels, partial_labels)
             iter_metrics.append(metrics)
-
-        if iteration.is_exploration_phase and not self.__is_callback_computation_iter(iteration):
-            metrics.update(self.__get_callback_metrics(iteration))
 
         return iter_metrics
 
-    def __is_callback_computation_iter(self, iteration):
-        return iteration.iter % self.callback_skip == 0
-
-    def __get_callback_metrics(self, iteration):
-        metrics = {}
-
-        for callback in self.callbacks:
-            callback_metrics = callback(iteration)
-
-            if callback_metrics:
-                metrics.update(callback_metrics)
-
-        if self.print_callback_result:
-            scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
-            print('iter: {0}, {1}'.format(iteration.iter, scores_str))
-
-        return metrics
-
-    def __converged(self, iteration, metrics):
-        return any((criterion(iteration, metrics) for criterion in self.convergence_criteria))
 
 
 class ExplorationManager:
     """
-    Class for managing all aspects of the data exploration loop: initial sampling, active learning, parition updates, etc.
+    Class for managing all aspects of the data exploration loop: initial sampling, model update, partition updates,
+    callback computation, convergence detection, etc.
     """
-    def __init__(self, data, active_learner, initial_sampler=None, subsampling=math.inf):
+    def __init__(self, data, active_learner, initial_sampler=None, subsampling=math.inf,
+                 callback=None, callback_skip=1, print_callback_result=False,
+                 convergence_criteria=None):
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
 
         self.data = data
         self.active_learner = active_learner
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
+        self.callbacks = process_callback(callback)
+        self.callback_skip = callback_skip
+        self.print_callback_result = print_callback_result
+        self.convergence_criteria = process_callback(convergence_criteria)
 
-        self.__iter = 0
-
-    @staticmethod
-    def __process_function(funcs):
-        if not funcs:
-            return []
-
-        if callable(funcs):
-            return [funcs]
-
-        return funcs
+        self.__iter = -1
 
     @property
     def iter(self):
@@ -179,36 +142,38 @@ class ExplorationManager:
         """
         self.data.clear(copy=True)
         self.active_learner.clear()
-        self.__iter = 0
+        self.__iter = -1
 
-    def advance(self, new_idx, labels, partial_labels):
+    def advance(self, new_idx=None, labels=None, partial_labels=None):
         """
         Updates current model with new labeled data and computes new point to be labeled.
-        :param new_idx: index of new labeled points
+        :param new_idx: index of new labeled points. If None, initial sampling will be run without any further changes.
         :param labels: labels of new points
         :param partial_labels: partial labels of new points
         :return: index of next point to be labeled, metrics
         """
-        metrics = {}
-
-        metrics['phase'] = self.phase
-
-        if self.is_exploration_phase:  # initial sampling phase is considered as iteration '0'
-            self.__iter += 1
+        metrics = {'phase': self.phase}
 
         self.__update_partitions(new_idx, labels, partial_labels, metrics)
 
-        idx = self.initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
+        idx = self.__initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
 
-        return idx, metrics
+        if self.is_exploration_phase:
+            self.__iter += 1  # initial sampling phase is considered as iteration '-1'
+
+        if self.__is_callback_computation_iter(metrics):
+            metrics.update(self.__get_callback_metrics())
+
+        return idx, metrics, self.__converged(metrics)
 
     def __update_partitions(self, new_idx, labels, partial_labels, metrics):
-        self.data.move_to_labeled(new_idx, labels, partial_labels, 'user')
-        metrics['labeled_indexes'] = new_idx
-        metrics['final_labels'] = list(labels)
-        metrics['partial_labels'] = partial_labels.tolist()
+        if new_idx is not None:
+            self.data.move_to_labeled(new_idx, labels, partial_labels, 'user')
+            metrics['labeled_indexes'] = new_idx
+            metrics['final_labels'] = list(labels)
+            metrics['partial_labels'] = partial_labels.tolist()
 
-    def initial_sampling_advance(self, metrics):
+    def __initial_sampling_advance(self, metrics):
         t0 = perf_counter()
         idx = self.initial_sampler(self.data)
         metrics['iter_time'] = perf_counter() - t0
@@ -218,22 +183,34 @@ class ExplorationManager:
     def __exploration_advance(self, metrics):
         # fit active learning model
         t0 = perf_counter()
-        self.__fit()
+        self.active_learner.fit_data(self.data)
         metrics['fit_time'] = perf_counter() - t0
 
         # find next point to label
         t0 = perf_counter()
-        idx, _ = self.__get_next_point_to_label()
+        idx, _ = self.active_learner.next_points_to_label(self.data, self.subsampling)
         metrics['get_next_time'] = perf_counter() - t0
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
         return idx
 
-    def __fit(self):
-        self.active_learner.fit_data(self.data)
+    def __converged(self, metrics):
+        return (self.data.unlabeled_size == 0) or any((criterion(self, metrics) for criterion in self.convergence_criteria))
 
-    def __get_next_point_to_label(self):
-        if self.data.unlabeled_size == 0:
-            raise RuntimeError("The entire dataset has already been labeled!")
+    def __is_callback_computation_iter(self, metrics):
+        return self.is_exploration_phase and (self.iter % self.callback_skip == 0 or self.__converged(metrics))
 
-        return self.active_learner.next_points_to_label(self.data, self.subsampling)
+    def __get_callback_metrics(self):
+        metrics = {}
+
+        for callback in self.callbacks:
+            callback_metrics = callback(self)
+
+            if callback_metrics:
+                metrics.update(callback_metrics)
+
+        if self.print_callback_result:
+            scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
+            print('iter: {0}, {1}'.format(self.iter, scores_str))
+
+        return metrics

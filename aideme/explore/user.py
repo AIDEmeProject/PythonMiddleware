@@ -95,4 +95,3 @@ class CommandLineUser(User):
 
         print()
         return True, [int(x) for x in vals]
-

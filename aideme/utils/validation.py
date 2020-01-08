@@ -32,3 +32,15 @@ def assert_positive_integer(value, name, allow_inf=False):
     if not isinstance(value, int) or value <= 0:
         raise ValueError("{0} must be a positive integer, got {1}".format(name, value))
 
+
+def process_callback(callback):
+    if not callback:
+        return []
+
+    if callable(callback):
+        return [callback]
+
+    if not all(callable(f) for f in callback):
+        raise ValueError("Expected callable or list of callable objects, got {}".format(callback))
+
+    return callback
