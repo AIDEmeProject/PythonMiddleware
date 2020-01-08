@@ -20,6 +20,7 @@ from time import perf_counter
 
 from .partitioned import PartitionedDataset
 from ..utils.validation import assert_positive_integer, process_callback
+from ..utils.convergence import all_points_are_labeled
 
 
 class PoolBasedExploration:
@@ -48,18 +49,17 @@ class PoolBasedExploration:
 
     def run(self, X, user, active_learner, repeat=1):
         """
-            Run the Active Learning model over data, for a given number of iterations.
+        Run the Active Learning model over data, for a given number of iterations.
 
-            :param X: data matrix
-            :param user: user instance
-            :param active_learner: Active Learning algorithm to run
-            :param repeat: repeat exploration this number of times
-            :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
-            containing:
-
-                    - Index of labeled points
-                    - Timing measurements (fit, select next point, ...)
-                    - Any metrics returned by the callback function
+        :param X: data matrix
+        :param user: user instance
+        :param active_learner: Active Learning algorithm to run
+        :param repeat: repeat exploration this number of times
+        :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
+        containing:
+                - Labeled points (index, labels, partial_labels)
+                - Timing measurements (fit, get next point, ...)
+                - Any metrics returned by the callback function
         """
         data = PartitionedDataset(X, copy=True)
         iteration = ExplorationManager(
@@ -76,7 +76,7 @@ class PoolBasedExploration:
 
         idx, metrics, converged = iteration.advance()
 
-        iter_metrics = []
+        iter_metrics = [metrics]
         while not converged:
             partial_labels, final_labels = user.label(idx, iteration.data.data[idx])
             idx, metrics, converged = iteration.advance(idx, final_labels, partial_labels)
@@ -100,26 +100,37 @@ class ExplorationManager:
         self.active_learner = active_learner
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
+
         self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
         self.print_callback_result = print_callback_result
-        self.convergence_criteria = process_callback(convergence_criteria)
 
-        self.__iter = -1
+        self.convergence_criteria = process_callback(convergence_criteria)
+        self.convergence_criteria.append(all_points_are_labeled)
+
+        self.__initial_sampling_iters = 0
+        self.__exploration_iters = 0
 
     @property
-    def iter(self):
+    def initial_sampling_iters(self):
         """
-        :return: How many iterations have gone so far.
+        :return: How many initial sampling iterations have gone so far.
         """
-        return self.__iter
+        return self.__initial_sampling_iters
+
+    @property
+    def exploration_iters(self):
+        """
+        :return: How many exploration iterations have gone so far.
+        """
+        return self.__exploration_iters
 
     @property
     def phase(self):
         """
         :return: a string corresponding to the current iteration phase.
         """
-        return 'exploration' if self.is_exploration_phase else 'initial_sampling'
+        return 'exploration' if self.is_exploration_phase else 'initial_sampling' if self.__initial_sampling_iters > 0 else 'begin'
 
     @property
     def is_exploration_phase(self):
@@ -142,7 +153,8 @@ class ExplorationManager:
         """
         self.data.clear(copy=True)
         self.active_learner.clear()
-        self.__iter = -1
+        self.__initial_sampling_iters = 0
+        self.__exploration_iters = 0
 
     def advance(self, new_idx=None, labels=None, partial_labels=None):
         """
@@ -152,14 +164,11 @@ class ExplorationManager:
         :param partial_labels: partial labels of new points
         :return: index of next point to be labeled, metrics
         """
-        metrics = {'phase': self.phase}
+        metrics = {'phase': self.phase}  # from which phase the new labeled points have been computed
 
         self.__update_partitions(new_idx, labels, partial_labels, metrics)
 
         idx = self.__initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
-
-        if self.is_exploration_phase:
-            self.__iter += 1  # initial sampling phase is considered as iteration '-1'
 
         if self.__is_callback_computation_iter(metrics):
             metrics.update(self.__get_callback_metrics())
@@ -178,6 +187,8 @@ class ExplorationManager:
         idx = self.initial_sampler(self.data)
         metrics['iter_time'] = perf_counter() - t0
 
+        self.__initial_sampling_iters += 1
+
         return idx
 
     def __exploration_advance(self, metrics):
@@ -192,13 +203,15 @@ class ExplorationManager:
         metrics['get_next_time'] = perf_counter() - t0
         metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
 
+        self.__exploration_iters += 1
+
         return idx
 
     def __converged(self, metrics):
-        return (self.data.unlabeled_size == 0) or any((criterion(self, metrics) for criterion in self.convergence_criteria))
+        return any((criterion(self, metrics) for criterion in self.convergence_criteria))
 
     def __is_callback_computation_iter(self, metrics):
-        return self.is_exploration_phase and (self.iter % self.callback_skip == 0 or self.__converged(metrics))
+        return self.is_exploration_phase and ((self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged(metrics))
 
     def __get_callback_metrics(self):
         metrics = {}
@@ -211,6 +224,6 @@ class ExplorationManager:
 
         if self.print_callback_result:
             scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
-            print('iter: {0}, {1}'.format(self.iter, scores_str))
+            print('iter: {0}, {1}'.format(self.exploration_iters, scores_str))
 
         return metrics
