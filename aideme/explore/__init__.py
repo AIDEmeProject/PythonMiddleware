@@ -16,6 +16,6 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .explore import PoolBasedExploration
-from .user import DummyUser
+from .labeledset import LabeledSet
 
-__all__ = ['PoolBasedExploration', 'DummyUser']
+__all__ = ['PoolBasedExploration', 'LabeledSet']

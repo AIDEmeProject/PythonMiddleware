@@ -23,6 +23,7 @@ import numpy as np
 from .factorization import FactorizedPolytopeModel
 from .persistent import PolytopeModel
 from ..active_learner import FactorizedActiveLearner
+from ...explore import LabeledSet
 
 
 class DualSpaceModel(FactorizedActiveLearner):
@@ -118,7 +119,7 @@ class DualSpaceModel(FactorizedActiveLearner):
 
     def next_points_to_label(self, data, subsample=None):
         if not self.polytope_model.is_valid:
-            return self.active_learner.next_points_to_label(data=data, subsample=subsample)
+            return self.active_learner.next_points_to_label(data, subsample)
 
         while data.unknown_size > 0:
             idx_sample, X_sample = data.sample_unknown(subsample) if random.random() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
@@ -135,7 +136,8 @@ class DualSpaceModel(FactorizedActiveLearner):
             is_known = (pred != 0.5)
 
             if np.any(is_known):
-                data.move_to_labeled([idx for i, idx in enumerate(idx_selected) if is_known[i]], pred[is_known], pred_part[is_known], 'dsm')
+                labeled_set = LabeledSet(pred[is_known], pred_part[is_known], [idx for i, idx in enumerate(idx_selected) if is_known[i]])
+                data.move_to_labeled(labeled_set, 'dsm')
                 self.__fit_active_learner(data)
 
             if not np.all(is_known):

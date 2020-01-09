@@ -69,15 +69,15 @@ class PartitionedDataset:
     ##################
     # MOVING DATA
     ##################
-    def move_to_labeled(self, indexes, labels, partial, tag='user'):
+    def move_to_labeled(self, labeled_set, tag):
         self._previous_inferred_start = self._inferred_start
 
-        for idx in indexes:
-            self.__move_single(idx, True)
+        for idx in labeled_set.index:
+            self.__move_single(idx, to_labeled=True)
 
-        self._labels.extend(labels)
-        self._partial.extend(partial)
-        self._label_tags.extend([tag] * len(labels))
+        self._labels.extend(labeled_set.labels)
+        self._partial.extend(labeled_set.partial)
+        self._label_tags.extend([tag] * len(labeled_set))
 
     def move_to_inferred(self, indexes):
         for idx in indexes:

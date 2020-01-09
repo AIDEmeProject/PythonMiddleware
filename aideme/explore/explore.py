@@ -18,6 +18,7 @@
 import math
 from time import perf_counter
 
+from .labeledset import LabeledSet
 from .partitioned import PartitionedDataset
 from ..utils.validation import assert_positive_integer, process_callback
 from ..utils.convergence import all_points_are_labeled
@@ -47,14 +48,14 @@ class PoolBasedExploration:
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, user, active_learner, repeat=1):
+    def run(self, X, labeled_set, active_learner, repeat=1):
         """
         Run the Active Learning model over data, for a given number of iterations.
 
         :param X: data matrix
-        :param user: user instance
-        :param active_learner: Active Learning algorithm to run
-        :param repeat: repeat exploration this number of times
+        :param labeled_set: object containing the user labels, as a LabeledSet instance or 1D numpy array (no factorization in this case)
+        :param active_learner: ActiveLearner instance to simulate
+        :param repeat: number of times to repeat exploration
         :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
         containing:
                 - Labeled points (index, labels, partial_labels)
@@ -62,24 +63,26 @@ class PoolBasedExploration:
                 - Any metrics returned by the callback function
         """
         data = PartitionedDataset(X, copy=True)
+
+        if not isinstance(labeled_set, LabeledSet):
+            labeled_set = LabeledSet(labeled_set)
+
         iteration = ExplorationManager(
             data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,
             callback=self.callbacks, callback_skip=self.callback_skip, print_callback_result=self.print_callback_result,
             convergence_criteria=self.convergence_criteria
         )
 
-        return [self._run(iteration, user) for _ in range(repeat)]
+        return [self._run(iteration, labeled_set) for _ in range(repeat)]
 
-    def _run(self, iteration, user):
+    def _run(self, iteration, labeled_set):
         iteration.clear()
-        user.clear()
 
         idx, metrics, converged = iteration.advance()
 
         iter_metrics = [metrics]
         while not converged:
-            partial_labels, final_labels = user.label(idx, iteration.data.data[idx])
-            idx, metrics, converged = iteration.advance(idx, final_labels, partial_labels)
+            idx, metrics, converged = iteration.advance(labeled_set[idx])
             iter_metrics.append(metrics)
 
         return iter_metrics
@@ -156,17 +159,15 @@ class ExplorationManager:
         self.__initial_sampling_iters = 0
         self.__exploration_iters = 0
 
-    def advance(self, new_idx=None, labels=None, partial_labels=None):
+    def advance(self, labeled_set=None):
         """
         Updates current model with new labeled data and computes new point to be labeled.
-        :param new_idx: index of new labeled points. If None, initial sampling will be run without any further changes.
-        :param labels: labels of new points
-        :param partial_labels: partial labels of new points
+        :param labeled_set: a LabeledSet instance containing the new labeled points by the user
         :return: index of next point to be labeled, metrics
         """
         metrics = {'phase': self.phase}  # from which phase the new labeled points have been computed
 
-        self.__update_partitions(new_idx, labels, partial_labels, metrics)
+        self.__update_partitions(labeled_set, metrics)
 
         idx = self.__initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
 
@@ -175,12 +176,10 @@ class ExplorationManager:
 
         return idx, metrics, self.__converged(metrics)
 
-    def __update_partitions(self, new_idx, labels, partial_labels, metrics):
-        if new_idx is not None:
-            self.data.move_to_labeled(new_idx, labels, partial_labels, 'user')
-            metrics['labeled_indexes'] = new_idx
-            metrics['final_labels'] = list(labels)
-            metrics['partial_labels'] = partial_labels.tolist()
+    def __update_partitions(self, labeled_set, metrics):
+        if labeled_set is not None:
+            self.data.move_to_labeled(labeled_set, 'user')
+            metrics.update(labeled_set.asdict())
 
     def __initial_sampling_advance(self, metrics):
         t0 = perf_counter()
