@@ -171,9 +171,6 @@ class ExplorationManager:
 
         idx = self.__initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
 
-        if self.__is_callback_computation_iter(metrics):
-            metrics.update(self.__get_callback_metrics())
-
         return idx, metrics, self.__converged(metrics)
 
     def __update_partitions(self, labeled_set, metrics):
@@ -204,19 +201,22 @@ class ExplorationManager:
 
         self.__exploration_iters += 1
 
+        if self.__is_callback_computation_iter(metrics):
+            metrics.update(self.__get_callback_metrics())
+
         return idx
 
     def __converged(self, metrics):
         return any((criterion(self, metrics) for criterion in self.convergence_criteria))
 
     def __is_callback_computation_iter(self, metrics):
-        return self.is_exploration_phase and ((self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged(metrics))
+        return (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged(metrics)
 
     def __get_callback_metrics(self):
         metrics = {}
 
         for callback in self.callbacks:
-            callback_metrics = callback(self)
+            callback_metrics = callback(self.data, self.active_learner)
 
             if callback_metrics:
                 metrics.update(callback_metrics)

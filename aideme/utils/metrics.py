@@ -18,17 +18,14 @@
 import sklearn
 
 
-def three_set_metric(iteration):
+def three_set_metric(data, active_learner):
     """
     :return: TSM score, which is a lower bound for F-score. Only available when running the DualSpaceModel.
     """
-    X = iteration.data.data
-    active_learner = iteration.active_learner
-
     if not hasattr(active_learner, 'polytope_model'):
         return {}
 
-    pred = active_learner.polytope_model.predict(X)
+    pred = active_learner.polytope_model.predict(data.data)
 
     pos = (pred == 1).sum()
     unknown = (pred == 0.5).sum()
@@ -49,9 +46,9 @@ def classification_metrics(y_test, *score_functions, X_test=None):
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(iteration):
-        X = X_test if X_test is not None else iteration.data.data
-        y_pred = iteration.active_learner.predict(X)
+    def compute(data, active_learner):
+        X = X_test if X_test is not None else data.data
+        y_pred = active_learner.predict(X)
 
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])
         return {score: __classification_metrics[score](cm) for score in score_functions}

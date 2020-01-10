@@ -19,11 +19,11 @@
 All functions in the module are possible criteria for stopping the exploration process. A valid "convergence criteria"
 is any function with the following signature:
 
-    def convergence_criteria(iteration, metrics):
+    def convergence_criteria(manager, metrics):
         return True if exploration can stop, False otherwise
 
-Here, 'iteration' is an Iteration instance containing the current state of the AL exploration (i.e. data and learner),
-and 'metrics' is the dictionary of all callback_metrics which have been computed in this iteration.
+Here, 'manager' is an ExplorationManager instance containing the current state of the AL exploration (i.e. data and learner),
+and 'metrics' is the dictionary of all callback_metrics which have been computed in this manager.
 """
 
 import math
@@ -39,24 +39,24 @@ def max_iter_reached(max_exploration_iter, max_initial_sampling_iter=math.inf):
     assert_non_negative_integer(max_exploration_iter, 'max_exploration_iter', allow_inf=True)
     assert_non_negative_integer(max_initial_sampling_iter, 'max_initial_sampling_iter', allow_inf=True)
 
-    def converged(iteration, metrics):
-        return iteration.exploration_iters > max_exploration_iter or iteration.initial_sampling_iters > max_initial_sampling_iter
+    def converged(manager, metrics):
+        return manager.exploration_iters > max_exploration_iter or manager.initial_sampling_iters > max_initial_sampling_iter
 
     return converged
 
 
-def all_points_are_known(iteration, metrics):
+def all_points_are_known(manager, metrics):
     """
     :return: whether no points remain in the unknown partition
     """
-    return iteration.data.unknown_size == 0
+    return manager.data.unknown_size == 0
 
 
-def all_points_are_labeled(iteration, metrics):
+def all_points_are_labeled(manager, metrics):
     """
     :return: whether no points remain in the unknown partition
     """
-    return iteration.data.unlabeled_size == 0
+    return manager.data.unlabeled_size == 0
 
 
 def metric_reached_threshold(metric, threshold):
@@ -68,7 +68,7 @@ def metric_reached_threshold(metric, threshold):
     :param threshold:
     :return: a convergence criteria
     """
-    def converged(iteration, metrics):
+    def converged(manager, metrics):
         if metric not in metrics:
             return False
 
