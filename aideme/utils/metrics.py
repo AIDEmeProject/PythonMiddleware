@@ -15,6 +15,16 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+"""
+This module contains helper functions for computing a few of the most popular metrics. A valid "metric" is any function
+with the following signature:
+
+    def metric(data, active_learner):
+        return a dict of key-value pair with the computed metrics
+
+Here, 'data' is an PartitionedDataset instance and 'active_learner' is a ActiveLearner instance.
+"""
+
 import sklearn
 
 

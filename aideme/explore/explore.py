@@ -29,13 +29,12 @@ class PoolBasedExploration:
                  callback=None, callback_skip=1, print_callback_result=False,
                  convergence_criteria=None):
         """
-        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done.
-        :param callback: a callback function to be called at the end of every iteration. It must have the
-        following signature:
-                          callback(manager), where manager is a ExplorationManager object
-
-        The callback can optionally return a dictionary containing new metrics to be included.
-        :param callback_skip: compute callback every callback_skip iterations only.
+        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
+        :param subsampling: sample size of unlabeled points when looking for the next point to label
+        :param callback: a list of callback functions. For more info, check utils/metrics.py
+        :param callback_skip: compute callback every callback_skip iterations
+        :param print_callback_result: whether to print all callback metrics to stdout
+        :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
         assert_positive_integer(callback_skip, 'callback_skip')
@@ -97,6 +96,16 @@ class ExplorationManager:
     def __init__(self, data, active_learner, initial_sampler=None, subsampling=math.inf,
                  callback=None, callback_skip=1, print_callback_result=False,
                  convergence_criteria=None):
+        """
+        :param data: a PartitionedDataset instance
+        :param active_learner: a ActiveLearner instance
+        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done.
+        :param subsampling: sample size of unlabeled points when looking for the next point to label.
+        :param callback: a list of callback functions. For more info, check utils/metrics.py
+        :param callback_skip: compute callback every callback_skip iterations
+        :param print_callback_result: whether to print all callback metrics to stdout
+        :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
+        """
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
 
         self.data = data

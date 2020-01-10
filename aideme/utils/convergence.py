@@ -23,7 +23,7 @@ is any function with the following signature:
         return True if exploration can stop, False otherwise
 
 Here, 'manager' is an ExplorationManager instance containing the current state of the AL exploration (i.e. data and learner),
-and 'metrics' is the dictionary of all callback_metrics which have been computed in this manager.
+and 'metrics' is the dictionary of all metrics which have been computed in the last iteration.
 """
 
 import math
@@ -47,14 +47,14 @@ def max_iter_reached(max_exploration_iter, max_initial_sampling_iter=math.inf):
 
 def all_points_are_known(manager, metrics):
     """
-    :return: whether no points remain in the unknown partition
+    Stop exploration once no unknown points remain.
     """
     return manager.data.unknown_size == 0
 
 
 def all_points_are_labeled(manager, metrics):
     """
-    :return: whether no points remain in the unknown partition
+    Stop exploration once no unlabeled points remain.
     """
     return manager.data.unlabeled_size == 0
 
@@ -65,8 +65,7 @@ def metric_reached_threshold(metric, threshold):
     Note that exploration may take a few iterations more to stop depending on the 'callback_skip' exploration parameter.
 
     :param metric: metric name
-    :param threshold:
-    :return: a convergence criteria
+    :param threshold: maximum value of metric before stopping the exploration
     """
     def converged(manager, metrics):
         if metric not in metrics:
