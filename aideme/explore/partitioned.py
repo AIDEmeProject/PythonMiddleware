@@ -61,7 +61,8 @@ class PartitionedDataset:
         dataset._inferred_start = self._inferred_start
         dataset._unknown_start = self._unknown_start
         dataset._index_to_row = self._index_to_row
-        dataset._labels = [lb[lb_cols] for lb in self._labels]
+        dataset._labels = self._labels
+        dataset._partial = [lb[lb_cols] for lb in self._partial]
         dataset._label_tags = self._label_tags
         dataset._previous_inferred_start = self._previous_inferred_start
         return dataset

@@ -16,12 +16,11 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 import math
-from time import perf_counter
 
 from .labeledset import LabeledSet
+from .manager import ExplorationManager
 from .partitioned import PartitionedDataset
 from ..utils.validation import assert_positive_integer, process_callback
-from ..utils.convergence import all_points_are_labeled
 
 
 class PoolBasedExploration:
@@ -66,172 +65,98 @@ class PoolBasedExploration:
         if not isinstance(labeled_set, LabeledSet):
             labeled_set = LabeledSet(labeled_set)
 
-        iteration = ExplorationManager(
+        manager = ExplorationManager(
             data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,
             callback=self.callbacks, callback_skip=self.callback_skip, print_callback_result=self.print_callback_result,
             convergence_criteria=self.convergence_criteria
         )
 
-        return [self._run(iteration, labeled_set) for _ in range(repeat)]
+        return [self._run(manager, labeled_set) for _ in range(repeat)]
 
-    def _run(self, iteration, labeled_set):
-        iteration.clear()
+    def _run(self, manager, labeled_set):
+        manager.clear()
 
-        idx, metrics, converged = iteration.advance()
+        idx, metrics, converged = manager.advance()
 
         iter_metrics = [metrics]
         while not converged:
-            idx, metrics, converged = iteration.advance(labeled_set[idx])
+            idx, metrics, converged = manager.advance(labeled_set[idx])
             iter_metrics.append(metrics)
 
         return iter_metrics
 
 
+class CommandLineExploration:
+    """
+    A class for running the exploration process on the command line.
+    """
 
-class ExplorationManager:
-    """
-    Class for managing all aspects of the data exploration loop: initial sampling, model update, partition updates,
-    callback computation, convergence detection, etc.
-    """
-    def __init__(self, data, active_learner, initial_sampler=None, subsampling=math.inf,
+    def __init__(self, initial_sampler=None, subsampling=math.inf,
                  callback=None, callback_skip=1, print_callback_result=False,
                  convergence_criteria=None):
         """
-        :param data: a PartitionedDataset instance
-        :param active_learner: a ActiveLearner instance
-        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done.
-        :param subsampling: sample size of unlabeled points when looking for the next point to label.
+        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
+        :param subsampling: sample size of unlabeled points when looking for the next point to label
         :param callback: a list of callback functions. For more info, check utils/metrics.py
         :param callback_skip: compute callback every callback_skip iterations
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
         assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
+        assert_positive_integer(callback_skip, 'callback_skip')
 
-        self.data = data
-        self.active_learner = active_learner
         self.initial_sampler = initial_sampler
         self.subsampling = subsampling
 
         self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
         self.print_callback_result = print_callback_result
-
         self.convergence_criteria = process_callback(convergence_criteria)
-        self.convergence_criteria.append(all_points_are_labeled)
 
-        self.__initial_sampling_iters = 0
-        self.__exploration_iters = 0
+    def run(self, X, active_learner):
+        data = PartitionedDataset(X, copy=False)
 
-    @property
-    def initial_sampling_iters(self):
-        """
-        :return: How many initial sampling iterations have gone so far.
-        """
-        return self.__initial_sampling_iters
+        manager = ExplorationManager(
+            data, active_learner, self.initial_sampler, self.subsampling,
+            self.callbacks, self.callback_skip, self.print_callback_result,
+            self.convergence_criteria
+        )
 
-    @property
-    def exploration_iters(self):
-        """
-        :return: How many exploration iterations have gone so far.
-        """
-        return self.__exploration_iters
+        print('Welcome to the manual exploration process. \n')
 
-    @property
-    def phase(self):
-        """
-        :return: a string corresponding to the current iteration phase.
-        """
-        return 'exploration' if self.is_exploration_phase else 'initial_sampling' if self.__initial_sampling_iters > 0 else 'begin'
+        idx, metrics, converged = manager.advance()
+
+        while not converged and self._is_willing:
+            labels = self._label(idx, X[idx])
+            idx, metrics, converged = manager.advance(labels)
 
     @property
-    def is_exploration_phase(self):
-        """
-        :return: Whether we are at exploration phase (i.e. initial sampling phase is over)
-        """
-        return self.initial_sampler is None or 0 < self.data.labels.sum() < self.data.labeled_size
+    def _is_willing(self):
+        val = input("Continue (y/n): ")
+        while val not in ['y', 'n']:
+            val = input("Continue (y/n): ")
 
-    @property
-    def is_initial_sampling_phase(self):
-        """
-        :return: Whether we are at initial sampling phase. Initial sampling ends only after 1 negative and 1 positive
-        points have been labeled by the user.
-        """
-        return not self.is_exploration_phase
+        return True if val == 'y' else False
 
-    def clear(self):
-        """
-        Resets the iteration state.
-        """
-        self.data.clear(copy=True)
-        self.active_learner.clear()
-        self.__initial_sampling_iters = 0
-        self.__exploration_iters = 0
+    def _label(self, idx, pts):
+        is_valid, labels = self.__is_valid_input(pts)
+        while not is_valid:
+            is_valid, labels = self.__is_valid_input(pts)
+        return LabeledSet(labels, index=idx)
 
-    def advance(self, labeled_set=None):
-        """
-        Updates current model with new labeled data and computes new point to be labeled.
-        :param labeled_set: a LabeledSet instance containing the new labeled points by the user
-        :return: index of next point to be labeled, metrics
-        """
-        metrics = {'phase': self.phase}  # from which phase the new labeled points have been computed
+    @staticmethod
+    def __is_valid_input(pts):
+        s = input("Give the labels for the following points: {}\n".format(pts.tolist()))
+        expected_size = len(pts)
 
-        self.__update_partitions(labeled_set, metrics)
+        if not set(s).issubset({' ', '0', '1'}):
+            print("Invalid character in labels. Only 0, 1 and ' ' are permitted.\n")
+            return False, None
 
-        idx = self.__initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
+        vals = s.split()
+        if len(vals) != expected_size:
+            print('Incorrect number of labels: got {} but expected {}\n'.format(len(vals), expected_size))
+            return False, None
 
-        return idx, metrics, self.__converged(metrics)
-
-    def __update_partitions(self, labeled_set, metrics):
-        if labeled_set is not None:
-            self.data.move_to_labeled(labeled_set, 'user')
-            metrics.update(labeled_set.asdict())
-
-    def __initial_sampling_advance(self, metrics):
-        t0 = perf_counter()
-        idx = self.initial_sampler(self.data)
-        metrics['iter_time'] = perf_counter() - t0
-
-        self.__initial_sampling_iters += 1
-
-        return idx
-
-    def __exploration_advance(self, metrics):
-        # fit active learning model
-        t0 = perf_counter()
-        self.active_learner.fit_data(self.data)
-        metrics['fit_time'] = perf_counter() - t0
-
-        # find next point to label
-        t0 = perf_counter()
-        idx, _ = self.active_learner.next_points_to_label(self.data, self.subsampling)
-        metrics['get_next_time'] = perf_counter() - t0
-        metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
-
-        self.__exploration_iters += 1
-
-        if self.__is_callback_computation_iter(metrics):
-            metrics.update(self.__get_callback_metrics())
-
-        return idx
-
-    def __converged(self, metrics):
-        return any((criterion(self, metrics) for criterion in self.convergence_criteria))
-
-    def __is_callback_computation_iter(self, metrics):
-        return (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged(metrics)
-
-    def __get_callback_metrics(self):
-        metrics = {}
-
-        for callback in self.callbacks:
-            callback_metrics = callback(self.data, self.active_learner)
-
-            if callback_metrics:
-                metrics.update(callback_metrics)
-
-        if self.print_callback_result:
-            scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
-            print('iter: {0}, {1}'.format(self.exploration_iters, scores_str))
-
-        return metrics
+        print()
+        return True, [int(x) for x in vals]
