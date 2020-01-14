@@ -25,14 +25,22 @@ with the following signature:
 Here, 'data' is an PartitionedDataset instance and 'active_learner' is a ActiveLearner instance.
 """
 
+from typing import Callable, Dict, Any
+
 import sklearn
 
+from aideme.active_learning import ActiveLearner, DualSpaceModel
+from aideme.explore import PartitionedDataset
 
-def three_set_metric(data, active_learner):
+Metrics = Dict[str, Any]
+Callback = Callable[[PartitionedDataset, ActiveLearner], Metrics]
+
+
+def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
     """
     :return: TSM score, which is a lower bound for F-score. Only available when running the DualSpaceModel.
     """
-    if not hasattr(active_learner, 'polytope_model'):
+    if not isinstance(active_learner, DualSpaceModel):
         return {}
 
     pred = active_learner.polytope_model.predict(data.data)
@@ -44,7 +52,7 @@ def three_set_metric(data, active_learner):
     return {'tsm': tsm}
 
 
-def classification_metrics(y_test, *score_functions, X_test=None):
+def classification_metrics(y_test, *score_functions: str, X_test=None) -> Callback:
     """
     :param y_test: true labels of test set
     :param score_functions: list of metrics to be computed. Available metrics are: 'true_positive', 'false_positive',
@@ -56,7 +64,7 @@ def classification_metrics(y_test, *score_functions, X_test=None):
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(data, active_learner):
+    def compute(data: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
         X = X_test if X_test is not None else data.data
         y_pred = active_learner.predict(X)
 
@@ -77,5 +85,6 @@ __classification_metrics = {
     'fscore': lambda cm: true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
 }
 
-def true_divide(x, y):
-    return 0 if y == 0 else x / y
+
+def true_divide(x: float, y: float) -> float:
+    return 0. if y == 0 else x / y

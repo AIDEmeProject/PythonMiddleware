@@ -16,8 +16,8 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .validation import *
-from .metrics import classification_metrics, three_set_metric
-from .convergence import max_iter_reached, all_points_are_known, metric_reached_threshold
+from .metrics import classification_metrics, three_set_metric, Metrics, Callback
+from .convergence import max_iter_reached, all_points_are_known, metric_reached_threshold, Convergence
 
 __all__ = [
     'classification_metrics', 'three_set_metric',

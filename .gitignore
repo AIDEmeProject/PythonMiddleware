@@ -15,3 +15,7 @@ resources/
 
 # pickle files
 *.pkl
+
+# mypy files
+.mypy_cache/
+.dmypy.json
