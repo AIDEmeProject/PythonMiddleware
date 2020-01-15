@@ -15,9 +15,9 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .explore import PoolBasedExploration, CommandLineExploration
-from .manager import ExplorationManager
 from .labeledset import LabeledSet
 from .partitioned import PartitionedDataset
+from .manager import ExplorationManager
+from .explore import PoolBasedExploration, CommandLineExploration
 
 __all__ = ['PoolBasedExploration', 'CommandLineExploration', 'ExplorationManager', 'LabeledSet', 'PartitionedDataset']

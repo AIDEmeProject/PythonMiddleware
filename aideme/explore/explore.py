@@ -14,19 +14,22 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
 
-import math
+from typing import Optional, List, TYPE_CHECKING
 
-from .labeledset import LabeledSet
-from .manager import ExplorationManager
-from .partitioned import PartitionedDataset
-from ..utils.validation import assert_positive_integer, process_callback
+from . import LabeledSet, ExplorationManager, PartitionedDataset
+from ..utils import assert_positive_integer, process_callback
+
+if TYPE_CHECKING:
+    from ..active_learning import ActiveLearner
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics
 
 
 class PoolBasedExploration:
-    def __init__(self, initial_sampler=None, subsampling=math.inf,
-                 callback=None, callback_skip=1, print_callback_result=False,
-                 convergence_criteria=None):
+    def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
+                 callback: FunctionList[Callback] = None, callback_skip: int = 1, print_callback_result: bool = False,
+                 convergence_criteria: FunctionList[Convergence] = None):
         """
         :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
         :param subsampling: sample size of unlabeled points when looking for the next point to label
@@ -35,7 +38,8 @@ class PoolBasedExploration:
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
-        assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
+        if subsampling is not None:
+            assert_positive_integer(subsampling, 'subsampling')
         assert_positive_integer(callback_skip, 'callback_skip')
 
         self.initial_sampler = initial_sampler
@@ -46,7 +50,7 @@ class PoolBasedExploration:
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, labeled_set, active_learner, repeat=1):
+    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1) -> List[List[Metrics]]:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
@@ -73,7 +77,7 @@ class PoolBasedExploration:
 
         return [self._run(manager, labeled_set) for _ in range(repeat)]
 
-    def _run(self, manager, labeled_set):
+    def _run(self, manager: ExplorationManager, labeled_set: LabeledSet) -> List[Metrics]:
         manager.clear()
 
         idx, metrics, converged = manager.advance()
@@ -91,9 +95,9 @@ class CommandLineExploration:
     A class for running the exploration process on the command line.
     """
 
-    def __init__(self, initial_sampler=None, subsampling=math.inf,
-                 callback=None, callback_skip=1, print_callback_result=False,
-                 convergence_criteria=None):
+    def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
+                 callback: FunctionList[Callback] = None, callback_skip: int = 1, print_callback_result: bool = False,
+                 convergence_criteria: FunctionList[Convergence] = None):
         """
         :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
         :param subsampling: sample size of unlabeled points when looking for the next point to label
@@ -102,7 +106,8 @@ class CommandLineExploration:
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
-        assert_positive_integer(subsampling, 'subsampling', allow_inf=True)
+        if subsampling is not None:
+            assert_positive_integer(subsampling, 'subsampling')
         assert_positive_integer(callback_skip, 'callback_skip')
 
         self.initial_sampler = initial_sampler
@@ -113,11 +118,11 @@ class CommandLineExploration:
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, active_learner):
+    def run(self, X, active_learner: ActiveLearner) -> None:
         data = PartitionedDataset(X, copy=False)
 
         manager = ExplorationManager(
-            data, active_learner, self.initial_sampler, self.subsampling,
+            data, active_learner, self.subsampling, self.initial_sampler,
             self.callbacks, self.callback_skip, self.print_callback_result,
             self.convergence_criteria
         )
@@ -131,14 +136,14 @@ class CommandLineExploration:
             idx, metrics, converged = manager.advance(labels)
 
     @property
-    def _is_willing(self):
+    def _is_willing(self) -> bool:
         val = input("Continue (y/n): ")
         while val not in ['y', 'n']:
             val = input("Continue (y/n): ")
 
         return True if val == 'y' else False
 
-    def _label(self, idx, pts):
+    def _label(self, idx, pts) -> LabeledSet:
         is_valid, labels = self.__is_valid_input(pts)
         while not is_valid:
             is_valid, labels = self.__is_valid_input(pts)

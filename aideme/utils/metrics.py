@@ -25,15 +25,18 @@ with the following signature:
 Here, 'data' is an PartitionedDataset instance and 'active_learner' is a ActiveLearner instance.
 """
 
-from typing import Callable, Dict, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import sklearn
 
-from aideme.active_learning import ActiveLearner, DualSpaceModel
-from aideme.explore import PartitionedDataset
+from aideme.active_learning.dsm import DualSpaceModel
 
-Metrics = Dict[str, Any]
-Callback = Callable[[PartitionedDataset, ActiveLearner], Metrics]
+if TYPE_CHECKING:
+    from .types import Metrics, Callback
+    from aideme.active_learning import ActiveLearner
+    from aideme.explore import PartitionedDataset
 
 
 def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:

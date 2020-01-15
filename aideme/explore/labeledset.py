@@ -14,8 +14,14 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
+from typing import Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from ..utils import Index, Metrics
 
 
 class LabeledSet:
@@ -23,7 +29,7 @@ class LabeledSet:
     This class manages a collection of user labels, including final labels, partial labels, and the corresponding data
     point indexes.
     """
-    def __init__(self, labels, partial=None, index=None):
+    def __init__(self, labels: Sequence[int], partial: Optional[Sequence[Sequence[int]]] = None, index: Optional[Index] = None):
         """
         :param labels: the collection of user labels (0, 1 format)
         :param partial: the collection of user partial labels, as a matrix of 0, 1 values. Use None if there is no partial
@@ -37,18 +43,18 @@ class LabeledSet:
     def __len__(self):
         return len(self.labels)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> LabeledSet:
         """
         :param item: a slice of positions to be retrieved
         :return: a LabeledSet instance containing the selected slice
         """
         return LabeledSet(self.labels[item], self.partial[item], self.index[item])
 
-    def __get_partial_labels(self, partial_labels):
-        if partial_labels is None:
+    def __get_partial_labels(self, partial: Optional[Sequence[Sequence[int]]]) -> np.ndarray:
+        if partial is None:
             return self.labels.reshape(-1, 1)
 
-        partial_labels = np.asarray(partial_labels)
+        partial_labels = np.asarray(partial)
 
         if partial_labels.ndim != 2:
             raise ValueError("Expected two-dimensional array of partial labels, but ndim = {}".format(partial_labels.ndim))
@@ -58,23 +64,23 @@ class LabeledSet:
 
         return partial_labels
 
-    def __get_index(self, idx):
-        if idx is None:
+    def __get_index(self, index: Optional[Index]) -> np.ndarray:
+        if index is None:
             return np.arange(len(self))
 
-        idx = np.ravel(idx)
+        idx = np.ravel(index)
 
         if len(idx) != len(self):
             raise ValueError("Wrong size of indexes: expected {}, but got {}".format(len(idx), len(self)))
 
         return idx
 
-    def asdict(self):
+    def asdict(self) -> Metrics:
         """
         :return: a dict containing all index and labels information
         """
         return {
-            'labeled_indexes': self.index,
+            'labeled_indexes': self.index.tolist(),
             'final_labels': self.labels.tolist(),
             'partial_labels': self.partial.tolist(),
         }

@@ -25,29 +25,31 @@ is any function with the following signature:
 Here, 'manager' is an ExplorationManager instance containing the current state of the AL exploration (i.e. data and learner),
 and 'metrics' is the dictionary of all metrics which have been computed in the last iteration.
 """
+from __future__ import annotations
 
-import math
-from typing import Callable
+from typing import Optional, TYPE_CHECKING
 
-from .metrics import Metrics
 from .validation import assert_non_negative_integer
-from ..explore import ExplorationManager
+
+if TYPE_CHECKING:
+    from .types import Convergence, Metrics
+    from ..explore import ExplorationManager
 
 
-Convergence = Callable[[ExplorationManager, Metrics], bool]
-
-
-def max_iter_reached(max_exploration_iter: float, max_initial_sampling_iter: float = math.inf) -> Convergence:
+def max_iter_reached(max_exploration_iter: int, max_initial_sampling_iter: Optional[int] = None) -> Convergence:
     """
     :param max_exploration_iter: maximum number of exploration iterations to run. Must be a positive integer.
     :param max_initial_sampling_iter: maximum number of initial sampling iterations to run. Must be a positive integer.
     :return: a convergence criteria which stops the exploration process after the specified number of iterations
     """
     assert_non_negative_integer(max_exploration_iter, 'max_exploration_iter', allow_inf=True)
-    assert_non_negative_integer(max_initial_sampling_iter, 'max_initial_sampling_iter', allow_inf=True)
+
+    if max_initial_sampling_iter is not None:
+        assert_non_negative_integer(max_initial_sampling_iter, 'max_initial_sampling_iter', allow_inf=True)
 
     def converged(manager: ExplorationManager, metrics: Metrics) -> bool:
-        return manager.exploration_iters > max_exploration_iter or manager.initial_sampling_iters > max_initial_sampling_iter
+        return manager.exploration_iters > max_exploration_iter or \
+               (max_initial_sampling_iter is not None and manager.initial_sampling_iters > max_initial_sampling_iter)
 
     return converged
 

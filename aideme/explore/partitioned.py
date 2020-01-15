@@ -180,14 +180,17 @@ class PartitionedDataset:
     ##################
     # SAMPLING
     ##################
-    def sample_unknown(self, subsample=float('inf')):
+    def sample_unknown(self, subsample=None):
         return self.__subsample(subsample, self._unknown_start, self.__size)
 
-    def sample_unlabeled(self, subsample=float('inf')):
+    def sample_unlabeled(self, subsample=None):
         return self.__subsample(subsample, self._inferred_start, self.__size)
 
     def __subsample(self, size, start, stop):
         remaining = stop - start
+
+        if size is None:
+            size = remaining
 
         if remaining == 0:
             raise RuntimeError("There are no points to sample from.")
