@@ -15,14 +15,13 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from typing import Union, Sequence, TypeVar, Callable, Dict, Any, TYPE_CHECKING
+from typing import Union, Sequence, TypeVar, Callable, Dict, Any
 
 import numpy as np
 
 from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
-from aideme.explore.partitioned import PartitionedDataset
 from aideme.explore.manager import ExplorationManager
-
+from aideme.explore.partitioned import PartitionedDataset
 
 T = TypeVar('T')
 FunctionList = Union[None, T, Sequence[T]]
@@ -35,7 +34,3 @@ Index = Sequence[T]
 InitialSampler = Callable[[PartitionedDataset], Index[T]]
 
 RandomStateType = Union[None, int, np.random.RandomState]
-
-
-# Array = NewType('Array',  np.ndarray)
-# ArrayLike = Union[Sequence[T], Array]

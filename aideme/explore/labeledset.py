@@ -21,7 +21,7 @@ from typing import Optional, Sequence, TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from ..utils import Index, Metrics
+    from ..utils import Metrics
 
 
 class LabeledSet:
@@ -29,7 +29,7 @@ class LabeledSet:
     This class manages a collection of user labels, including final labels, partial labels, and the corresponding data
     point indexes.
     """
-    def __init__(self, labels: Sequence[int], partial: Optional[Sequence[Sequence[int]]] = None, index: Optional[Index] = None):
+    def __init__(self, labels, partial=None, index=None):
         """
         :param labels: the collection of user labels (0, 1 format)
         :param partial: the collection of user partial labels, as a matrix of 0, 1 values. Use None if there is no partial
@@ -39,16 +39,6 @@ class LabeledSet:
         self.labels = np.ravel(labels)
         self.partial = self.__get_partial_labels(partial)
         self.index = self.__get_index(index)
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, item) -> LabeledSet:
-        """
-        :param item: a slice of positions to be retrieved
-        :return: a LabeledSet instance containing the selected slice
-        """
-        return LabeledSet(self.labels[item], self.partial[item], self.index[item])
 
     def __get_partial_labels(self, partial: Optional[Sequence[Sequence[int]]]) -> np.ndarray:
         if partial is None:
@@ -64,7 +54,7 @@ class LabeledSet:
 
         return partial_labels
 
-    def __get_index(self, index: Optional[Index]) -> np.ndarray:
+    def __get_index(self, index) -> np.ndarray:
         if index is None:
             return np.arange(len(self))
 
@@ -75,6 +65,38 @@ class LabeledSet:
 
         return idx
 
+    @staticmethod
+    def empty() -> LabeledSet:
+        """
+        :return: an empty labeled set of given dimension
+        """
+        return LabeledSet(np.array([]))
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, item) -> LabeledSet:
+        """
+        :param item: a slice of positions to be retrieved
+        :return: a LabeledSet instance containing the selected slice
+        """
+        return LabeledSet(self.labels[item], self.partial[item], self.index[item])
+
+    def get_index(self, idx):
+        # TODO: optimized this. Add index_to_row map?
+        idx_list = self.index.tolist()
+        rows = [idx_list.index(i) for i in idx]
+        return self[rows]
+
+    def concat(self, labeled_set: LabeledSet) -> LabeledSet:
+        if len(self) == 0:
+            return labeled_set
+
+        labels = np.hstack([self.labels, labeled_set.labels])
+        partial = np.vstack([self.partial, labeled_set.partial])
+        index = np.hstack([self.index, labeled_set.index])
+        return LabeledSet(labels, partial, index)
+
     def asdict(self) -> Metrics:
         """
         :return: a dict containing all index and labels information
@@ -84,3 +106,6 @@ class LabeledSet:
             'final_labels': self.labels.tolist(),
             'partial_labels': self.partial.tolist(),
         }
+
+    def has_positive_and_negative_labels(self):
+        return len(self.labels) > 0 and 0 < self.labels.sum() < len(self.labels)

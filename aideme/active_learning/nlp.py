@@ -97,7 +97,7 @@ class TwoStepsLearner(FactorizedActiveLearner):
 
                 data.move_to_inferred(idx)
 
-            X, y = data.training_set(partial=True)
+            X, y = data.training_set(get_partial=True)
             X_text = self.get_text_data(X)
             y_text = self.get_text_labels(y)
 
@@ -131,5 +131,6 @@ class TwoStepsLearner(FactorizedActiveLearner):
             lb_slice = slice(0, -1)
             return self._al_struct.next_points_to_label(data.select_cols(col_slice, lb_slice), subsample)
 
-        idx, X = data.sample_unknown(subsample)
-        return self._al_text._select_next(idx, self.get_text_data(X))
+        sample = data.sample_unknown(subsample)
+        sample.data = self.get_text_data(sample.data)
+        return self._al_text._select_next(sample)

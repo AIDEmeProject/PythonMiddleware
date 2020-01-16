@@ -14,17 +14,23 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
 
 from sklearn.utils import check_random_state
 
 from .active_learner import ActiveLearner
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..utils import RandomStateType
 
 
 class RandomSampler(ActiveLearner):
     """
     Randomly picks the next point to label. Usually used as baseline method for comparison.
     """
-    def __init__(self, clf, random_state=None):
+    def __init__(self, clf, random_state: RandomStateType = None):
         """
         :param clf: Classifier object implementing two methods:
             - fit(X, y): fits the classifier over the labeled data X,y

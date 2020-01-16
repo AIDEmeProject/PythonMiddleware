@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .labeledset import LabeledSet
-from .partitioned import PartitionedDataset
+from .partitioned import PartitionedDataset, IndexedDataset
 from .manager import ExplorationManager
 from .explore import PoolBasedExploration, CommandLineExploration
 

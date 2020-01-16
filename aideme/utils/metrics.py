@@ -46,7 +46,7 @@ def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) ->
     if not isinstance(active_learner, DualSpaceModel):
         return {}
 
-    pred = active_learner.polytope_model.predict(data.data)
+    pred = active_learner.polytope_model.predict(data.data.data)  # TODO: shorten data access
 
     pos = (pred == 1).sum()
     unknown = (pred == 0.5).sum()
@@ -68,7 +68,7 @@ def classification_metrics(y_test, *score_functions: str, X_test=None) -> Callba
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
     def compute(data: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
-        X = X_test if X_test is not None else data.data
+        X = X_test if X_test is not None else data.data.data
         y_pred = active_learner.predict(X)
 
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])

@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from time import perf_counter
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import Tuple, Optional, TYPE_CHECKING, List
 
 from ..utils import assert_positive_integer, process_callback
 from ..utils.convergence import all_points_are_labeled
@@ -93,7 +93,7 @@ class ExplorationManager:
         """
         :return: Whether we are at exploration phase (i.e. initial sampling phase is over)
         """
-        return self.initial_sampler is None or 0 < self.data.labels.sum() < self.data.labeled_size
+        return self.initial_sampler is None or self.data.labeled_set.has_positive_and_negative_labels()
 
     @property
     def is_initial_sampling_phase(self) -> bool:
@@ -107,7 +107,7 @@ class ExplorationManager:
         """
         Resets the iteration state.
         """
-        self.data.clear(copy=True)
+        self.data.clear()
         self.active_learner.clear()
         self.__initial_sampling_iters = 0
         self.__exploration_iters = 0
@@ -128,7 +128,7 @@ class ExplorationManager:
 
     def __update_partitions(self, labeled_set: Optional[LabeledSet], metrics: Metrics) -> None:
         if labeled_set is not None:
-            self.data.move_to_labeled(labeled_set, 'user')
+            self.data.move_to_labeled(labeled_set)
             metrics.update(labeled_set.asdict())
 
     def __initial_sampling_advance(self, metrics: Metrics) -> Index:
@@ -150,10 +150,13 @@ class ExplorationManager:
         metrics['fit_time'] = perf_counter() - t0
 
         # find next point to label
-        t0 = perf_counter()
-        idx, _ = self.active_learner.next_points_to_label(self.data, self.subsampling)
-        metrics['get_next_time'] = perf_counter() - t0
-        metrics['iter_time'] = metrics['get_next_time'] + metrics['fit_time']
+        idx: List = []
+        if self.data.unlabeled_size > 0:
+            t0 = perf_counter()
+            idx = self.active_learner.next_points_to_label(self.data, self.subsampling).index
+            metrics['get_next_time'] = perf_counter() - t0
+
+        metrics['iter_time'] = metrics['fit_time'] + metrics.get('get_next_time', 0)
 
         self.__exploration_iters += 1
 

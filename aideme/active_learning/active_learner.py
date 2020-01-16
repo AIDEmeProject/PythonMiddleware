@@ -14,8 +14,15 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
+from typing import Any, Optional, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from aideme.explore import PartitionedDataset
+    from aideme.explore.partitioned import IndexedDataset
 
 
 class ActiveLearner:
@@ -25,13 +32,13 @@ class ActiveLearner:
         - Trains a classification model over labeled data, predicting class labels and, possibly, class probabilities.
         - Ranks unlabeled points from "more informative" to "less informative"
     """
-    def clear(self):
+    def clear(self) -> None:
         """
         Resets object internal state. Called at the beginning of each run.
         """
         pass
 
-    def fit_data(self, data):
+    def fit_data(self, data: PartitionedDataset) -> None:
         """
         Trains active learning model over data
 
@@ -40,7 +47,7 @@ class ActiveLearner:
         X, y = data.training_set()
         self.fit(X, y)
 
-    def fit(self, X, y):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         """
         Fit model over labeled data.
 
@@ -49,7 +56,7 @@ class ActiveLearner:
         """
         raise NotImplementedError
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict classes for each data point x in X.
 
@@ -58,7 +65,7 @@ class ActiveLearner:
         """
         raise NotImplementedError
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predict probability of class being positive for each data point x in X.
 
@@ -67,7 +74,7 @@ class ActiveLearner:
         """
         raise NotImplementedError
 
-    def rank(self, X):
+    def rank(self, X: np.ndarray) -> np.ndarray:
         """
         Ranking function returning an "informativeness" score for each data point x in X. The lower the score, the most
         informative the data point is.
@@ -77,7 +84,7 @@ class ActiveLearner:
         """
         raise NotImplementedError
 
-    def next_points_to_label(self, data, subsample=None):
+    def next_points_to_label(self, data: PartitionedDataset, subsample: Optional[int] = None) -> IndexedDataset:
         """
         Returns a list of data points to be labeled at the next iteration. By default, it returns a random minimizer of
         the rank function.
@@ -86,22 +93,20 @@ class ActiveLearner:
         :param subsample: size of unlabeled points sample. By default, no subsample is performed
         :return: row indexes of data points to be labeled
         """
-        idx_sample, X_sample = data.unlabeled if subsample is None else data.sample_unlabeled(subsample)
-        return self._select_next(idx_sample, X_sample)
+        return self._select_next(data.sample_unlabeled(subsample))
 
-    def _select_next(self, idx, X):
-        ranks = self.rank(X)
-        min_row = np.arange(len(X))[ranks == ranks.min()]
-        chosen_row = np.random.choice(min_row)
-        return [idx[chosen_row]], X[[chosen_row]]
+    def _select_next(self, dataset: IndexedDataset) -> IndexedDataset:
+        ranks = self.rank(dataset.data)
+        min_row = np.where(ranks == ranks.min())[0]
+        return dataset[np.random.choice(min_row)]
 
 
 class FactorizedActiveLearner(ActiveLearner):
-    def fit_data(self, data):
-        X, y = data.training_set(partial=True)
+    def fit_data(self, data: PartitionedDataset) -> None:
+        X, y = data.training_set(get_partial=True)
         self.fit(X, y)
 
-    def set_factorization_structure(self, **factorization_info):
+    def set_factorization_structure(self, **factorization_info: Any) -> None:
         """
         Tells the Active Learner to consider a new factorization structure, provided it can support such information
 

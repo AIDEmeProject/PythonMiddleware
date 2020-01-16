@@ -69,4 +69,4 @@ def random_sampler(sample_size: int) -> InitialSampler:
     Samples a random batch of unlabeled points.
     """
     assert_positive_integer(sample_size, 'sample_size')
-    return lambda data: data.sample_unlabeled(sample_size)[0]
+    return lambda data: data.sample_unlabeled(sample_size).index

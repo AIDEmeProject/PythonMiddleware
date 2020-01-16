@@ -19,6 +19,7 @@ from __future__ import annotations
 from typing import Optional, List, TYPE_CHECKING
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
+from .partitioned import IndexedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
@@ -64,10 +65,13 @@ class PoolBasedExploration:
                 - Timing measurements (fit, get next point, ...)
                 - Any metrics returned by the callback function
         """
-        data = PartitionedDataset(X, copy=True)
+        if not isinstance(X, IndexedDataset):
+            X = IndexedDataset(X)
 
         if not isinstance(labeled_set, LabeledSet):
             labeled_set = LabeledSet(labeled_set)
+
+        data = PartitionedDataset(X)
 
         manager = ExplorationManager(
             data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,
@@ -84,7 +88,7 @@ class PoolBasedExploration:
 
         iter_metrics = [metrics]
         while not converged:
-            idx, metrics, converged = manager.advance(labeled_set[idx])
+            idx, metrics, converged = manager.advance(labeled_set.get_index(idx))
             iter_metrics.append(metrics)
 
         return iter_metrics
