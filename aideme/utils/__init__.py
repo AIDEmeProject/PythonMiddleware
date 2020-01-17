@@ -21,4 +21,4 @@ from .convergence import max_iter_reached, all_points_are_known, metric_reached_
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .types import FunctionList, Metrics, Callback, Convergence, Index, InitialSampler, RandomStateType
+    from .types import FunctionList, Metrics, Callback, Convergence, InitialSampler, RandomStateType

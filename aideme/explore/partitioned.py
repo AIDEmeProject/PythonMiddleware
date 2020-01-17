@@ -16,26 +16,24 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Tuple, Optional
+from typing import Iterable, Tuple, Optional
 
 import numpy as np
 import sklearn.utils
 
 from . import LabeledSet
-
-if TYPE_CHECKING:
-    pass
+from .index import Index
 
 
 class PartitionedDataset:  # TODO: how can we add partition information? (factorization)
     def __init__(self, dataset: IndexedDataset, copy: bool = False):
         self.data = dataset
         self.__dataset = dataset.copy() if copy else dataset
-        self.__index_to_row = {idx: i for i, idx in enumerate(self.__dataset.index)}
-        self.__labeled_set = LabeledSet.empty()
+        self.__index_to_row = Index(self.__dataset.index)
+        self.__labeled_set = LabeledSet([])
         self.__inferred_start = 0
         self.__unknown_start = 0
-        self.__last_user_labeled_set = LabeledSet.empty()
+        self.__last_user_labeled_set =  LabeledSet([])
 
     def __len__(self):
         return len(self.__dataset)
@@ -45,11 +43,11 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
 
     def clear(self) -> None:
         self.__dataset = self.data.copy()
-        self.__index_to_row = {idx: i for i, idx in enumerate(self.__dataset.index)}
-        self.__labeled_set = LabeledSet.empty()
+        self.__index_to_row = Index(self.__dataset.index)
+        self.__labeled_set =  LabeledSet([])
         self.__inferred_start = 0
         self.__unknown_start = 0
-        self.__last_user_labeled_set = LabeledSet.empty()
+        self.__last_user_labeled_set =  LabeledSet([])
 
     ##################
     # MOVING
@@ -109,7 +107,7 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
     def __swap_rows(self, i, j):
         idx_i, idx_j = self.__dataset.index[i], self.__dataset.index[j]
         self.__dataset.swap_rows(i, j)
-        self.__index_to_row[idx_i], self.__index_to_row[idx_j] = j, i
+        self.__index_to_row.swap_index(idx_i, idx_j)
 
     def __raise_error(self, idx, pos: int, partition_name: str) -> None:
         raise ValueError("Index {}, at position {}, is already in {} set.".format(idx, pos, partition_name))
@@ -188,7 +186,7 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
     # LABELED DATA
     ##################
     def last_training_set(self, get_partial=False) -> Tuple[np.ndarray, np.ndarray]:
-        rows = [self.__index_to_row[idx] for idx in self.__last_user_labeled_set.index]
+        rows = self.__index_to_row.get_rows(self.__last_user_labeled_set.index)
         return self.__dataset.data[rows], self.__last_user_labeled_set.partial if get_partial else self.__last_user_labeled_set.labels
 
     def training_set(self, get_partial=False) -> Tuple[np.ndarray, np.ndarray]:

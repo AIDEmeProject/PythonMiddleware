@@ -17,16 +17,15 @@
 from __future__ import annotations
 
 from time import perf_counter
-from typing import Tuple, Optional, TYPE_CHECKING, List
+from typing import Tuple, Optional, TYPE_CHECKING, List, Sequence
 
 from ..utils import assert_positive_integer, process_callback
 from ..utils.convergence import all_points_are_labeled
 
-
 if TYPE_CHECKING:
     from . import LabeledSet, PartitionedDataset
     from ..active_learning import ActiveLearner
-    from ..utils import InitialSampler, FunctionList, Callback, Convergence, Index, Metrics
+    from ..utils import InitialSampler, FunctionList, Callback, Convergence, Metrics
 
 
 class ExplorationManager:
@@ -112,7 +111,7 @@ class ExplorationManager:
         self.__initial_sampling_iters = 0
         self.__exploration_iters = 0
 
-    def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Index, Metrics, bool]:
+    def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
         """
         Updates current model with new labeled data and computes new point to be labeled.
         :param labeled_set: a LabeledSet instance containing the new labeled points by the user
@@ -131,7 +130,7 @@ class ExplorationManager:
             self.data.move_to_labeled(labeled_set)
             metrics.update(labeled_set.asdict())
 
-    def __initial_sampling_advance(self, metrics: Metrics) -> Index:
+    def __initial_sampling_advance(self, metrics: Metrics) -> Sequence:
         if self.initial_sampler is None:
             raise RuntimeError("No initial sampler was provided.")
 
@@ -143,7 +142,7 @@ class ExplorationManager:
 
         return idx
 
-    def __exploration_advance(self, metrics: Metrics) -> Index:
+    def __exploration_advance(self, metrics: Metrics) -> Sequence:
         # fit active learning model
         t0 = perf_counter()
         self.active_learner.fit_data(self.data)

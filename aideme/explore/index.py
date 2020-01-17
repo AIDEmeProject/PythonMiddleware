@@ -15,21 +15,20 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from typing import Union, Sequence, TypeVar, Callable, Dict, Any
-
-import numpy as np
-
-from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
-from aideme.explore.manager import ExplorationManager
-from aideme.explore.partitioned import PartitionedDataset
+from typing import List, Sequence, TypeVar
 
 T = TypeVar('T')
-FunctionList = Union[None, T, Sequence[T]]
 
-Metrics = Dict[str, Any]
-Callback = Callable[[PartitionedDataset, ActiveLearner], Metrics]
-Convergence = Callable[[ExplorationManager, Metrics], bool]
+class Index:
+    def __init__(self, index: Sequence[T]):
+        self.__index_to_row = {idx: i for i, idx in enumerate(index)}
 
-InitialSampler = Callable[[PartitionedDataset], Sequence]
+    def __getitem__(self, item: T) -> int:
+        return self.__index_to_row[item]
 
-RandomStateType = Union[None, int, np.random.RandomState]
+    def get_rows(self, index: Sequence[T]) -> List[int]:
+        return [self.__index_to_row[idx] for idx in index]
+
+    def swap_index(self, idx_i: T, idx_j: T) -> None:
+        i, j = self.__index_to_row[idx_i], self.__index_to_row[idx_j]
+        self.__index_to_row[idx_i], self.__index_to_row[idx_j] = j, i

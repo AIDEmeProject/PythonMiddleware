@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 from sklearn.utils import check_random_state
 
@@ -25,7 +25,7 @@ from .utils import assert_positive_integer
 
 if TYPE_CHECKING:
     from .explore import LabeledSet
-    from .utils import  Index, RandomStateType, InitialSampler
+    from .utils import  RandomStateType, InitialSampler
 
 
 __all__ = ['stratified_sampler', 'fixed_sampler', 'random_sampler']
@@ -48,7 +48,7 @@ def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_
     pos_idx, neg_idx = labeled_set.index[pos_mask], labeled_set.index[neg_mask]
     rng = check_random_state(random_state)
 
-    def sampler(data) -> Index:
+    def sampler(data) -> Sequence:
         pos_samples = rng.choice(pos_idx, size=pos, replace=False)
         neg_samples = rng.choice(neg_idx, size=neg, replace=False)
 
@@ -57,7 +57,7 @@ def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_
     return sampler
 
 
-def fixed_sampler(indexes: Index) -> InitialSampler:
+def fixed_sampler(indexes: Sequence) -> InitialSampler:
     """
     Dummy sampler which returns a specified selection of indexes.
     """

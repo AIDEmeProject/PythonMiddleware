@@ -16,9 +16,11 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+from .index import Index
 
 if TYPE_CHECKING:
     from ..utils import Metrics
@@ -39,8 +41,9 @@ class LabeledSet:
         self.labels = np.ravel(labels)
         self.partial = self.__get_partial_labels(partial)
         self.index = self.__get_index(index)
+        self.__index_to_row = Index(self.index)
 
-    def __get_partial_labels(self, partial: Optional[Sequence[Sequence[int]]]) -> np.ndarray:
+    def __get_partial_labels(self, partial) -> np.ndarray:
         if partial is None:
             return self.labels.reshape(-1, 1)
 
@@ -65,32 +68,19 @@ class LabeledSet:
 
         return idx
 
-    @staticmethod
-    def empty() -> LabeledSet:
-        """
-        :return: an empty labeled set of given dimension
-        """
-        return LabeledSet(np.array([]))
-
     def __len__(self):
         return len(self.labels)
 
-    def __getitem__(self, item) -> LabeledSet:
-        """
-        :param item: a slice of positions to be retrieved
-        :return: a LabeledSet instance containing the selected slice
-        """
-        return LabeledSet(self.labels[item], self.partial[item], self.index[item])
-
     def get_index(self, idx):
-        # TODO: optimized this. Add index_to_row map?
-        idx_list = self.index.tolist()
-        rows = [idx_list.index(i) for i in idx]
-        return self[rows]
+        rows = self.__index_to_row.get_rows(idx)
+        return LabeledSet(self.labels[rows], self.partial[rows], self.index[rows])
 
     def concat(self, labeled_set: LabeledSet) -> LabeledSet:
         if len(self) == 0:
             return labeled_set
+
+        if len(labeled_set) == 0:
+            return self
 
         labels = np.hstack([self.labels, labeled_set.labels])
         partial = np.vstack([self.partial, labeled_set.partial])
