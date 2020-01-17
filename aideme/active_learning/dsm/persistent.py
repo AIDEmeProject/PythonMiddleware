@@ -56,25 +56,9 @@ class PolytopeModel:
         self._pol.clear()
 
     def predict(self, X):
-        """
-            Predicts the label of each data point. There are three cases to consider:
-                1) is_positive_convex == None: if a single polytope is valid, return its predictions. Otherwise, predict all as unknown
-                2) is_positive_convex == True: return prediction of polytope built over positive region
-                3) is_positive_convex == False: return prediction of polytope built over negative region
-
-            :param X: data matrix to predict labels
-        """
         return self._pol.predict(X)
 
-
     def update(self, X, y):
-        """
-        Increments the polytopes with new labeled data.
-
-        :param X: data matrix
-        :param y: labels array. Expects 1 for positive points, and 0 for negative points
-        :return: whether update was successful or not
-        """
         return self._pol.update(X, y)
 
 

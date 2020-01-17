@@ -160,8 +160,10 @@ class ExplorationManager:
 
         self.__exploration_iters += 1
 
+        t0 = perf_counter()
         if self.__is_callback_computation_iter(metrics):
             metrics.update(self.__get_callback_metrics())
+        metrics['callback_time'] = perf_counter() - t0
 
         return idx
 

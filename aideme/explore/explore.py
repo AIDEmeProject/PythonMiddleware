@@ -65,6 +65,7 @@ class PoolBasedExploration:
                 - Timing measurements (fit, get next point, ...)
                 - Any metrics returned by the callback function
         """
+        # TODO: check if X and labeled_set have compatible indexes
         if not isinstance(X, IndexedDataset):
             X = IndexedDataset(X)
 
@@ -84,12 +85,14 @@ class PoolBasedExploration:
     def _run(self, manager: ExplorationManager, labeled_set: LabeledSet) -> List[Metrics]:
         manager.clear()
 
-        idx, metrics, converged = manager.advance()
+        converged, new_labeled_set = False, None
 
-        iter_metrics = [metrics]
+        iter_metrics = []
         while not converged:
-            idx, metrics, converged = manager.advance(labeled_set.get_index(idx))
+            idx, metrics, converged = manager.advance(new_labeled_set)
             iter_metrics.append(metrics)
+
+            new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
 
         return iter_metrics
 

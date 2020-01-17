@@ -150,8 +150,12 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         return len(self) - self.__inferred_start
 
     ##################
-    # DATA SLICING
+    # DATA ACCESS
     ##################
+    @property
+    def raw_values(self) -> np.ndarray:
+        return self.data.data
+
     @property
     def labeled(self) -> IndexedDataset:
         return self.__dataset[:self.__inferred_start]
