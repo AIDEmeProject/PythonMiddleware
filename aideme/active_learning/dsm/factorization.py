@@ -35,6 +35,10 @@ class FactorizedPolytopeModel:
     def is_valid(self):
         return any((pol.is_valid for pol in self.polytope_models))
 
+    @property
+    def is_all_valid(self):
+        return all((pol.is_valid for pol in self.polytope_models))
+
     def clear(self):
         for pol in self.polytope_models:
             pol.clear()
@@ -54,14 +58,12 @@ class FactorizedPolytopeModel:
     def predict(self, X):
         """
             Predicts the label of each data point. Returns 1 if point is in positive region, 0 if in negative region,
-            and -1 otherwise
+            and 0.5 otherwise
 
             :param X: data matrix to predict labels
         """
-        if not self.is_valid:
-            return np.full(len(X), fill_value=0.5)
-
-        prediction = np.full(len(X), fill_value=1.0)
+        val = 1.0 if self.is_all_valid else 0.5
+        prediction = np.full(len(X), fill_value=val)
 
         for i, idx, pol in self.__valid_elements():
             np.minimum(prediction, pol.predict(X[:, idx]), out=prediction)

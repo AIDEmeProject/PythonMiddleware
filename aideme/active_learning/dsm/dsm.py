@@ -18,14 +18,13 @@ from __future__ import annotations
 
 import random
 import warnings
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING, Union, Sequence, List, Tuple
 
 import numpy as np
 
 from .factorization import FactorizedPolytopeModel
 from .persistent import PolytopeModel
 from ..active_learner import FactorizedActiveLearner
-from ...explore import LabeledSet
 
 if TYPE_CHECKING:
     from ..active_learner import ActiveLearner
@@ -39,15 +38,18 @@ class DualSpaceModel(FactorizedActiveLearner):
     """
 
     def __init__(self, active_learner: ActiveLearner, sample_unknown_proba: float = 0.5, partition=None,
-                 mode: str = 'persist', tol: float = 1e-12):
+                 mode: Union[str, Sequence[str]] = 'persist', tol: float = 1e-12):
         self.active_learner = active_learner
         self.sample_unknown_proba = sample_unknown_proba
         self.__tol = tol
         self.set_factorization_structure(partition=partition, mode=mode)
 
+        self._dsm_labeled_cache = TrainingSetCache()
+
     def clear(self) -> None:
         self.active_learner.clear()
         self.polytope_model.clear()
+        self._dsm_labeled_cache.clear()
 
     def set_factorization_structure(self, **factorization_info: Any) -> None:
         partition = factorization_info.get('partition', None)
@@ -73,11 +75,12 @@ class DualSpaceModel(FactorizedActiveLearner):
         X_new, y_new = data.last_training_set(get_partial=self.factorized)
         is_success = self.polytope_model.update(X_new, y_new)
 
-        # if conflicting points were found, the inferred partition has to be relabeled and labeled points checked
+        # if conflicting points were found, we must relabel the inferred partition and the DSM labeled points
         if not is_success:
             warnings.warn("Found conflicting point in polytope model. is_valid = {0}".format(self.polytope_model.is_valid))
+
             data.remove_inferred()
-            self.__fit_active_learner(data)  # retrain AL since labeled set may have changed
+            self.__verify_dsm_labeled_points(data)
 
             # if polytope became invalid with the last update, skip relabeling
             if not self.polytope_model.is_valid:
@@ -88,7 +91,17 @@ class DualSpaceModel(FactorizedActiveLearner):
             pred = self.polytope_model.predict(unknown.data)
             data.move_to_inferred(unknown.index[pred != 0.5])
 
-    def predict(self, X) -> np.ndarray:
+    def __verify_dsm_labeled_points(self, data: PartitionedDataset) -> None:
+        if self._dsm_labeled_cache.is_empty:
+            return
+
+        is_known = self.polytope_model.predict(self._dsm_labeled_cache.X) != 0.5
+
+        if not np.all(is_known):
+            self._dsm_labeled_cache.filter(is_known)
+            self.__fit_active_learner(data)  # retrain AL since labeled changed
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predicts classes based on polytope model first; unknown labels are labeled via the active learner
         """
@@ -104,7 +117,7 @@ class DualSpaceModel(FactorizedActiveLearner):
 
         return predictions
 
-    def predict_proba(self, X) -> np.ndarray:
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predicts probabilities using the polytope model first; unknown labels are predicted via the active learner
         """
@@ -120,7 +133,7 @@ class DualSpaceModel(FactorizedActiveLearner):
 
         return probas
 
-    def rank(self, X) -> np.ndarray:
+    def rank(self, X: np.ndarray) -> np.ndarray:
         """
         Simply use AL to rank points
         """
@@ -134,18 +147,11 @@ class DualSpaceModel(FactorizedActiveLearner):
             sample = data.sample_unknown(subsample) if random.random() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
             selected = self.active_learner._select_next(sample)
 
-            if self.factorized:
-                pred_part = self.polytope_model.predict_partial(selected.data)
-                pred = pred_part.min(axis=1)
-            else:
-                pred = self.polytope_model.predict(selected.data)
-                pred_part = pred.reshape(-1, 1)
-
+            pred = self.polytope_model.predict(selected.data)
             is_known = (pred != 0.5)
 
             if np.any(is_known):
-                labeled_set = LabeledSet(pred[is_known], pred_part[is_known], selected.index[is_known])
-                data.move_to_labeled(labeled_set, user_labeled=False)  # TODO: could we move these indexes to the inferred partition instead? The extra labeled points can be store here
+                self._dsm_labeled_cache.append(selected.data[is_known], pred[is_known])
                 self.__fit_active_learner(data)
 
             if not np.all(is_known):
@@ -153,6 +159,65 @@ class DualSpaceModel(FactorizedActiveLearner):
 
         return self.active_learner.next_points_to_label(data, subsample)
 
-    def __fit_active_learner(self, data: PartitionedDataset):
+    def __fit_active_learner(self, data: PartitionedDataset) -> None:
         X, y = data.training_set()
+
+        if not self._dsm_labeled_cache.is_empty:
+            X, y = self._dsm_labeled_cache.merge(X, y)
+
         self.active_learner.fit(X, y)
+
+
+class TrainingSetCache:
+    """
+    Helper class for caching training data
+    """
+    def __init__(self):
+        self._X: List[np.ndarray]
+        self._y: List
+        self._X, self._y = [], []
+
+    @property
+    def is_empty(self) -> bool:
+        """
+        :return: whether the cache is empty
+        """
+        return not self._X
+
+    @property
+    def X(self) -> np.ndarray:
+        """
+        :return: the training data as numpy array
+        """
+        return np.vstack(self._X)
+
+    def clear(self) -> None:
+        """
+        Empties the cache
+        """
+        self._X, self._y = [], []
+
+    def merge(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        :param X: a data array
+        :param y: a labels array
+        :return: a pair (X, y) containing the merge of input data and the cached data
+        """
+        return np.vstack([X, self._X]), np.hstack([y, self._y])
+
+    def append(self, X: np.ndarray, y: np.ndarray) -> None:
+        """
+        Appends new data to the cache
+        :param X: data matrix to append
+        :param y: data labels to append
+        """
+        self._X.extend(X)
+        self._y.extend(y)
+
+    def filter(self, mask: Sequence[bool]) -> None:
+        """
+        Filters the cache elements with the given mask sequence
+        :param mask: list of booleans indicating which positions to keep
+        """
+        self._X = [x for i, x in enumerate(self._X) if mask[i]]
+        self._y = [y for i, y in enumerate(self._y) if mask[i]]

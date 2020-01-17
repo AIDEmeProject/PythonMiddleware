@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Tuple, List, Optional
+from typing import TYPE_CHECKING, Iterable, Tuple, Optional
 
 import numpy as np
 import sklearn.utils
@@ -35,7 +35,6 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         self.__labeled_set = LabeledSet.empty()
         self.__inferred_start = 0
         self.__unknown_start = 0
-        self.__non_user_labeled_indexes: List = []
         self.__last_user_labeled_set = LabeledSet.empty()
 
     def __len__(self):
@@ -50,13 +49,12 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         self.__labeled_set = LabeledSet.empty()
         self.__inferred_start = 0
         self.__unknown_start = 0
-        self.__non_user_labeled_indexes = []
         self.__last_user_labeled_set = LabeledSet.empty()
 
     ##################
     # MOVING
     ##################
-    def move_to_labeled(self, labeled_set: LabeledSet, user_labeled: bool = True) -> None:
+    def move_to_labeled(self, labeled_set: LabeledSet) -> None:
         for idx in labeled_set.index:
             pos = self.__index_to_row[idx]
 
@@ -65,12 +63,8 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
             else:
                 self.__raise_error(idx, pos, 'labeled')
 
+        self.__last_user_labeled_set = labeled_set
         self.__labeled_set = self.__labeled_set.concat(labeled_set)
-
-        if user_labeled:
-            self.__last_user_labeled_set = labeled_set
-        else:
-            self.__non_user_labeled_indexes.extend(labeled_set.index)
 
     def move_to_inferred(self, indexes: Iterable) -> None:
         for idx in indexes:
@@ -122,13 +116,6 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
 
     def remove_inferred(self) -> None:
         self.__unknown_start = self.__inferred_start  # flush inferred partition
-
-        self.move_to_unknown(self.__non_user_labeled_indexes)
-
-        rows_to_keep = np.setdiff1d(self.__labeled_set.index, self.__non_user_labeled_indexes, assume_unique=True)
-        self.__labeled_set = self.__labeled_set[rows_to_keep]
-
-        self.__non_user_labeled_indexes = []  # only user-labeled points remain in labeled partition
 
     ##################
     # SIZES
@@ -222,10 +209,10 @@ class IndexedDataset:
         self.index: np.ndarray
 
         if index is None:
-            self.data = sklearn.utils.check_array(X)
+            self.data = sklearn.utils.check_array(X, ensure_min_samples=0)
             self.index = np.arange(len(X))
         else:
-            self.data, self.index = sklearn.utils.check_X_y(X, index)
+            self.data, self.index = sklearn.utils.check_X_y(X, index, ensure_min_samples=0)
 
     def __len__(self):
         return self.data.shape[0]
