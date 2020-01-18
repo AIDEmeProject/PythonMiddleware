@@ -26,9 +26,9 @@ from .index import Index
 
 
 class PartitionedDataset:  # TODO: how can we add partition information? (factorization)
-    def __init__(self, dataset: IndexedDataset, copy: bool = False):
-        self.data = dataset
-        self.__dataset = dataset.copy() if copy else dataset
+    def __init__(self, X, index=None, copy: bool = False):
+        self.data = IndexedDataset(X, index)
+        self.__dataset = self.data.copy() if copy else self.data
         self.__index_to_row = Index(self.__dataset.index)
         self.__labeled_set = LabeledSet([])
         self.__inferred_start = 0

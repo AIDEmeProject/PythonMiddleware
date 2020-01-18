@@ -19,7 +19,6 @@ from __future__ import annotations
 from typing import Optional, List, TYPE_CHECKING
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
-from .partitioned import IndexedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
@@ -55,8 +54,8 @@ class PoolBasedExploration:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
-        :param X: data matrix
-        :param labeled_set: object containing the user labels, as a LabeledSet instance or 1D numpy array (no factorization in this case)
+        :param X: data matrix as a numpy array
+        :param labeled_set: object containing the user labels, as a LabeledSet instance or array-like (no factorization in this case)
         :param active_learner: ActiveLearner instance to simulate
         :param repeat: number of times to repeat exploration
         :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
@@ -65,14 +64,10 @@ class PoolBasedExploration:
                 - Timing measurements (fit, get next point, ...)
                 - Any metrics returned by the callback function
         """
-        # TODO: check if X and labeled_set have compatible indexes
-        if not isinstance(X, IndexedDataset):
-            X = IndexedDataset(X)
-
         if not isinstance(labeled_set, LabeledSet):
             labeled_set = LabeledSet(labeled_set)
 
-        data = PartitionedDataset(X)
+        data = PartitionedDataset(X, labeled_set.index)
 
         manager = ExplorationManager(
             data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,

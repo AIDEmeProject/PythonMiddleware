@@ -21,6 +21,7 @@ from aideme.active_learning.active_learner import FactorizedActiveLearner
 from aideme.utils import assert_positive_integer
 
 
+#TODO: check logic on this class
 class TwoStepsLearner(FactorizedActiveLearner):
     """
     A special Active Learner for working with datasets containing both structured and text data. It works in two phases:
@@ -89,11 +90,11 @@ class TwoStepsLearner(FactorizedActiveLearner):
 
         else:
             if self.__labels_cache is None:
-                self.__update_cache(data.data)
+                self.__update_cache(data.raw_values)
 
                 mask = ~self.__mask_cache.copy()
                 mask[data.labeled[0]] = False  # remove labeled points
-                idx = np.arange(len(data.data))[mask]
+                idx = np.arange(len(data))[mask]
 
                 data.move_to_inferred(idx)
 
