@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 
 import sklearn
 
-from aideme.active_learning.dsm import DualSpaceModel
+from aideme.active_learning.dsm.base import DualSpaceModelBase
 
 if TYPE_CHECKING:
     from .types import Metrics, Callback
@@ -43,7 +43,7 @@ def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) ->
     """
     :return: TSM score, which is a lower bound for F-score. Only available when running the DualSpaceModel.
     """
-    if not isinstance(active_learner, DualSpaceModel):
+    if not isinstance(active_learner, DualSpaceModelBase):
         return {}
 
     pred = active_learner.polytope_model.predict(data.raw_values)

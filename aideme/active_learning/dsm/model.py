@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Union, Sequence, TYPE_CHECKING
 
-from .base import *
+from .polytope import *
 
 if TYPE_CHECKING:
     from ... import PartitionedDataset
