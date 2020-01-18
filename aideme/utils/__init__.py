@@ -17,7 +17,7 @@
 
 from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, process_callback
 from .metrics import classification_metrics, three_set_metric
-from .convergence import max_iter_reached, all_points_are_known, metric_reached_threshold
+from .convergence import max_iter_reached, metric_reached_threshold
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

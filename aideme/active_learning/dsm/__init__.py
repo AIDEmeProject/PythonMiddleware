@@ -16,6 +16,5 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .dsm import DualSpaceModel
-from .persistent import PolytopeModel
 
-__all__ = ['DualSpaceModel', 'PolytopeModel']
+__all__ = ['DualSpaceModel']

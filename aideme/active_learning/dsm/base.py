@@ -14,79 +14,126 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Set, List, Tuple
 
 import numpy as np
 
-from .polytope import Polytope
+from .convex import PositiveRegion, NegativeCone, ConvexError
 
 
-class PolytopeModel:
-    def __init__(self, mode='persist', tol=1e-12):
-        """
-        :param mode: flag specifying the type of polytope to build. There are four possible cases:
-                1) 'positive': assume positive region is convex
-                2) 'negative': assume negative region is convex
-                3) 'persist': run both options above in parallel until one of the polytopes becomes invalid.
-                4) 'categorical': special polytope for the case where all attributes are categorical.
-                5) 'multiset': special polytope for the case where attributes come from a multi-set encoding.
+class PolytopeBase:
+    @property
+    def is_valid(self) -> bool:
+        raise NotImplementedError
 
-        :param tol: polytope model tolerance
-        """
-        self._pol = self.__get_polytope(mode, tol)
+    def clear(self) -> None:
+        raise NotImplementedError
 
-    @staticmethod
-    def __get_polytope(mode, tol):
-        if mode == 'positive':
-            return Polytope(tol)
-        if mode == 'negative':
-            return FlippedPolytope(tol)
-        if mode == 'persist':
-            return PersistentPolytope(tol)
-        if mode == 'categorical':
-            return CategoricalPolytope()
-        if mode == 'multiset':
-            return MultiSetPolytope()
-        raise ValueError('Unknown mode {0}. Available values are: {1}'.format(mode, ['categorical', 'multiset', 'negative', 'persist', 'positive']))
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+    def update(self, X: np.ndarray, y: np.ndarray) -> bool:
+        raise NotImplementedError
+
+
+class Polytope(PolytopeBase):
+    def __init__(self, tol: float = 1e-12):
+        self.__is_valid = True
+        self.positive_region = PositiveRegion(tol)
+        self.negative_region: List[NegativeCone] = []
 
     @property
-    def is_valid(self):
-        return self._pol.is_valid
+    def is_valid(self) -> bool:
+        return self.__is_valid
 
-    def clear(self):
-        self._pol.clear()
+    def clear(self) -> None:
+        self.positive_region.clear()
+        self.negative_region = []
+        self.__is_valid = True
 
-    def predict(self, X):
-        return self._pol.predict(X)
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+            Predicts the label of each data point. Returns 1 if point is in positive region, 0 if in negative region,
+            and 0.5 otherwise
 
-    def update(self, X, y):
-        return self._pol.update(X, y)
+            :param X: data matrix to predict labels
+        """
+        X = np.atleast_2d(X)
+
+        probas = np.full(len(X), fill_value=0.5)
+
+        if self.__is_valid:
+            if self.positive_region.is_built:
+                probas[self.positive_region.is_inside(X)] = 1.0
+
+            for cone in self.negative_region:
+                if cone.is_built:
+                    probas[cone.is_inside(X)] = 0.0
+
+        return probas
+
+    def update(self, X: np.ndarray, y: np.ndarray) -> bool:
+        """
+        Increments the polytope model with new labeled data
+
+        :param X: data matrix
+        :param y: labels array. Expects 1 for positive points, and 0 for negative points
+        :return: whether update was successful or not
+        """
+        if not self.__is_valid:
+            raise RuntimeError("Cannot update invalid polytope.")
+
+        X, y = np.atleast_2d(X), np.asarray(y)
+
+        try:
+            self.__update_positive(X[y == 1])
+            self.__update_negative(X[y != 1])
+
+        except ConvexError:
+            self.__is_valid = False
+
+        finally:
+            return self.__is_valid
+
+    def __update_positive(self, X: np.ndarray) -> None:
+        if len(X) > 0:
+            self.positive_region.update(X)
+
+            for nr in self.negative_region:
+                nr.add_points_to_hull(X)
+
+    def __update_negative(self, X: np.ndarray) -> None:
+        for x in X:
+            cone = NegativeCone(x, self.positive_region._tol)
+            cone.add_points_to_hull(self.positive_region.vertices)
+            self.negative_region.append(cone)
 
 
-class FlippedPolytope:
+class FlippedPolytope(PolytopeBase):
     """
     Polytope model built assuming the negative region is convex.
     """
-    def __init__(self, tol=1e-12):
+    def __init__(self, tol: float = 1e-12):
         """
         :param tol: polytope model tolerance
         """
         self._pol = Polytope(tol)
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self._pol.is_valid
 
-    def clear(self):
+    def clear(self) -> None:
         self._pol.clear()
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         :param X: data matrix to predict labels
         :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
         """
         return 1 - self._pol.predict(X)
 
-    def update(self, X, y):
+    def update(self, X: np.ndarray, y: np.ndarray) -> bool:
         """
         Increments the polytopes with new labeled data.
 
@@ -97,11 +144,11 @@ class FlippedPolytope:
         return self._pol.update(X, 1 - y)
 
 
-class PersistentPolytope:
+class PersistentPolytope(PolytopeBase):
     """
     Polytope model built assuming the negative region is convex.
     """
-    def __init__(self, tol=1e-12):
+    def __init__(self, tol: float = 1e-12):
         """
         :param tol: polytope model tolerance
         """
@@ -109,14 +156,14 @@ class PersistentPolytope:
         self._flipped = FlippedPolytope(tol)
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self._pol.is_valid or self._flipped.is_valid
 
-    def clear(self):
+    def clear(self) -> None:
         self._pol.clear()
         self._flipped.clear()
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         :param X: data matrix to predict labels
         :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
@@ -131,7 +178,7 @@ class PersistentPolytope:
 
         return self._flipped.predict(X)
 
-    def update(self, X, y):
+    def update(self, X: np.ndarray, y: np.ndarray) -> bool:
         """
         Increments the polytopes with new labeled data.
 
@@ -151,26 +198,26 @@ class PersistentPolytope:
         return self._flipped.update(X, y)
 
 
-class CategoricalPolytope:
+class CategoricalPolytope(PolytopeBase):
     """
     Special polytope for the case where all attributes are assumed to be categorical. It simply memorizes the positive and
     negative values seen so far.
     """
     def __init__(self):
-        self._pos_classes = set()
-        self._neg_classes = set()
+        self._pos_classes: Set[Tuple] = set()
+        self._neg_classes: Set[Tuple] = set()
         self.__is_valid = True
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self.__is_valid
 
-    def clear(self):
+    def clear(self) -> None:
         self._pos_classes = set()
         self._neg_classes = set()
         self.__is_valid = True
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         :param X: data array to predict labels.
         :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
@@ -180,7 +227,7 @@ class CategoricalPolytope:
 
         return np.fromiter((self.__predict_single(x) for x in X), np.float)
 
-    def __predict_single(self, x):
+    def __predict_single(self, x: np.ndarray) -> float:
         x = tuple(x)
 
         if x in self._pos_classes:
@@ -191,7 +238,7 @@ class CategoricalPolytope:
 
         return 0.5
 
-    def update(self, X, y):
+    def update(self, X: np.ndarray, y: np.ndarray) -> bool:
         """
         Increments the polytopes with new labeled data.
 
@@ -215,24 +262,24 @@ class CategoricalPolytope:
         return self.__is_valid
 
 
-class MultiSetPolytope:
+class MultiSetPolytope(PolytopeBase):
     def __init__(self):
-        self._pos_indexes = set()
-        self._neg_indexes = set()
-        self._neg_point_cache = []
+        self._pos_indexes: Set[int] = set()
+        self._neg_indexes: Set[int] = set()
+        self._neg_point_cache: List[Set[int]] = []
         self.__is_valid = True
 
     @property
-    def is_valid(self):
+    def is_valid(self) -> bool:
         return self.__is_valid
 
-    def clear(self):
+    def clear(self) -> None:
         self._pos_indexes = set()
         self._neg_indexes = set()
         self._neg_point_cache = []
         self.__is_valid = True
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         :param X: data array to predict labels.
         :return: predicted labels. 1 for positive, 0 for negative, 0.5 for unknown
@@ -252,7 +299,7 @@ class MultiSetPolytope:
 
         return pred
 
-    def update(self, X, y):
+    def update(self, X: np.ndarray, y: np.ndarray) -> bool:
         """
         Increments the polytopes with new labeled data.
 
@@ -270,7 +317,7 @@ class MultiSetPolytope:
 
         return True
 
-    def __update_single(self, pt, lb):
+    def __update_single(self, pt: np.ndarray, lb: int) -> bool:
         """
         Increments polytope with a single point.
         :param pt: data point
@@ -289,7 +336,7 @@ class MultiSetPolytope:
         self._neg_point_cache.append(idx)
         return True
 
-    def __update_positive_set(self, idx):
+    def __update_positive_set(self, idx: Set[int]) -> bool:
         """
         Adds new indexes to the positive set. Also, removes the new positive indexes from each negative point in the cache.
 
@@ -316,7 +363,7 @@ class MultiSetPolytope:
 
         return self.__update_negative_set(new_neg)
 
-    def __update_negative_set(self, idx):
+    def __update_negative_set(self, idx: Set[int]) -> bool:
         """
         Adds new indexes to the negative set. Also, if a cached negative points contains any of the new negative indexes,
         it will also be removed from cache since no inference can be done on its values.

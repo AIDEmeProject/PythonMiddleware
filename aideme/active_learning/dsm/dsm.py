@@ -22,8 +22,7 @@ from typing import Optional, Any, TYPE_CHECKING, Union, Sequence, List, Tuple
 
 import numpy as np
 
-from .factorization import FactorizedPolytopeModel
-from .persistent import PolytopeModel
+from .model import PolytopeModel, FactorizedPolytopeModel, PolytopeModelBase
 from ..active_learner import FactorizedActiveLearner
 
 if TYPE_CHECKING:
@@ -52,16 +51,8 @@ class DualSpaceModel(FactorizedActiveLearner):
         self._dsm_labeled_cache.clear()
 
     def set_factorization_structure(self, **factorization_info: Any) -> None:
-        partition = factorization_info.get('partition', None)
-        mode = factorization_info['mode']
-
-        if not partition:
-            self.polytope_model = PolytopeModel(mode, self.__tol)
-            self.factorized = False
-
-        else:
-            self.polytope_model = FactorizedPolytopeModel(partition, mode, self.__tol)
-            self.factorized = True
+        partition, mode = factorization_info.get('partition', None), factorization_info['mode']
+        self.polytope_model: PolytopeModelBase = FactorizedPolytopeModel(partition, mode, self.__tol) if partition else PolytopeModel(mode, self.__tol)
 
     def fit_data(self, data: PartitionedDataset) -> None:
         """
@@ -72,8 +63,7 @@ class DualSpaceModel(FactorizedActiveLearner):
         if not self.polytope_model.is_valid:
             return
 
-        X_new, y_new = data.last_training_set(get_partial=self.factorized)
-        is_success = self.polytope_model.update(X_new, y_new)
+        is_success = self.polytope_model.update_data(data)
 
         # if conflicting points were found, we must relabel the inferred partition and the DSM labeled points
         if not is_success:

@@ -17,7 +17,7 @@
 
 import pytest
 
-from aideme.active_learning.dsm.polytope import *
+from aideme.active_learning.dsm.convex.geometry import *
 
 
 class TestPolytopeModel:

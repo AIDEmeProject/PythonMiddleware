@@ -19,7 +19,7 @@ import pytest
 
 from scipy.spatial.qhull import QhullError
 
-from aideme.active_learning.dsm.convex import *
+from aideme.active_learning.dsm.convex.convex import *
 
 
 def assert_arrays_have_same_rows(arr1, arr2):

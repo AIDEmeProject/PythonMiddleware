@@ -54,13 +54,6 @@ def max_iter_reached(max_exploration_iter: int, max_initial_sampling_iter: Optio
     return converged
 
 
-def all_points_are_known(manager: ExplorationManager, metrics: Metrics) -> bool:
-    """
-    Stop exploration once no unknown points remain.
-    """
-    return manager.data.unknown_size == 0
-
-
 def all_points_are_labeled(manager: ExplorationManager, metrics: Metrics) -> bool:
     """
     Stop exploration once no unlabeled points remain.

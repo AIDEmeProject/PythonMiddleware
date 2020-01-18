@@ -17,7 +17,7 @@
 
 import pytest
 
-from aideme.active_learning.dsm.one_dim_convex import *
+from aideme.active_learning.dsm.convex.one_dim_convex import *
 
 
 def assert_lists_have_same_elements(ls1, ls2):

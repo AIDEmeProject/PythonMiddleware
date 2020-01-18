@@ -17,7 +17,7 @@
 
 import numpy as np
 
-from ..dsm.persistent import CategoricalPolytope, MultiSetPolytope
+from ..dsm.base import CategoricalPolytope, MultiSetPolytope
 from ..active_learner import ActiveLearner
 
 

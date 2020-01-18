@@ -17,82 +17,9 @@
 
 import numpy as np
 
-from .convex import ConvexHull, ConvexCone, ConvexError
-from .one_dim_convex import OneDimensionalConvexHull, OneDimensionalConvexCone
 from aideme.utils import assert_positive
-
-
-class Polytope:
-    def __init__(self, tol=1e-12):
-        self.positive_region = PositiveRegion(tol)
-        self.negative_region = []
-        self.__is_valid = True
-
-    @property
-    def is_valid(self):
-        return self.__is_valid
-
-    def clear(self):
-        self.positive_region.clear()
-        self.negative_region = []
-        self.__is_valid = True
-
-    def predict(self, X):
-        """
-            Predicts the label of each data point. Returns 1 if point is in positive region, 0 if in negative region,
-            and 0.5 otherwise
-
-            :param X: data matrix to predict labels
-        """
-        X = np.atleast_2d(X)
-
-        probas = np.full(len(X), fill_value=0.5)
-
-        if self.__is_valid:
-            if self.positive_region.is_built:
-                probas[self.positive_region.is_inside(X)] = 1.0
-
-            for cone in self.negative_region:
-                if cone.is_built:
-                    probas[cone.is_inside(X)] = 0.0
-
-        return probas
-
-    def update(self, X, y):
-        """
-        Increments the polytope model with new labeled data
-
-        :param X: data matrix
-        :param y: labels array. Expects 1 for positive points, and 0 for negative points
-        :return: whether update was successful or not
-        """
-        if not self.__is_valid:
-            raise RuntimeError("Cannot update invalid polytope.")
-
-        X, y = np.atleast_2d(X), np.asarray(y)
-
-        try:
-            self.__update_positive(X[y == 1])
-            self.__update_negative(X[y != 1])
-
-        except ConvexError:
-            self.__is_valid = False
-
-        finally:
-            return self.__is_valid
-
-    def __update_positive(self, X):
-        if len(X) > 0:
-            self.positive_region.update(X)
-
-            for nr in self.negative_region:
-                nr.add_points_to_hull(X)
-
-    def __update_negative(self, X):
-        for x in X:
-            cone = NegativeCone(x, self.positive_region._tol)
-            cone.add_points_to_hull(self.positive_region.vertices)
-            self.negative_region.append(cone)
+from .convex import ConvexHull, ConvexCone
+from .one_dim_convex import OneDimensionalConvexHull, OneDimensionalConvexCone
 
 
 class PositiveRegion:
