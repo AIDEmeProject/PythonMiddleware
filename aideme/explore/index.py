@@ -15,36 +15,20 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-import math
+from typing import List, Sequence, TypeVar
 
+T = TypeVar('T')
 
-def assert_positive(value, name):
-    if not isinstance(value, (int, float)) or value <= 0:
-        raise ValueError("{0} must be a positive number, got {1}".format(name, value))
+class Index:
+    def __init__(self, index: Sequence[T]):
+        self.__index_to_row = {idx: i for i, idx in enumerate(index)}
 
+    def __getitem__(self, item: T) -> int:
+        return self.__index_to_row[item]
 
-def assert_positive_integer(value, name, allow_inf=False):
-    assert_non_negative_integer(value, name, allow_inf)
-    if value == 0:
-        raise ValueError("Expected positive integer for {}, got 0".format(name))
+    def get_rows(self, index: Sequence[T]) -> List[int]:
+        return [self.__index_to_row[idx] for idx in index]
 
-def assert_non_negative_integer(value, name, allow_inf=False):
-    if value == math.inf:
-        if not allow_inf:
-            raise ValueError("{0} cannot be infinity.".format(name))
-        return
-
-    if not isinstance(value, int) or value < 0:
-        raise ValueError("{0} must be a positive integer, got {1}".format(name, value))
-
-def process_callback(callback):
-    if not callback:
-        return []
-
-    if callable(callback):
-        return [callback]
-
-    if not all(callable(f) for f in callback):
-        raise ValueError("Expected callable or list of callable objects, got {}".format(callback))
-
-    return callback
+    def swap_index(self, idx_i: T, idx_j: T) -> None:
+        i, j = self.__index_to_row[idx_i], self.__index_to_row[idx_j]
+        self.__index_to_row[idx_i], self.__index_to_row[idx_j] = j, i

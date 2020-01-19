@@ -15,36 +15,23 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-import math
+from typing import Union, Sequence, TypeVar, Callable, Dict, Any
 
+import numpy as np
 
-def assert_positive(value, name):
-    if not isinstance(value, (int, float)) or value <= 0:
-        raise ValueError("{0} must be a positive number, got {1}".format(name, value))
+from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
+from aideme.explore.manager import ExplorationManager
+from aideme.explore.partitioned import PartitionedDataset
 
+T = TypeVar('T')
+FunctionList = Union[None, T, Sequence[T]]
 
-def assert_positive_integer(value, name, allow_inf=False):
-    assert_non_negative_integer(value, name, allow_inf)
-    if value == 0:
-        raise ValueError("Expected positive integer for {}, got 0".format(name))
+Metrics = Dict[str, Any]
+Callback = Callable[[PartitionedDataset, ActiveLearner], Metrics]
+Convergence = Callable[[ExplorationManager, Metrics], bool]
 
-def assert_non_negative_integer(value, name, allow_inf=False):
-    if value == math.inf:
-        if not allow_inf:
-            raise ValueError("{0} cannot be infinity.".format(name))
-        return
+InitialSampler = Callable[[PartitionedDataset], Sequence]
 
-    if not isinstance(value, int) or value < 0:
-        raise ValueError("{0} must be a positive integer, got {1}".format(name, value))
+RandomStateType = Union[None, int, np.random.RandomState]
 
-def process_callback(callback):
-    if not callback:
-        return []
-
-    if callable(callback):
-        return [callback]
-
-    if not all(callable(f) for f in callback):
-        raise ValueError("Expected callable or list of callable objects, got {}".format(callback))
-
-    return callback
+Partition = Sequence[Union[slice, Sequence[int]]]

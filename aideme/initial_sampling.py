@@ -14,59 +14,59 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
 
-from numpy import arange
-from sklearn.utils import check_random_state, check_array
+from typing import TYPE_CHECKING, Sequence
+
+from sklearn.utils import check_random_state
 
 from .utils import assert_positive_integer
 
 
-class StratifiedSampler:
+if TYPE_CHECKING:
+    from .explore import LabeledSet
+    from .utils import  RandomStateType, InitialSampler
+
+
+__all__ = ['stratified_sampler', 'fixed_sampler', 'random_sampler']
+
+
+def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_in_all_subspaces: bool = False, random_state: RandomStateType = None) -> InitialSampler:
     """
-        Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
-        of labels.
+    Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
+    of labels.
+
+    :param pos: Number of positive points to sample. Must be non-negative.
+    :param neg: Number of negative points to sample. Must be non-negative.
     """
-    def __init__(self, pos, neg, assert_neg_all_subspaces=False, random_state=None):
-        """
+    assert_positive_integer(pos, 'pos')
+    assert_positive_integer(neg, 'neg')
 
-        :param pos: Number of positive points to sample. Must be non-negative.
-        :param neg: Number of negative points to sample. Must be non-negative.
-        """
-        assert_positive_integer(pos, 'pos')
-        assert_positive_integer(neg, 'neg')
+    pos_mask = (labeled_set.labels == 1)
+    neg_mask = (labeled_set.partial.max(axis=1) == 0) if neg_in_all_subspaces else ~pos_mask
 
-        self.pos = pos
-        self.neg = neg
-        self.assert_neg_all_subspaces = assert_neg_all_subspaces
-        self.__random_state = check_random_state(random_state)
+    pos_idx, neg_idx = labeled_set.index[pos_mask], labeled_set.index[neg_mask]
+    rng = check_random_state(random_state)
 
-    def __call__(self, y, true_class=1, neg_class=0):
-        """
-        Call the sampling procedure over the input array.
-
-        :param y: array-like collection of labels
-        :param true_class: class to be considered positive. Default to 1.0.
-        :return: index of samples in the array
-        """
-        y = check_array(y, ensure_2d=False, allow_nd=False)
-
-        # TODO: can we avoid this check ?
-        if y.ndim == 2:
-            y = y.mean(axis=1) if self.assert_neg_all_subspaces else y.min(axis=1)
-
-        idx = arange(len(y))
-        pos_samples = self.__random_state.choice(idx[y == true_class], size=self.pos, replace=False)
-        neg_samples = self.__random_state.choice(idx[y == neg_class], size=self.neg, replace=False)
+    def sampler(data) -> Sequence:
+        pos_samples = rng.choice(pos_idx, size=pos, replace=False)
+        neg_samples = rng.choice(neg_idx, size=neg, replace=False)
 
         return list(pos_samples) + list(neg_samples)
 
+    return sampler
 
-class FixedSampler:
-    """
-        Dummy sampler which returns a specified selection of indexes.
-    """
-    def __init__(self, indexes):
-        self.indexes = indexes.copy()
 
-    def __call__(self, y):
-        return self.indexes
+def fixed_sampler(indexes: Sequence) -> InitialSampler:
+    """
+    Dummy sampler which returns a specified selection of indexes.
+    """
+    return lambda data: indexes
+
+
+def random_sampler(sample_size: int) -> InitialSampler:
+    """
+    Samples a random batch of unlabeled points.
+    """
+    assert_positive_integer(sample_size, 'sample_size')
+    return lambda data: data.sample_unlabeled(sample_size).index

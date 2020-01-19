@@ -14,193 +14,228 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
+from typing import Iterable, Tuple, Optional
 
 import numpy as np
+import sklearn.utils
+
+from . import LabeledSet
+from .index import Index
 
 
-class PartitionedDataset:
-    """
-              0 <= i < infer_start    -> labeled partition
-    infer_start <= i < unknown_start  -> infer partition
-                   i >= unknown_start -> unknown partition
-    """
-
-    def __init__(self, data, copy=False):
-        self.data = data
-
-        self._data = data.copy() if copy else data
-
-        self.__size = len(data)
-
-        self._row_to_index = np.arange(self.__size)
-        self._inferred_start = 0
-        self._unknown_start = 0
-
-        self._index_to_row = {i: i for i in range(self.__size)}
-
-        self._labels = []
-        self._label_tags = []
-
-        self._previous_inferred_start = 0
+class PartitionedDataset:  # TODO: how can we add partition information? (factorization)
+    def __init__(self, X, index=None, copy: bool = False):
+        self.data = IndexedDataset(X, index)
+        self.__dataset = self.data.copy() if copy else self.data
+        self.__index_to_row = Index(self.__dataset.index)
+        self.__labeled_set = LabeledSet([])
+        self.__inferred_start = 0
+        self.__unknown_start = 0
+        self.__last_user_labeled_set = LabeledSet([])
 
     def __len__(self):
-        return self.__size
+        return len(self.__dataset)
 
     def __repr__(self):
-        return "labeled: {0}, inferred: {1}, unknown: {2}".format(
-            self._row_to_index[:self._inferred_start],
-            self._row_to_index[self._inferred_start:self._unknown_start],
-            self._row_to_index[self._unknown_start:]
-        )
+        return self.__dataset.__repr__()
 
-    def select_cols(self, data_cols, lb_cols):
-        dataset = PartitionedDataset(self.data[:, data_cols], copy=False)
-        dataset._data = self._data[:, data_cols]
-        dataset._row_to_index = self._row_to_index
-        dataset._inferred_start = self._inferred_start
-        dataset._unknown_start = self._unknown_start
-        dataset._index_to_row = self._index_to_row
-        dataset._labels = [lb[lb_cols] for lb in self._labels]
-        dataset._label_tags = self._label_tags
-        dataset._previous_inferred_start = self._previous_inferred_start
-        return dataset
+    def clear(self) -> None:
+        self.__dataset = self.data.copy()
+        self.__index_to_row = Index(self.__dataset.index)
+        self.__labeled_set = LabeledSet([])
+        self.__inferred_start = 0
+        self.__unknown_start = 0
+        self.__last_user_labeled_set = LabeledSet([])
 
     ##################
-    # MOVING DATA
+    # MOVING
     ##################
-    def move_to_labeled(self, indexes, labels, tag):
-        self._previous_inferred_start = self._inferred_start
+    def move_to_labeled(self, labeled_set: LabeledSet) -> None:
+        for idx in labeled_set.index:
+            pos = self.__index_to_row[idx]
 
+            if pos >= self.__inferred_start:
+                self.__move_left(pos, to_labeled=True)
+            else:
+                self.__raise_error(idx, pos, 'labeled')
+
+        self.__last_user_labeled_set = labeled_set
+        self.__labeled_set = self.__labeled_set.concat(labeled_set)
+
+    def move_to_inferred(self, indexes: Iterable) -> None:
         for idx in indexes:
-            self.__move_single(idx, True)
+            pos = self.__index_to_row[idx]
 
-        self._labels.extend(labels)
-        self._label_tags.extend([tag] * len(labels))
+            if pos >= self.__unknown_start:
+                self.__move_left(pos, to_labeled=False)
+            elif pos < self.__inferred_start:
+                self.__move_right(pos, to_unknown=False)
+            else:
+                self.__raise_error(idx, pos, 'inferred')
 
-    def move_to_inferred(self, indexes):
+    def move_to_unknown(self, indexes: Iterable) -> None:
         for idx in indexes:
-            self.__move_single(idx, False)
+            pos = self.__index_to_row[idx]
 
-    def __move_single(self, idx, to_labeled):
-        pos = self._index_to_row[idx]
+            if pos < self.__unknown_start:
+                self.__move_right(idx, to_unknown=True)
+            else:
+                self.__raise_error(idx, pos, 'unknown')
 
-        if pos < self._inferred_start:
-            raise RuntimeError('Index {0} is already in labeled set.'.format(idx))
+    def __move_left(self, pos: int, to_labeled: bool) -> None:
+        if pos >= self.__unknown_start:
+            self.__swap_rows(pos, self.__unknown_start)
+            pos = self.__unknown_start
+            self.__unknown_start += 1
 
-        if not to_labeled and self._inferred_start <= pos < self._unknown_start:
-            raise RuntimeError('Index {0} is already in inferred set.'.format(idx))
+        if to_labeled and pos >= self.__inferred_start:
+            self.__swap_rows(pos, self.__inferred_start)
+            self.__inferred_start += 1
 
-        if pos >= self._unknown_start:
-            self.__swap(pos, self._unknown_start)
-            pos = self._unknown_start
-            self._unknown_start += 1
+    def __move_right(self, pos: int, to_unknown: bool) -> None:
+        if pos < self.__inferred_start:
+            self.__swap_rows(pos, self.__inferred_start - 1)
+            pos = self.__inferred_start - 1
+            self.__inferred_start -= 1
 
-        if to_labeled and pos >= self._inferred_start:
-            self.__swap(pos, self._inferred_start)
-            self._inferred_start += 1
+        if to_unknown and pos < self.__unknown_start:
+            self.__swap_rows(pos, self.__unknown_start - 1)
+            self.__unknown_start -= 1
 
-    def __swap(self, i, j):
-        idx_i, idx_j = self._row_to_index[i], self._row_to_index[j]
-        self._row_to_index[i], self._row_to_index[j] = idx_j, idx_i
-        self._index_to_row[idx_i], self._index_to_row[idx_j] = j, i
-        self._data[[i, j]] = self._data[[j, i]]
+    def __swap_rows(self, i, j):
+        idx_i, idx_j = self.__dataset.index[i], self.__dataset.index[j]
+        self.__dataset.swap_rows(i, j)
+        self.__index_to_row.swap_index(idx_i, idx_j)
 
-    def remove_inferred(self):
-        # flush inferred partition
-        self._unknown_start = self._inferred_start
+    def __raise_error(self, idx, pos: int, partition_name: str) -> None:
+        raise ValueError("Index {}, at position {}, is already in {} set.".format(idx, pos, partition_name))
 
-        # copy labeled indexes slice because we will modify list inplace
-        labeled_idx = self._row_to_index[:self._inferred_start].copy()
-
-        for idx, tag in zip(labeled_idx, self._label_tags):
-            if tag != 'user':
-                self.__move_right(idx)
-
-        self._labels = [lb for lb, tag in zip(self._labels, self._label_tags) if tag == 'user']
-        self._label_tags = ['user'] * len(self._labels)
-
-    def __move_right(self, idx):
-        pos = self._index_to_row[idx]
-
-        if pos >= self._unknown_start:
-            raise RuntimeError('Index {0} is already in unknown set.'.format(idx))
-
-        if pos < self._inferred_start:
-            self.__swap(pos, self._inferred_start - 1)
-            pos = self._inferred_start - 1
-            self._inferred_start -= 1
-            self._previous_inferred_start -= 1
-
-        if pos < self._unknown_start:
-            self.__swap(pos, self._unknown_start - 1)
-            self._unknown_start -= 1
+    def remove_inferred(self) -> None:
+        self.__unknown_start = self.__inferred_start  # flush inferred partition
 
     ##################
     # SIZES
     ##################
     @property
-    def labeled_size(self):
-        return self._inferred_start
+    def labeled_size(self) -> int:
+        return self.__inferred_start
 
     @property
-    def infer_size(self):
-        return self._unknown_start - self._inferred_start
+    def infer_size(self) -> int:
+        return self.__unknown_start - self.__inferred_start
 
     @property
-    def unknown_size(self):
-        return self.__size - self._unknown_start
+    def unknown_size(self) -> int:
+        return len(self) - self.__unknown_start
 
     @property
-    def unlabeled_size(self):
-        return self.__size - self._inferred_start
+    def unlabeled_size(self) -> int:
+        return len(self) - self.__inferred_start
 
     ##################
-    # DATA SLICING
+    # DATA ACCESS
     ##################
     @property
-    def labeled(self):
-        return self._row_to_index[:self._inferred_start], self._data[:self._inferred_start]
+    def raw_values(self) -> np.ndarray:
+        return self.data.data
 
     @property
-    def inferred(self):
-        return self._row_to_index[self._inferred_start:self._unknown_start], self._data[self._inferred_start:self._unknown_start]
+    def labeled(self) -> IndexedDataset:
+        return self.__dataset[:self.__inferred_start]
 
     @property
-    def unknown(self):
-        return self._row_to_index[self._unknown_start:], self._data[self._unknown_start:]
+    def inferred(self) -> IndexedDataset:
+        return self.__dataset[self.__inferred_start:self.__unknown_start]
 
     @property
-    def unlabeled(self):
-        return self._row_to_index[self._inferred_start:], self._data[self._inferred_start:]
+    def unknown(self) -> IndexedDataset:
+        return self.__dataset[self.__unknown_start:]
+
+    @property
+    def unlabeled(self) -> IndexedDataset:
+        return self.__dataset[self.__inferred_start:]
 
     ##################
     # SAMPLING
     ##################
-    def sample_unknown(self, subsample=float('inf')):
-        return self.__subsample(subsample, self._unknown_start, self.__size)
+    # TODO: refactor the functions below?
+    def sample_unknown(self, subsample: Optional[int] = None) -> IndexedDataset:
+        return self.__subsample(subsample, self.__unknown_start)
 
-    def sample_unlabeled(self, subsample=float('inf')):
-        return self.__subsample(subsample, self._inferred_start, self.__size)
+    def sample_unlabeled(self, subsample: Optional[int] = None) -> IndexedDataset:
+        return self.__subsample(subsample, self.__inferred_start)
 
-    def __subsample(self, size, start, stop):
-        remaining = stop - start
+    def __subsample(self, size: Optional[int], start: int) -> IndexedDataset:
+        remaining = len(self) - start
+
+        if size is None:
+            size = remaining
 
         if remaining == 0:
             raise RuntimeError("There are no points to sample from.")
 
         if size >= remaining:
-            return self._row_to_index[start:stop], self._data[start:stop]
+            return self.__dataset[start:]
 
-        row_sample = np.random.choice(np.arange(start, stop), size=size, replace=False)
-        return self._row_to_index[row_sample], self._data[row_sample]
+        row_sample = start + np.random.choice(remaining, size=size, replace=False)
+        return self.__dataset[row_sample]
 
     ##################
     # LABELED DATA
     ##################
-    @property
-    def last_labeled_set(self):
-        return self._data[self._previous_inferred_start:self._inferred_start], np.array(self._labels[self._previous_inferred_start:self._inferred_start])
+    def last_training_set(self, get_partial=False) -> Tuple[np.ndarray, np.ndarray]:
+        rows = self.__index_to_row.get_rows(self.__last_user_labeled_set.index)
+        return self.__dataset.data[rows], self.__last_user_labeled_set.partial if get_partial else self.__last_user_labeled_set.labels
+
+    def training_set(self, get_partial=False) -> Tuple[np.ndarray, np.ndarray]:
+        return self.labeled.data, self.__labeled_set.partial if get_partial else self.__labeled_set.labels
 
     @property
-    def training_set(self):
-        return self._data[:self._inferred_start], np.array(self._labels)
+    def labeled_set(self) -> LabeledSet:
+        return self.__labeled_set
+
+    def select_cols(self, data_cols, lb_cols):
+        # TODO: implement this
+        pass
+
+
+class IndexedDataset:
+    def __init__(self, X, index=None):
+        self.data: np.ndarray
+        self.index: np.ndarray
+
+        if index is None:
+            self.data = sklearn.utils.check_array(X, ensure_min_samples=0)
+            self.index = np.arange(len(X))
+        else:
+            self.data, self.index = sklearn.utils.check_X_y(X, index, ensure_min_samples=0)
+
+    def __len__(self):
+        return self.data.shape[0]
+
+    def __getitem__(self, item) -> IndexedDataset:
+        if isinstance(item, (int, np.integer)):
+            item = [item]
+
+        return IndexedDataset(self.data[item], self.index[item])
+
+    @property
+    def dim(self) -> int:
+        return self.data.shape[1]
+
+    def copy(self) -> IndexedDataset:
+        return IndexedDataset(self.data.copy(), self.index.copy())
+
+    def swap_rows(self, i: int, j: int) -> None:
+        if i != j:
+            self.index[[i, j]] = self.index[[j, i]]
+            self.data[[i, j]] = self.data[[j, i]]
+
+    def sample(self, size: Optional[int] = None) -> IndexedDataset:
+        if size is None or size >= len(self):
+            return self
+
+        row_sample = np.random.choice(len(self), size, replace=False)
+        return self[row_sample]

@@ -18,3 +18,10 @@ data/
 # ignore all jupyter notebooks except for the example.ipynb
 *.ipynb
 !example.ipynb
+
+# pickle files
+*.pkl
+
+# mypy files
+.mypy_cache/
+.dmypy.json

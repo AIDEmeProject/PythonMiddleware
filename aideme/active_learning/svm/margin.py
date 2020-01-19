@@ -1,9 +1,3 @@
-"""
-SVM-based Active Learning algorithms, from the article "Support Vector Machine Active Learning with Applications to Text
-Classification", JMLR (2001), by Simon TONG & Daphne KOLLER.
-
-Link: http://www.jmlr.org/papers/volume2/tong01a/tong01a.pdf
-"""
 #  Copyright (c) 2019 École Polytechnique
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
@@ -21,6 +15,15 @@ Link: http://www.jmlr.org/papers/volume2/tong01a/tong01a.pdf
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+"""
+SVM-based Active Learning algorithms, from the article "Support Vector Machine Active Learning with Applications to Text
+Classification", JMLR (2001), by Simon TONG & Daphne KOLLER.
+
+Link: http://www.jmlr.org/papers/volume2/tong01a/tong01a.pdf
+"""
+
+from typing import Union
+
 import numpy as np
 from scipy.special import expit
 from sklearn import clone
@@ -35,7 +38,7 @@ class SimpleMargin(UncertaintySampler):
     At every iteration, it trains an SVM model over labeled data, and picks the closest point to the decision boundary
     as most informative point.
     """
-    def __init__(self, C=1.0, kernel='rbf', gamma='auto'):
+    def __init__(self, C: float = 1.0, kernel: str = 'rbf', gamma: Union[str, float]='auto'):
         clf = SVC(C=C, kernel=kernel, gamma=gamma, decision_function_shape='ovo')
         super().__init__(clf)
 

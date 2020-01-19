@@ -15,7 +15,6 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .dsm import DualSpaceModel
-from .persistent import PolytopeModel
+from .dsm import DualSpaceModel, FactorizedDualSpaceModel
 
-__all__ = ['DualSpaceModel', 'PolytopeModel']
+__all__ = ['DualSpaceModel', 'FactorizedDualSpaceModel']
