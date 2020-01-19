@@ -33,3 +33,5 @@ Convergence = Callable[[ExplorationManager, Metrics], bool]
 InitialSampler = Callable[[PartitionedDataset], Sequence]
 
 RandomStateType = Union[None, int, np.random.RandomState]
+
+Partition = Sequence[Union[slice, Sequence[int]]]

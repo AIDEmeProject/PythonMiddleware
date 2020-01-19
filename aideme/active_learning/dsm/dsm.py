@@ -24,6 +24,7 @@ from ..active_learner import FactorizedActiveLearner
 
 if TYPE_CHECKING:
     from ..active_learner import ActiveLearner
+    from ...utils.types import Partition
 
 
 class DualSpaceModel(DualSpaceModelBase):
@@ -40,10 +41,9 @@ class FactorizedDualSpaceModel(DualSpaceModelBase, FactorizedActiveLearner):
     Dual Space Model algorithm with factorization
     """
     def __init__(self, active_learner: ActiveLearner, sample_unknown_proba: float = 0.5,
-                 partition: Optional[Sequence[Sequence[int]]] = None, mode: Union[str, Sequence[str]] = 'persist',
+                 partition: Optional[Partition] = None, mode: Union[str, Sequence[str]] = 'persist',
                  tol: float = 1e-12):
-        pol = None if partition is None else FactorizedPolytopeModel(partition, mode, tol)
-        super().__init__(pol, active_learner, sample_unknown_proba)
+        super().__init__(FactorizedPolytopeModel(partition, mode, tol), active_learner, sample_unknown_proba)
         self.__tol = tol
 
     def set_factorization_structure(self, **factorization_info: Any) -> None:

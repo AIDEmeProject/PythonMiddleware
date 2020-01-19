@@ -33,7 +33,7 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         self.__labeled_set = LabeledSet([])
         self.__inferred_start = 0
         self.__unknown_start = 0
-        self.__last_user_labeled_set =  LabeledSet([])
+        self.__last_user_labeled_set = LabeledSet([])
 
     def __len__(self):
         return len(self.__dataset)
@@ -44,10 +44,10 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
     def clear(self) -> None:
         self.__dataset = self.data.copy()
         self.__index_to_row = Index(self.__dataset.index)
-        self.__labeled_set =  LabeledSet([])
+        self.__labeled_set = LabeledSet([])
         self.__inferred_start = 0
         self.__unknown_start = 0
-        self.__last_user_labeled_set =  LabeledSet([])
+        self.__last_user_labeled_set = LabeledSet([])
 
     ##################
     # MOVING
@@ -197,7 +197,7 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         return self.__labeled_set
 
     def select_cols(self, data_cols, lb_cols):
-        #TODO: implement this
+        # TODO: implement this
         pass
 
 

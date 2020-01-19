@@ -111,6 +111,6 @@ class FactorizedActiveLearner(ActiveLearner):
         Tells the Active Learner to consider a new factorization structure, provided it can support such information
 
         :param partition: new attributes partitioning
-        :param kwargs: any extra factorization information the AL may rely on
+        :param factorization_info: any extra factorization information the AL may rely on
         """
         pass

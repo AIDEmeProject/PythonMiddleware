@@ -16,12 +16,13 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Union, Sequence, TYPE_CHECKING
+from typing import Union, Sequence, TYPE_CHECKING, Optional
 
 from .polytope import *
 
 if TYPE_CHECKING:
     from ... import PartitionedDataset
+    from ...utils.types import Partition
 
 
 class PolytopeModelBase(PolytopeBase):
@@ -67,17 +68,20 @@ class PolytopeModel(PolytopeModelBase):
 
 
 class FactorizedPolytopeModel(PolytopeModelBase):
-    def __init__(self, partition: Sequence[Sequence[int]], modes: Union[str, Sequence[str]], tol: float = 1e-12):
+    def __init__(self, partition: Optional[Partition] = None, mode: Union[str, Sequence[str]] = 'persist', tol: float = 1e-12):
         super().__init__(factorized=True)
 
-        if isinstance(modes, str):
-            modes = [modes] * len(partition)
+        if not partition:
+            partition = [slice(None)]
 
-        if len(partition) != len(modes):
-            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(modes)))
+        if isinstance(mode, str):
+            mode = [mode] * len(partition)
+
+        if len(partition) != len(mode):
+            raise ValueError("Lists have incompatible sizes: {0} and {1}".format(len(partition), len(mode)))
 
         self.partition = partition
-        self.polytope_models = [self.get_polytope(mode, tol) for mode in modes]
+        self.polytope_models = [self.get_polytope(m, tol) for m in mode]
 
     @property
     def is_valid(self) -> bool:
