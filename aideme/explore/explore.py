@@ -16,14 +16,14 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, TYPE_CHECKING, Sequence, Union
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
-    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, SeedSequence
 
 
 class PoolBasedExploration:
@@ -50,7 +50,7 @@ class PoolBasedExploration:
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1) -> List[List[Metrics]]:
+    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: SeedSequence = None) -> List[List[Metrics]]:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
@@ -58,12 +58,16 @@ class PoolBasedExploration:
         :param labeled_set: object containing the user labels, as a LabeledSet instance or array-like (no factorization in this case)
         :param active_learner: ActiveLearner instance to simulate
         :param repeat: number of times to repeat exploration
+        :param seed: random number generator seed. Set this if you wish for reproducible results. If repeat > 1, each run
+        "i" will be assigned its own seed, given by "seed + i".
         :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
         containing:
                 - Labeled points (index, labels, partial_labels)
                 - Timing measurements (fit, get next point, ...)
                 - Any metrics returned by the callback function
         """
+        seeds = self.__get_seed(seeds, repeat)
+
         if not isinstance(labeled_set, LabeledSet):
             labeled_set = LabeledSet(labeled_set)
 
@@ -75,10 +79,10 @@ class PoolBasedExploration:
             convergence_criteria=self.convergence_criteria
         )
 
-        return [self._run(manager, labeled_set) for _ in range(repeat)]
+        return [self._run(manager, labeled_set, seed) for seed in seeds]
 
-    def _run(self, manager: ExplorationManager, labeled_set: LabeledSet) -> List[Metrics]:
-        manager.clear()
+    def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> List[Metrics]:
+        manager.clear(seed)
 
         converged, new_labeled_set = False, None
 
@@ -90,6 +94,17 @@ class PoolBasedExploration:
             new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
 
         return iter_metrics
+
+    def __get_seed(self, seed: SeedSequence, repeat: int) -> Sequence[int]:
+        if seed is None:
+            seed = [None] * repeat
+        elif isinstance(seed, int):
+            seed = [seed]
+
+        if len(seed) != repeat:
+            raise ValueError("Expected {} seed values, but got {} instead.".format(repeat, len(seed)))
+
+        return seed
 
 
 class CommandLineExploration:

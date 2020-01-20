@@ -18,20 +18,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
 
-from sklearn.utils import check_random_state
+import numpy as np
 
 from .utils import assert_positive_integer
 
-
 if TYPE_CHECKING:
     from .explore import LabeledSet
-    from .utils import  RandomStateType, InitialSampler
+    from .utils import InitialSampler
 
 
 __all__ = ['stratified_sampler', 'fixed_sampler', 'random_sampler']
 
 
-def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_in_all_subspaces: bool = False, random_state: RandomStateType = None) -> InitialSampler:
+def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_in_all_subspaces: bool = False) -> InitialSampler:
     """
     Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
     of labels.
@@ -46,11 +45,10 @@ def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_
     neg_mask = (labeled_set.partial.max(axis=1) == 0) if neg_in_all_subspaces else ~pos_mask
 
     pos_idx, neg_idx = labeled_set.index[pos_mask], labeled_set.index[neg_mask]
-    rng = check_random_state(random_state)
 
     def sampler(data) -> Sequence:
-        pos_samples = rng.choice(pos_idx, size=pos, replace=False)
-        neg_samples = rng.choice(neg_idx, size=neg, replace=False)
+        pos_samples = np.random.choice(pos_idx, size=pos, replace=False)
+        neg_samples = np.random.choice(neg_idx, size=neg, replace=False)
 
         return list(pos_samples) + list(neg_samples)
 
