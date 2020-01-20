@@ -16,7 +16,6 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-import random
 import warnings
 from typing import Optional, TYPE_CHECKING, Sequence, List, Tuple
 
@@ -122,7 +121,7 @@ class DualSpaceModelBase(ActiveLearner):
             return self.active_learner.next_points_to_label(data, subsample)
 
         while data.unknown_size > 0:
-            sample = data.sample_unknown(subsample) if random.random() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
+            sample = data.sample_unknown(subsample) if np.random.rand() < self.sample_unknown_proba else data.sample_unlabeled(subsample)
             selected = self.active_learner._select_next(sample)
 
             pred = self.polytope_model.predict(selected.data)

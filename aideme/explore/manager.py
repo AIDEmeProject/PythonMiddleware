@@ -16,8 +16,11 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
+import random
 from time import perf_counter
 from typing import Tuple, Optional, TYPE_CHECKING, List, Sequence
+
+import numpy as np
 
 from ..utils import assert_positive_integer, process_callback
 from ..utils.convergence import all_points_are_labeled
@@ -102,14 +105,21 @@ class ExplorationManager:
         """
         return not self.is_exploration_phase
 
-    def clear(self) -> None:
+    def clear(self, seed: Optional[int] = None) -> None:
         """
-        Resets the iteration state.
+        Resets the internal state of all data structures and objects.
+        :param seed: seed for numpy's internal RNG. Set this if you need reproducible results.
         """
+        self.__set_random_state(seed)
+
         self.data.clear()
         self.active_learner.clear()
         self.__initial_sampling_iters = 0
         self.__exploration_iters = 0
+
+    def __set_random_state(self, seed: Optional[int] = None) -> None:
+        np.random.seed(seed)  # Seeds numpy's internal RNG
+        random.seed(seed)  # Seeds python's internal RNG
 
     def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
         """
