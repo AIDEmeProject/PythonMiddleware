@@ -14,16 +14,17 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Sequence
 
-from pandas import get_dummies
+import pandas as pd
 
 
-def one_hot_encoding(df):
+def one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
     """ Find the one-hot-encoding of a pandas dataframe """
-    return get_dummies(df, drop_first=False)
+    return pd.get_dummies(df, drop_first=False)
 
 
-def standardize(df):
+def standardize(df: pd.DataFrame) -> pd.DataFrame:
     """ Standardize a pandas dataframe. """
     mean = df.mean()
     std = df.std()
@@ -35,7 +36,7 @@ def standardize(df):
     return (df - mean) / std
 
 
-def preprocess(data, preprocess_list):
+def preprocess(data: pd.DataFrame, preprocess_list: Sequence[str]) -> pd.DataFrame:
     """
     Preprocess a dataframe from a list of pre-processing steps
     :param data: pandas dataframe of data

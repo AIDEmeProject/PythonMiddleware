@@ -14,15 +14,20 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
 
 import os
+from typing import Optional, Sequence, TYPE_CHECKING
 
 import pandas as pd
 
 from .utils import get_config_from_resources
 
+if TYPE_CHECKING:
+    from ..utils.types import Config
 
-def read_dataset(tag, columns=None, distinct=False):
+
+def read_dataset(tag: str, columns: Optional[Sequence[str]] = None, distinct: bool = False) -> pd.DataFrame:
     """
     Read a given dataset from a CSV file or database, as specified in the resources/datasets.yml file.
 
@@ -33,14 +38,12 @@ def read_dataset(tag, columns=None, distinct=False):
     """
     config = get_config_from_resources('datasets', tag)
 
-    source = config['source']
+    source: str = config['source']
 
     if source == 'filesystem':
         data = read_from_file(config, columns)
-
     elif source == 'postgres':
         data = read_from_database(config, columns)
-
     else:
         raise ValueError("Unknown source value: " + source)
 
@@ -50,7 +53,7 @@ def read_dataset(tag, columns=None, distinct=False):
     return data
 
 
-def read_from_file(config, columns=None):
+def read_from_file(config: Config, columns: Optional[Sequence[str]] = None) -> pd.DataFrame:
     """
     Reads data from a file. We support reading from CSV and Pickle files.
 
@@ -76,15 +79,15 @@ def read_from_file(config, columns=None):
 
         return data
 
-    raise ValueError('Unsupported extension for file'.format(path))
+    raise ValueError('Unsupported extension for file {}'.format(path))
 
 
-def get_path_to_data(config):
+def get_path_to_data(config: Config) -> str:
     source_config = get_config_from_resources('sources', config['source'])
     return os.path.join(source_config['path'], config['filename'])
 
 
-def read_from_database(config, columns=None):
+def read_from_database(config: Config, columns: Optional[Sequence[str]] = None) -> pd.DataFrame:
     """
     Reads data from a database.
 
@@ -102,7 +105,7 @@ def read_from_database(config, columns=None):
     return pd.read_sql_table(table, connection_string, index_col=key, columns=columns)
 
 
-def get_connection_string(config):
+def get_connection_string(config: Config) -> str:
     source = config['source']
 
     if source != 'postgres':
@@ -114,7 +117,7 @@ def get_connection_string(config):
     return 'postgresql://{user}:{password}@{address}:{port}/{database}'.format(**source_config)
 
 
-def query_keys_matching_predicate(tag, predicate):
+def query_keys_matching_predicate(tag: str, predicate: str) -> pd.Series:
     config = get_config_from_resources('datasets', tag)
 
     connection_string = get_connection_string(config)

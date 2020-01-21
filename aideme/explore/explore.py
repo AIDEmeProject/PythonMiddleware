@@ -23,7 +23,7 @@ from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
-    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, SeedSequence
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed
 
 
 class PoolBasedExploration:
@@ -50,7 +50,7 @@ class PoolBasedExploration:
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: SeedSequence = None) -> List[List[Metrics]]:
+    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: Union[Seed, Sequence[Seed]] = None) -> List[List[Metrics]]:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
@@ -95,7 +95,7 @@ class PoolBasedExploration:
 
         return iter_metrics
 
-    def __get_seed(self, seed: SeedSequence, repeat: int) -> Sequence[int]:
+    def __get_seed(self, seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
         if seed is None:
             seed = [None] * repeat
         elif isinstance(seed, int):

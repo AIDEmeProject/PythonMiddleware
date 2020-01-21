@@ -14,14 +14,20 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
 
 import os
+from typing import Optional, TYPE_CHECKING
+
 import yaml
 
 from definitions import RESOURCES_DIR
 
+if TYPE_CHECKING:
+    from aideme.utils.types import Config
 
-def get_config_from_resources(config, section=None):
+
+def get_config_from_resources(config: str, section: Optional[str] = None) -> Config:
     """
     Read an specific section of a YAML configuration file
 
@@ -32,5 +38,5 @@ def get_config_from_resources(config, section=None):
     path = os.path.join(RESOURCES_DIR, config + '.yaml')
 
     with open(path, 'r') as file:
-        config = yaml.safe_load(file)
-        return config[section] if section else config
+        conf = yaml.safe_load(file)
+        return conf[section] if section else conf

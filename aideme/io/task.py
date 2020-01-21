@@ -14,6 +14,9 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
 
 import pandas as pd
 
@@ -21,12 +24,15 @@ from .dataset import read_dataset, query_keys_matching_predicate
 from .preprocessing import preprocess
 from .utils import get_config_from_resources
 
+if TYPE_CHECKING:
+    from ..utils.types import Config
 
-def read_task(tag, distinct=False, get_raw=False, read_factorization=False):
+
+def read_task(tag: str, distinct: bool  =False, get_raw: bool = False, read_factorization: bool = False) -> Config:
     task_config = get_config_from_resources('tasks', tag)
 
     # read data
-    dataset_config = {'distinct': distinct}
+    dataset_config: Config = {'distinct': distinct}
     dataset_config.update(task_config['dataset'])
     data = read_dataset(**dataset_config)
 
@@ -48,7 +54,7 @@ def read_task(tag, distinct=False, get_raw=False, read_factorization=False):
     return output
 
 
-def read_positive_indexes(labels_config, dataset_tag):
+def read_positive_indexes(labels_config: Config, dataset_tag: str) -> Sequence:
     if 'positive_indexes' in labels_config:
         return labels_config['positive_indexes']
 
@@ -58,7 +64,7 @@ def read_positive_indexes(labels_config, dataset_tag):
     raise ValueError("Either 'positive_indexes' or 'predicate' option must be present in labels configuration.")
 
 
-def read_factorization_information(factorization_config, dataset_tag, data):
+def read_factorization_information(factorization_config: Config, dataset_tag: str, data: pd.DataFrame) -> Config:
     output = {}
 
     feature_groups, subpredicates = factorization_config['feature_groups'], factorization_config['subpredicates']
@@ -90,7 +96,7 @@ def read_factorization_information(factorization_config, dataset_tag, data):
     return output
 
 
-def read_partial_positive_indexes(factorization_config, dataset_tag):
+def read_partial_positive_indexes(factorization_config: Config, dataset_tag: str) -> Sequence[Sequence]:
     if 'partial_positive_indexes' in factorization_config:
         return factorization_config['partial_positive_indexes']
 
@@ -101,7 +107,7 @@ def read_partial_positive_indexes(factorization_config, dataset_tag):
     raise RuntimeError("Missing 'subpredicates' or 'partial_positive_indexes' from factorization config.")
 
 
-def indexes_to_labels(positive_indexes, all_indexes):
+def indexes_to_labels(positive_indexes: Sequence, all_indexes: Sequence) -> pd.Series:
     labels = pd.Series(data=0., index=all_indexes)
     labels[labels.index.isin(positive_indexes)] = 1
     return labels
