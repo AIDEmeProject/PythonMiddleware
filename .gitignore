@@ -2,18 +2,18 @@
 .ipynb_checkpoints/
 
 # pytest cache
-tests/.pytest_cache/
+/tests/.pytest_cache/
 
 # configuration files
-resources/sources.yaml
-resources/datasets.yaml
-resources/tasks.yaml
+/resources/sources.yaml
+/resources/datasets.yaml
+/resources/tasks.yaml
 
 # experiments result folder
-experiments/
+/experiments/
 
 # datasets folder
-data/
+/data/
 
 # ignore all jupyter notebooks except for the example.ipynb
 *.ipynb
