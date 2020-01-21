@@ -36,7 +36,7 @@ def standardize(df: pd.DataFrame) -> pd.DataFrame:
     return (df - mean) / std
 
 
-def preprocess(data: pd.DataFrame, preprocess_list: Sequence[str]) -> pd.DataFrame:
+def preprocess_data(data: pd.DataFrame, preprocess_list: Sequence[str]) -> pd.DataFrame:
     """
     Preprocess a dataframe from a list of pre-processing steps
     :param data: pandas dataframe of data

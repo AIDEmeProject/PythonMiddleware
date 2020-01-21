@@ -21,18 +21,18 @@ from typing import TYPE_CHECKING, Sequence
 import pandas as pd
 
 from .dataset import read_dataset, query_keys_matching_predicate
-from .preprocessing import preprocess
+from .preprocessing import preprocess_data
 from .utils import get_config_from_resources
 
 if TYPE_CHECKING:
     from ..utils.types import Config
 
 
-def read_task(tag: str, distinct: bool  =False, get_raw: bool = False, read_factorization: bool = False) -> Config:
+def read_task(tag: str, distinct: bool = True, sort_index: bool = True, preprocess: bool = True, read_factorization: bool = False) -> Config:
     task_config = get_config_from_resources('tasks', tag)
 
     # read data
-    dataset_config: Config = {'distinct': distinct}
+    dataset_config: Config = {'distinct': distinct, 'sort_index': sort_index}
     dataset_config.update(task_config['dataset'])
     data = read_dataset(**dataset_config)
 
@@ -41,9 +41,9 @@ def read_task(tag: str, distinct: bool  =False, get_raw: bool = False, read_fact
     labels = indexes_to_labels(positive_indexes, data.index)
 
     # preprocessing
-    if not get_raw:
+    if preprocess:
         preprocess_list = task_config.get('preprocessing', [])
-        data = preprocess(data, preprocess_list)
+        data = preprocess_data(data, preprocess_list)
 
     # factorization
     output = {'data': data, 'labels': labels}

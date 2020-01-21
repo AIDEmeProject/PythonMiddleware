@@ -27,13 +27,14 @@ if TYPE_CHECKING:
     from ..utils.types import Config
 
 
-def read_dataset(tag: str, columns: Optional[Sequence[str]] = None, distinct: bool = False) -> pd.DataFrame:
+def read_dataset(tag: str, columns: Optional[Sequence[str]] = None, distinct: bool = False, sort_index: bool = False) -> pd.DataFrame:
     """
     Read a given dataset from a CSV file or database, as specified in the resources/datasets.yml file.
 
     :param tag: dataset to be read, defined on config.py file
     :param columns: list of columns to read (if None, all columns are read)
     :param distinct: whether to remove duplicates or not
+    :param sort_index: whether to sort the dataset indexes
     :return: pandas Dataframe
     """
     config = get_config_from_resources('datasets', tag)
@@ -47,8 +48,11 @@ def read_dataset(tag: str, columns: Optional[Sequence[str]] = None, distinct: bo
     else:
         raise ValueError("Unknown source value: " + source)
 
+    if sort_index:
+        data.sort_index(inplace=True)
+
     if distinct:
-        data = data.drop_duplicates()
+        data.drop_duplicates(keep='first', inplace=True)
 
     return data
 
