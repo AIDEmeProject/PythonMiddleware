@@ -25,3 +25,6 @@
 # mypy files
 .mypy_cache/
 .dmypy.json
+
+# python cache
+__pycache__/
