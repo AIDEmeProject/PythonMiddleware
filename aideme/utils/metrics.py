@@ -27,7 +27,7 @@ Here, 'data' is an PartitionedDataset instance and 'active_learner' is a ActiveL
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import sklearn
 
@@ -55,7 +55,7 @@ def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) ->
     return {'tsm': tsm}
 
 
-def classification_metrics(y_test, *score_functions: str, X_test=None) -> Callback:
+def classification_metrics(y_test, score_functions: Sequence[str], X_test=None) -> Callback:
     """
     :param y_test: true labels of test set
     :param score_functions: list of metrics to be computed. Available metrics are: 'true_positive', 'false_positive',

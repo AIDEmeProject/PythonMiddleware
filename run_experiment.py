@@ -14,78 +14,86 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Optional
 
 from aideme.active_learning import *
-from aideme.experiments import Experiment
-from aideme.explore import PoolBasedExploration
-from aideme.initial_sampling import StratifiedSampler
+from aideme.experiments import run_all_experiments, Tag
+from aideme.experiments.folder import RootFolder
+from aideme.initial_sampling import stratified_sampler
 from aideme.utils import *
 
-class tag:
-    def __init__(self, tag, learner, factorize=True):
-        self.tag = tag
-        self.learner = learner
-        self.factorized = factorize if isinstance(learner, FactorizedActiveLearner) else False
-
-    def __repr__(self):
-        return "tag={}, learner={}, factorize={}".format(self.tag, self.learner, self.factorized)
-
-    def __getitem__(self, item):
-        if not isinstance(item, int):
-            raise TypeError('Only integer indexes are supported.')
-
-        if item == 0:
-            return self.tag
-        if item == 1:
-            return self.learner
-        if item == 2:
-            return self.factorized
-        raise IndexError('Index {} out-of-bounds.'.format(item))
-
-    def __len__(self):
-        return 3
 
 def get_user_study(ls):
     assert set(ls).issubset(range(1, 19))
-
     process = lambda x: str(x) if x >= 10 else '0' + str(x)
-    return [('User Study Query ' + num, 'user_study_' + num) for num in map(process, ls)]
+    return ['user_study_' + num for num in map(process, ls)]
+
 
 def get_sdss(queries):
     assert set(queries).issubset(range(1, 12))
-    return [("SDSS Query {}".format(q), "sdss_q{}".format(q)) for q in queries]
+    return ["sdss_q{}".format(q) for q in queries]
 
-# DATASETS
-datasets_list = get_user_study([2])  # range(1,13)
-#datasets_list = get_sdss([3], [1, 0.1])
+
+# TASKS
+#task_list = get_sdss([2, 3])
+task_list = get_user_study(range(1,3))  # range(1,13)
+
 
 # LEARNERS
 active_learners_list = [
-    ("Simple Margin C=1e7", SimpleMargin(C=1e7)),
-    ("DSM C=1024 m=persist", DualSpaceModel(SimpleMargin(C=1024), mode='persist')),
-    #("DSM no Fact", DualSpaceModel(SimpleMargin(C=1e7), mode='persist'), False),
-    ("Version Space ss=16 w=1000 t=100", KernelQueryByCommittee(n_samples=16, warmup=1000, thin=100, rounding=True)),
-    ("Fact VS GREEDY ss=8 w=100 t=10", SubspatialVersionSpace(loss='GREEDY', n_samples=8, warmup=100, thin=10, rounding=True)),
-    #("Bayesian Kernel QBC", KernelQueryByCommittee(gamma=0.5, n_samples=32, warmup=100, thin=1, sampling='bayesian', sigma=10000.0, kernel='rbf')),
+    Tag(SimpleMargin, C=1024),
+    #Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024)),
+    Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024, kernel='rbf')),
+    #Tag(KernelQueryByCommittee, n_samples=16, warmup=1000, thin=100, rounding=True),
+    Tag(SubspatialVersionSpace, loss='GREEDY', n_samples=8, warmup=100, thin=10, rounding=True),
 ]
 
 # RUN PARAMS
-TIMES = 10
-NUMBER_OF_ITERATIONS = 100
-SUBSAMPLING = float('inf')  # 50000, float('inf')
-INITIAL_SAMPLER = StratifiedSampler(pos=1, neg=1, assert_neg_all_subspaces=False)
-CALLBACK = [
-    classification_metrics('fscore'),
-    three_set_metric,
-]
-CONVERGENCE_CRITERIA = [
-    #metric_reached_threshold('fscore', 0.9),
-    #all_points_are_known,
-]
-CALLBACK_SKIP = 10
-PRINT_CALLBACK_RESULT = False
+REPEAT = 3
+NUMBER_OF_ITERATIONS = 50  # number of points to be labeled by the user
+SEEDS = [i for i in range(REPEAT)]  # TODO: is there a better way?
 
-# run experiment
-active_learners_list = [tag(*elem) for elem in active_learners_list]
-explore = PoolBasedExploration(NUMBER_OF_ITERATIONS, INITIAL_SAMPLER, SUBSAMPLING, CALLBACK, CALLBACK_SKIP, PRINT_CALLBACK_RESULT, CONVERGENCE_CRITERIA)
-Experiment().run(datasets_list, active_learners_list, times=TIMES, explore=explore)
+SUBSAMPLING: Optional[int] = None
+
+CALLBACK_SKIP = 1
+PRINT_CALLBACK_RESULT = False
+CALLBACKS = [
+    Tag(classification_metrics, score_functions=['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']),
+    Tag(three_set_metric),
+]
+
+INITIAL_SAMPLER = Tag(stratified_sampler, pos=1, neg=1, neg_in_all_subspaces=False)
+
+CONVERGENCE_CRITERIA = [
+    Tag(max_iter_reached, max_exploration_iter=NUMBER_OF_ITERATIONS),
+    # Tag(metric_reached_threshold, metric='tsm', threshold=1.0),
+]
+
+#############################################
+# EXPERIMENTS
+#############################################
+root_folder = RootFolder()
+
+# write configuration to disk + set folder structure
+for TASK in task_list:
+    for ACTIVE_LEARNER in active_learners_list:
+        folder = root_folder.get_experiment_folder(TASK, str(ACTIVE_LEARNER))
+
+        config = {
+            'task': TASK,
+            'active_learner': ACTIVE_LEARNER.to_json(),
+            'repeat': REPEAT,
+            'seeds': SEEDS,
+            'initial_sampling': INITIAL_SAMPLER.to_json(),
+            'subsampling': SUBSAMPLING,
+            'callbacks': [c.to_json() for c in CALLBACKS],
+            'callback_skip': CALLBACK_SKIP,
+            'print_callback_results': PRINT_CALLBACK_RESULT,
+            'convergence_criteria': [c.to_json() for c in CONVERGENCE_CRITERIA],
+        }
+
+        # save config to disk
+        folder.write_config(config)
+
+# run all experiments
+run_all_experiments(root_folder)

@@ -31,7 +31,7 @@ def read_dataset(tag: str, columns: Optional[Sequence[str]] = None, distinct: bo
     """
     Read a given dataset from a CSV file or database, as specified in the resources/datasets.yml file.
 
-    :param tag: dataset to be read, defined on config.py file
+    :param tag: dataset to be read, defined on resources/datasets.yaml file
     :param columns: list of columns to read (if None, all columns are read)
     :param distinct: whether to remove duplicates or not
     :param sort_index: whether to sort the dataset indexes
