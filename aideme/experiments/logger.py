@@ -15,57 +15,42 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-import logging
-from os.path import join
+import logging.config
+
+import yaml
+
+from aideme.experiments.folder import RootFolder
 
 
 class ExperimentLogger:
-    def __init__(self):
+    def __init__(self, root_folder: RootFolder):
+        self._setup_logging(root_folder)
         self.logger = logging.getLogger('experiment')
-        self.logger.setLevel(logging.INFO)
-        self.formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
         self.total = 0
-        self.skips = 0
         self.errors = 0
 
-    def remove_handlers(self):
-        for handler in self.logger.handlers[:]:  # loop through a copy to avoid simultaneously looping and deleting
-            self.logger.removeHandler(handler)
+    def _setup_logging(self, root_folder) -> None:
+        with open('./resources/logging.yml') as f:
+            config = yaml.safe_load(f)
 
-    def set_folder(self, folder_path):
-        self.remove_handlers()
+        config['handlers']['file']['filename'] = root_folder.log_file
+        logging.config.dictConfig(config)
 
-        handler = logging.FileHandler(join(folder_path, 'experiment.log'))
-        handler.setFormatter(self.formatter)
-        self.logger.addHandler(handler)
-
-    def begin(self, data_tag, learner_tag, run_id):
+    def start(self, task: str, learner: str):
         self.total += 1
+        self.logger.info("Starting experiment #{0}: TASK = '{1}', LEARNER = '{2}'".format(self.total, task, learner))
 
-        self.logger.info("Starting experiment #{0}: TASK = {1}, LEARNER = {2}, RUN = {3}".format(
-            self.total,
-            data_tag,
-            learner_tag,
-            run_id
-        ))
+    def finish(self, task: str, learner: str):
+        self.logger.info("Experiment #{0} ended successfully: TASK = '{1}', LEARNER = '{2}'".format(self.total, task, learner))
 
-    def skip(self):
-        self.skips += 1
-        self.total += 1
-        self.logger.info("Skipping experiment #{0}".format(self.total))
-
-    def error(self, exception):
+    def error(self, task, learner, exception):
         self.errors += 1
-        self.logger.error(exception, exc_info=1)
+        self.logger.error('Error in experiment: task = "{}", learner = "{}"'.format(task, learner), exc_info=exception)
 
     def end(self):
-        self.logger.info("Finished all experiments! " + self.end_message())
-
-    def end_message(self):
-        return "Total: {0}, Success: {1}, Fail: {2}, Skipped: {3}".format(
+        self.logger.info("Finished all experiments! Total: {0}, Success: {1}, Fail: {2}".format(
             self.total,
-            self.total - self.errors - self.skips,
+            self.total - self.errors,
             self.errors,
-            self.skips
-        )
+        ))

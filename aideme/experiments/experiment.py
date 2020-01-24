@@ -22,6 +22,7 @@ import pandas as pd
 
 from .decoder import read_training_set, decode_active_learner, build_exploration_object
 from .folder import RootFolder
+from .logger import ExperimentLogger
 
 if TYPE_CHECKING:
     from ..utils import Config
@@ -29,6 +30,8 @@ if TYPE_CHECKING:
 
 # TODO: Save metrics to file as soon as they are computed (add logger?)
 def run_all_experiments(root_folder: RootFolder) -> None:
+    logger = ExperimentLogger(root_folder)
+
     for task in root_folder.get_all_tasks():
         training_set = read_training_set(task)
 
@@ -36,13 +39,12 @@ def run_all_experiments(root_folder: RootFolder) -> None:
             exp_folder = root_folder.get_experiment_folder(task, learner)
 
             try:
+                logger.start(task, learner)
                 runs = run_experiment(exp_folder.read_config(), training_set)
+                logger.finish(task, learner)
             except Exception as e:
-                # TODO: log this error
-                print('Error in task {}, learner {}'.format(task, learner))
-                print(e)
-                # Move to next experiment
-                continue
+                logger.error(task, learner, exception=e)
+                continue  # Move to next experiment
 
             # save metrics to disk
             for i, df in enumerate(runs):
@@ -53,6 +55,8 @@ def run_all_experiments(root_folder: RootFolder) -> None:
             to_keep = [col for col, tp in zip(runs[0].columns, runs[0].dtypes) if tp in ('int', 'float')]
             avg = sum((run[to_keep] for run in runs)) / len(runs)
             exp_folder.save(avg, 'average.tsv')
+
+    logger.end()
 
 
 def run_experiment(config: Config, training_set=None) -> List[pd.DataFrame]:

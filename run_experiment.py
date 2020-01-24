@@ -33,7 +33,12 @@ def get_sdss(queries):
     assert set(queries).issubset(range(1, 12))
     return ["sdss_q{}".format(q) for q in queries]
 
+# TODO: how can minimize the chance of making mistakes when running experiments?
+# TODO: Example: automatically set SUBSAMPLING depending on whether we use 'cars' or 'sdss' task
+# TODO: Example: automatically set mode='negative' in DSM for sdss_q4
+# TODO: Example: use default values for VS parameters
 
+# TODO: print config resume after experiment is launched
 # TASKS
 #task_list = get_sdss([2, 3])
 task_list = get_user_study(range(1,3))  # range(1,13)
@@ -42,16 +47,17 @@ task_list = get_user_study(range(1,3))  # range(1,13)
 # LEARNERS
 active_learners_list = [
     Tag(SimpleMargin, C=1024),
+    Tag(SimpleMargin, C=1e7),
     #Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024)),
-    Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024, kernel='rbf')),
+    #Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024, kernel='rbf')),
     #Tag(KernelQueryByCommittee, n_samples=16, warmup=1000, thin=100, rounding=True),
-    Tag(SubspatialVersionSpace, loss='GREEDY', n_samples=8, warmup=100, thin=10, rounding=True),
+    #Tag(SubspatialVersionSpace, loss='GREEDY', n_samples=8, warmup=100, thin=10, rounding=True),
 ]
 
 # RUN PARAMS
-REPEAT = 3
-NUMBER_OF_ITERATIONS = 50  # number of points to be labeled by the user
-SEEDS = [i for i in range(REPEAT)]  # TODO: is there a better way?
+REPEAT = 2
+NUMBER_OF_ITERATIONS = 10  # number of points to be labeled by the user
+SEEDS = [i for i in range(REPEAT)]  # TODO: is this ok?
 
 SUBSAMPLING: Optional[int] = None
 

@@ -33,7 +33,7 @@ class ExperimentFolder:
         os.makedirs(self._folder, exist_ok=True)
 
     @property
-    def folder(self) -> str:
+    def path(self) -> str:
         return self._folder
 
     def read_config(self) -> Config:
@@ -58,13 +58,21 @@ class RootFolder:
         now = datetime.datetime.now()
         self._root = os.path.join('experiments', str(now))
 
+    @property
+    def log_file(self) -> str:
+        return os.path.join(self._root, 'experiment.log')
+
     def get_experiment_folder(self, task: str, learner: str) -> ExperimentFolder:
         folder = os.path.join(self._root, task, learner)
         return ExperimentFolder(folder)
 
     def get_all_tasks(self) -> List[str]:
-        return os.listdir(self._root)
+        return self.__get_all_files(self._root)
 
     def get_all_learners(self, task: str) -> List[str]:
         task_folder = os.path.join(self._root, task)
-        return os.listdir(task_folder)
+        return self.__get_all_files(task_folder)
+
+    @staticmethod
+    def __get_all_files(path):
+        return [f for f in os.listdir(path) if not (f.endswith('.log') or f.startswith('.'))]

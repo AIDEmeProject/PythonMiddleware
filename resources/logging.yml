@@ -2,30 +2,24 @@ version: 1
 disable_existing_loggers: False
 formatters:
     simple:
-        format: "%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s"
+        format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 handlers:
     console:
         class: logging.StreamHandler
-        level: DEBUG
+        level: INFO
         formatter: simple
         stream: ext://sys.stdout
 
-    task_file_handler:
+    file:
         class: logging.FileHandler
         level: INFO
         formatter: simple
-        filename: task.log
         encoding: utf8
         mode: w
 
 loggers:
-    task:
+    experiment:
         level: INFO
-        handlers: [task_file_handler]
+        handlers: [console, file]
         propagate: no
-
-root:
-    level: ERROR
-    handlers: [console]
-

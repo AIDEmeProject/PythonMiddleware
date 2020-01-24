@@ -28,3 +28,6 @@
 
 # python cache
 __pycache__/
+
+# log files
+*.log
