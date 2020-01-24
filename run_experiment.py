@@ -33,10 +33,7 @@ def get_sdss(queries):
     assert set(queries).issubset(range(1, 12))
     return ["sdss_q{}".format(q) for q in queries]
 
-# TODO: how can minimize the chance of making mistakes when running experiments?
-# TODO: Example: automatically set SUBSAMPLING depending on whether we use 'cars' or 'sdss' task
-# TODO: Example: automatically set mode='negative' in DSM for sdss_q4
-# TODO: Example: use default values for VS parameters
+
 # TASKS
 #task_list = get_sdss([2, 3])
 task_list = get_user_study(range(1,3))  # range(1,13)
