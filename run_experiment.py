@@ -37,8 +37,6 @@ def get_sdss(queries):
 # TODO: Example: automatically set SUBSAMPLING depending on whether we use 'cars' or 'sdss' task
 # TODO: Example: automatically set mode='negative' in DSM for sdss_q4
 # TODO: Example: use default values for VS parameters
-
-# TODO: print config resume after experiment is launched
 # TASKS
 #task_list = get_sdss([2, 3])
 task_list = get_user_study(range(1,3))  # range(1,13)
@@ -100,6 +98,21 @@ for TASK in task_list:
 
         # save config to disk
         folder.write_config(config)
+
+# Print reminder
+print("""-----------INFO--------------
+TASKS: {}
+ACTIVE_LEARNERS: {}
+SUBSAMPLING: {}
+REPEAT: {}
+INITIAL_SAMPLER: {}
+CALLBACKS: {}
+CALLBACK_SKIP: {}
+CONVERGENCE: {}
+-----------------------------""".format(
+    task_list, active_learners_list, SUBSAMPLING, REPEAT, INITIAL_SAMPLER,
+    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA
+))
 
 # run all experiments
 run_all_experiments(root_folder)
