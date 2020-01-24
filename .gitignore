@@ -1,13 +1,19 @@
+# jupyter notebook cache
 .ipynb_checkpoints/
 
-# data folder
-data/
+# pytest cache
+/tests/.pytest_cache/
 
-# experiments folder
-experiments/
+# configuration files
+/resources/sources.yaml
+/resources/datasets.yaml
+/resources/tasks.yaml
 
-# resources folder (only for experiments/ branch)
-resources/
+# experiments result folder
+/experiments/
+
+# datasets folder
+/data/
 
 # ignore all jupyter notebooks except for the example.ipynb
 *.ipynb
@@ -19,3 +25,6 @@ resources/
 # mypy files
 .mypy_cache/
 .dmypy.json
+
+# python cache
+__pycache__/
