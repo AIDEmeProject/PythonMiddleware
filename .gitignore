@@ -1,4 +1,5 @@
-# jupyter notebook cache
+# jupyter notebooks
+/notebooks/
 .ipynb_checkpoints/
 
 # pytest cache
