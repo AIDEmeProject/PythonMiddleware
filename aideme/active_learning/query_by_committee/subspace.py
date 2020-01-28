@@ -168,7 +168,8 @@ class SubspaceLearner(FactorizedActiveLearner):
 
 class SubspatialVersionSpace(SubspaceLearner):
     def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
-                 sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100, rounding=True, add_intercept=True,
+                 sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100,
+                 rounding=True, max_rounding_iters=None, cache=True, add_intercept=True,
                  kernel='rbf', gamma=None, degree=3, coef0=0.):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
@@ -197,7 +198,7 @@ class SubspatialVersionSpace(SubspaceLearner):
         base_learner = Cloneable(
             KernelQueryByCommittee,
             n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
-            warmup=warmup, thin=thin, sigma=sigma, rounding=rounding,
+            warmup=warmup, thin=thin, sigma=sigma, rounding=rounding, max_rounding_iters=max_rounding_iters, cache=cache,
             kernel=kernel, gamma=gamma, degree=degree, coef0=coef0
         )
 
