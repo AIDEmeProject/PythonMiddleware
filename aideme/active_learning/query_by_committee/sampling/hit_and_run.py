@@ -14,11 +14,12 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Tuple, Optional, List
 
 import numpy as np
 from scipy.optimize import linprog
 
-from .ellipsoid import Ellipsoid
+from .ellipsoid import RoundingAlgorithm
 
 
 class LinearVersionSpace:
@@ -26,22 +27,22 @@ class LinearVersionSpace:
     This class represents an instance of a centered linear classifiers Version Space. Basically, given a collection
     of labeled data points (x_i, y_i), a vector "w" belongs to the Version Space if:
 
-        y_i x_i^T w > 0   AND   |w| < 1
+        y_i x_i^T w >= 0   AND   |w| <= 1
 
     By defining a_i = -y_i x_i, we see that it defines a polytope:
 
-        a_i^T w < 0   AND   |w| < 1
+        a_i^T w <= 0   AND   |w| =< 1
     """
-    def __init__(self, X, y):
+    def __init__(self, X: np.ndarray, y: np.ndarray):
         y = np.where(y == 1, 1, -1).reshape(-1, 1)
         self.A = -X * y
 
     @property
-    def dim(self):
+    def dim(self) -> int:
         return self.A.shape[1]
 
     @staticmethod
-    def __solve_second_degree_equation(a, b, c):
+    def __solve_second_degree_equation(a: float, b: float, c: float) -> Tuple[float, float]:
         delta = b ** 2 - a * c
 
         if delta <= 0:
@@ -50,10 +51,10 @@ class LinearVersionSpace:
         sq_delta = np.sqrt(delta)
         return (-b - sq_delta) / a, (-b + sq_delta) / a
 
-    def is_inside(self, X):
+    def is_inside(self, X: np.ndarray) -> bool:
         return np.all(np.dot(X, self.A.T) < 0, axis=-1)
 
-    def intersection(self, center, direction):
+    def intersection(self, center: np.ndarray, direction: np.ndarray) -> Tuple[float, float]:
         """
         Finds the intersection between the version space and a straight line.
 
@@ -61,6 +62,8 @@ class LinearVersionSpace:
         :param direction: director vector of line. Does not need to be normalized.
         :return: t1 and t2 such that center + t * direction are extremes of the line segment determined by the intersection
         """
+        lower: List[float]
+        upper: List[float]
         lower, upper = [], []
 
         # polytope intersection
@@ -92,7 +95,7 @@ class LinearVersionSpace:
 
         return lower_extreme, upper_extreme
 
-    def get_interior_point(self):
+    def get_interior_point(self) -> np.ndarray:
         """
         Finds an interior point to the version space by solving the following Linear Programming problem:
 
@@ -120,7 +123,7 @@ class LinearVersionSpace:
         point = res.x[1:]
         return point / np.linalg.norm(point)
 
-    def get_separating_oracle(self, point):
+    def get_separating_oracle(self, point: np.ndarray) -> Optional[Tuple[float, np.ndarray]]:
         """
         For any given point, find a hyperplane separating it from the polytope. Basically, we check whether any constrain
         is not satisfied by the point. This method is used during the rounding procedure in Hit-and-Run sampler.
@@ -128,11 +131,11 @@ class LinearVersionSpace:
         :param point: data point
         :return: normal vector to separating hyperplane. If no such plane exists, returns None
         """
-        if np.dot(point, point) > 1:
+        if np.dot(point, point) >= 1:
             return 1, point / np.linalg.norm(point)
 
         for a in self.A:
-            if np.dot(a, point) > 0:
+            if np.dot(a, point) >= 0:
                 return 0, a
 
         return None
@@ -146,23 +149,24 @@ class HitAndRunSampler:
     Reference: https://link.springer.com/content/pdf/10.1007%2Fs101070050099.pdf
     """
 
-    def __init__(self, warmup=100, thin=1, rounding=True, cache=False):
+    def __init__(self, warmup: int = 100, thin: int = 1,
+                 rounding: bool = True, max_rounding_iters: Optional[int] = None, cache: bool = True):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
         :param rounding: whether to apply the rounding preprocessing step. Mixing time considerably improves, but so does
+        :param max_rounding_iters: maximum number of iterations of rounding algorithm
+        :param cache: whether to cache samples between iterations
         the running time.
         """
         self.warmup = warmup
         self.thin = thin
 
-        self.rounding = rounding
-        self.elp = None
-
+        self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters) if rounding else None
         self.cache = cache
         self.samples = None
 
-    def sample(self, X, y, n_samples):
+    def sample(self, X: np.ndarray, y: np.ndarray, n_samples: int) -> np.ndarray:
         """
         Compute a MCMC Sample from the version space.
 
@@ -174,12 +178,12 @@ class HitAndRunSampler:
         version_space = LinearVersionSpace(X, y)
 
         # rounding
-        rounding_matrix = None
-        if self.rounding:
-            self.elp = Ellipsoid(version_space)
-            rounding_matrix = self.elp.L * np.sqrt(self.elp.D).reshape(1, -1)
+        elp, rounding_matrix = None, None
+        if self.rounding_algorithm:
+            elp = self.rounding_algorithm.fit(version_space)  # Ellipsoid(version_space)
+            rounding_matrix = elp.L * np.sqrt(elp.D).reshape(1, -1)
 
-        center = self.__get_center(version_space)
+        center = self.__get_center(version_space, elp)
         samples = np.empty((n_samples, version_space.dim))
 
         # skip samples
@@ -212,14 +216,14 @@ class HitAndRunSampler:
     def __sample_direction(self, dim, rounding_matrix):
         direction = np.random.normal(size=(dim,))
 
-        if self.rounding:
+        if self.rounding_algorithm:
             direction = rounding_matrix.dot(direction)
 
         return direction
 
-    def __get_center(self, version_space):
-        if self.rounding:
-            return self.elp.x
+    def __get_center(self, version_space, ellipsoid):
+        if self.rounding_algorithm:
+            return ellipsoid.center
 
         if self.cache and self.samples is not None:
             samples = self.__truncate_samples(version_space.dim)

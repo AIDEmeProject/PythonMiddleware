@@ -14,69 +14,98 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Generator, Optional
 
 import numpy as np
 
+if TYPE_CHECKING:
+    from .hit_and_run import LinearVersionSpace
+
+
+class RoundingAlgorithm:
+    def __init__(self, max_iter: Optional[int] = None):
+        self.max_iter = max_iter if max_iter is not None else float('inf')
+
+    def fit(self, body: LinearVersionSpace) -> Ellipsoid:
+        elp = Ellipsoid(body.dim)
+
+        count = 0
+        while self._attempt_to_reduce_ellipsoid(elp, body):
+            count += 1
+            if count >= self.max_iter:
+                return elp
+
+        return elp
+
+    def _attempt_to_reduce_ellipsoid(self, elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+        return any(self._can_cut(vector, elp, body) for vector in elp.extremes())  # TODO: can we avoid checking the extremes?
+
+    def _can_cut(self, vector: np.ndarray, elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+        hyperplane = body.get_separating_oracle(vector)
+        return hyperplane is not None and elp.cut(*hyperplane)
+
 
 class Ellipsoid:
-    """
-    Ellipsoid equation: {z : (z - x)^T P^-1 (z - x) <= 1}
-    where P is SPD and z is the center.
-    """
+    def __init__(self, dim: int):
+        self.dim = dim
 
-    def __init__(self, body):
-        self.n = body.dim
-        self.body = body
+        self.center = np.zeros(self.dim)
+        self.scale = np.eye(self.dim)
 
-        self.x = np.zeros(self.n)
+        self.L = np.eye(self.dim)
+        self.D = np.ones(self.dim)
 
-        self.L = np.eye(self.n)
-        self.D = np.ones(self.n)
-        self.P = np.eye(self.n)
+    def extremes(self) -> Generator[np.ndarray, None, None]:
+        yield self.center
 
-        self.__fit()
+        eig, P = np.linalg.eigh(self.scale + 1e-12 * np.eye(self.dim))  # add small perturbation to diagonal to counter numerical errors
 
-    def __repr__(self):
-        return str(self.x) + "\n" + str(self.P)
+        for i in range(len(eig)):
+            if eig[i] <= 0:
+                raise RuntimeError("Found non-positive eigenvalue: {}".format(eig[i]))
 
+            factor = np.sqrt(eig[i]) / (self.dim + 1)
+            direction = factor * P[:, i]
 
-    def get_endpoints(self, factor=1.0):
-        yield self.x
+            yield self.center + direction
+            yield self.center - direction
 
-        eig, P = np.linalg.eigh(self.P)
+    def cut(self, bias: float, g: np.ndarray) -> bool:
+        a_hat = self.L.T.dot(g)
+        gamma = np.sqrt(np.square(a_hat).dot(self.D))
+        alpha = (g.dot(self.center) - bias) / gamma
 
-        for i in range(self.n):
-            a = P[:, i] * np.sqrt(eig[i])
-            yield self.x + factor * a
-            yield self.x - factor * a
+        if alpha >= 1:
+            raise RuntimeError("Invalid hyperplane: ellipsoid is contained in its positive semi-space (expected the negative one)")
 
-    def __update(self, b, g):
-        n = self.n
-
-        a_hat = self.L.T.dot(g)  # a_hat = L^T g
-        gamma = np.sqrt(np.square(a_hat).dot(self.D))  # gamma = sqrt(a_hat^T D a_hat)
-        alpha = (g.dot(self.x) - b) / gamma
+        # shallow cut
+        if alpha <= -1.0 / self.dim:
+            return False
 
         p = self.D * a_hat / gamma
         Pg = self.L.dot(p)
 
         # update center
-        tau = (1 + n * alpha) / (n + 1)
-        self.x -= tau * Pg
+        tau = (1 + self.dim * alpha) / (self.dim + 1)
+        self.center -= tau * Pg
 
-        # update LDL^T decomposition
+        # update LDL^T
         sigma = 2 * tau / (alpha + 1)
-        delta = (1 - alpha * alpha) * (n * n / (n * n - 1.))
-        beta = self.__update_diagonal(p, sigma, delta)
-        self.__update_cholesky_factor(p, beta)
+        delta = (1. - alpha * alpha) * ((self.dim * self.dim) / (self.dim * self.dim - 1.))
+
+        beta = self._update_diagonal(p, sigma, delta)
+        self._update_cholesky_factor(p, beta)
 
         # update P
-        self.P -= sigma * Pg.reshape(-1, 1).dot(Pg.reshape(1, -1))
-        self.P *= delta
+        self.scale -= sigma * (Pg.reshape(-1, 1) @ Pg.reshape(1, -1))
+        self.scale *= delta
 
-    def __update_diagonal(self, p, sigma, delta):
-        """ LDL^T for D - sigma pp^T """
-        t = np.empty(len(self.D) + 1)
+        return True
+
+    def _update_diagonal(self, p: np.ndarray, sigma: float, delta: float) -> np.ndarray:
+        t = np.empty(self.dim + 1)
         t[-1] = 1 - sigma * p.dot(p / self.D)
         t[:-1] = sigma * np.square(p) / self.D
         t = np.cumsum(t[::-1])[::-1]
@@ -88,23 +117,9 @@ class Ellipsoid:
 
         return beta
 
-    def __update_cholesky_factor(self, p, b):
-        """ Computes the product L K, with L and K lower triangular with unit diagonal, and Kij = pi * bj for i > j """
+
+    def _update_cholesky_factor(self, p: np.ndarray, beta: np.ndarray) -> None:
         v = self.L * p.reshape(1, -1)
         v = np.cumsum(v[:, ::-1], axis=1)[:, ::-1]
 
-        self.L[:, :-1] += v[:, 1:] * b[:-1].reshape(1, -1)
-
-    def __fit(self):
-        converge = False
-
-        while not converge:
-            converge = True
-
-            for end_point in self.get_endpoints(factor=1.0 / (self.n + 1)):
-                bad_constrain = self.body.get_separating_oracle(end_point)
-                if bad_constrain is not None:
-                    converge = False
-                    b, g = bad_constrain
-                    self.__update(b, g)
-                    break
+        self.L[:, :-1] += v[:, 1:] * beta[:-1].reshape(1, -1)

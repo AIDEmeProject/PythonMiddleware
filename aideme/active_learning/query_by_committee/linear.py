@@ -38,7 +38,8 @@ class BayesianLogisticRegression:
         better performance under these assumptions.
     """
 
-    def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100, rounding=True):
+    def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100,
+                 rounding=True, max_rounding_iters=None, cache=True):
         """
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not
@@ -51,7 +52,7 @@ class BayesianLogisticRegression:
         if sampling == 'bayesian':
             self.sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, sigma=sigma)
         elif sampling == 'deterministic':
-            self.sampler = HitAndRunSampler(warmup=warmup, thin=thin, rounding=rounding, cache=True)
+            self.sampler = HitAndRunSampler(warmup=warmup, thin=thin, rounding=rounding, max_rounding_iters=max_rounding_iters, cache=cache)
         else:
             raise ValueError("Unknown sampling option. Options are 'deterministic' and 'bayesian'.")
 
