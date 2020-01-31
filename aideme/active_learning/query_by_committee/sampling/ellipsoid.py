@@ -16,35 +16,12 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generator, Optional
+from typing import TYPE_CHECKING, Generator, Optional, Callable
 
 import numpy as np
 
 if TYPE_CHECKING:
     from .hit_and_run import LinearVersionSpace
-
-
-class RoundingAlgorithm:
-    def __init__(self, max_iter: Optional[int] = None):
-        self.max_iter = max_iter if max_iter is not None else float('inf')
-
-    def fit(self, body: LinearVersionSpace) -> Ellipsoid:
-        elp = Ellipsoid(body.dim)
-
-        count = 0
-        while self._attempt_to_reduce_ellipsoid(elp, body):
-            count += 1
-            if count >= self.max_iter:
-                return elp
-
-        return elp
-
-    def _attempt_to_reduce_ellipsoid(self, elp: Ellipsoid, body: LinearVersionSpace) -> bool:
-        return any(self._can_cut(vector, elp, body) for vector in elp.extremes())  # TODO: can we avoid checking the extremes?
-
-    def _can_cut(self, vector: np.ndarray, elp: Ellipsoid, body: LinearVersionSpace) -> bool:
-        hyperplane = body.get_separating_oracle(vector)
-        return hyperplane is not None and elp.cut(*hyperplane)
 
 
 class Ellipsoid:
@@ -71,6 +48,11 @@ class Ellipsoid:
 
             yield self.center + direction
             yield self.center - direction
+
+    def compute_alpha(self, G):
+        a_hat = G @ self.L
+        gamma = np.sqrt(np.square(a_hat).dot(self.D))
+        return G.dot(self.center) / gamma
 
     def cut(self, bias: float, g: np.ndarray) -> bool:
         a_hat = self.L.T.dot(g)
@@ -123,3 +105,56 @@ class Ellipsoid:
         v = np.cumsum(v[:, ::-1], axis=1)[:, ::-1]
 
         self.L[:, :-1] += v[:, 1:] * beta[:-1].reshape(1, -1)
+
+
+if TYPE_CHECKING:
+    STRATEGY_TYPE = Callable[[Ellipsoid, LinearVersionSpace], bool]
+
+class RoundingAlgorithm:
+    def __init__(self, max_iter: Optional[int] = None, strategy='diag'):
+        self.max_iter = max_iter if max_iter is not None else float('inf')
+        self.strategy = self.__get_strategy(strategy)
+
+    def __get_strategy(self, strategy: str) -> STRATEGY_TYPE:
+        strategy = strategy.upper()
+        if strategy == 'DIAG':
+            return diagonalization_strategy
+        if strategy == 'NEW':
+            return new_strategy
+        raise ValueError("Unknown strategy {}. Possible values are: 'diag', 'new'.")
+
+    def fit(self, body: LinearVersionSpace) -> Ellipsoid:
+        elp = Ellipsoid(body.dim)
+
+        count = 0
+        while self.strategy(elp, body):
+            count += 1
+            if count >= self.max_iter:
+                # TODO: log this
+                return elp
+        # TODO: log avg_time and count
+
+        return elp
+
+
+def diagonalization_strategy(elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+    for vector in elp.extremes():
+        hyperplane = body.get_separating_oracle(vector)
+
+        if hyperplane is not None and elp.cut(*hyperplane):
+            return True
+
+    return False
+
+
+def new_strategy(elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+    # find best cut
+    alphas = elp.compute_alpha(body.A)
+    idx_max = np.argmax(alphas)
+    alpha_max = alphas[idx_max]
+
+    # stop criteria: gamma (= -alpha) >= threshold (= 1 / (n+1)*sqrt(n))
+    threshold = 1 / ((elp.dim + 1) * np.sqrt(elp.dim))
+
+    # TODO: optimize this -> avoid recomputing alpha, do not update scale matrix
+    return alpha_max >= -threshold and elp.cut(0, body.A[idx_max])

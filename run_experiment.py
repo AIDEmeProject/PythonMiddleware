@@ -35,28 +35,29 @@ def get_sdss(queries):
 
 
 # TASKS
-#task_list = get_sdss([2, 3])
-task_list = get_user_study(range(1,3))  # range(1,13)
+task_list = get_sdss([2])
+#task_list = get_user_study([7, 13])  # range(1,13)
 
 
 # LEARNERS
 active_learners_list = [
-    Tag(SimpleMargin, C=1024),
-    Tag(SimpleMargin, C=1e7),
+    #Tag(SimpleMargin, C=1024),
+    #Tag(SimpleMargin, C=1e7),
     #Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024)),
     #Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024, kernel='rbf')),
-    #Tag(KernelQueryByCommittee, n_samples=16, warmup=1000, thin=100, rounding=True),
+    Tag(KernelQueryByCommittee, n_samples=8, warmup=100, thin=10, rounding=True, strategy='diag'),
+    Tag(KernelQueryByCommittee, n_samples=8, warmup=100, thin=10, rounding=True, strategy='new'),
     #Tag(SubspatialVersionSpace, loss='GREEDY', n_samples=8, warmup=100, thin=10, rounding=True),
 ]
 
 # RUN PARAMS
-REPEAT = 2
-NUMBER_OF_ITERATIONS = 10  # number of points to be labeled by the user
+REPEAT = 1
+NUMBER_OF_ITERATIONS = 100  # number of points to be labeled by the user
 SEEDS = [i for i in range(REPEAT)]  # TODO: is this ok?
 
 SUBSAMPLING: Optional[int] = None
 
-CALLBACK_SKIP = 1
+CALLBACK_SKIP = 10
 PRINT_CALLBACK_RESULT = False
 CALLBACKS = [
     Tag(classification_metrics, score_functions=['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']),

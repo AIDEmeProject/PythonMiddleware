@@ -150,7 +150,7 @@ class HitAndRunSampler:
     """
 
     def __init__(self, warmup: int = 100, thin: int = 1,
-                 rounding: bool = True, max_rounding_iters: Optional[int] = None, cache: bool = True):
+                 rounding: bool = True, max_rounding_iters: Optional[int] = None, cache: bool = True, strategy='diag'):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
@@ -162,7 +162,7 @@ class HitAndRunSampler:
         self.warmup = warmup
         self.thin = thin
 
-        self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters) if rounding else None
+        self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters, strategy=strategy) if rounding else None
         self.cache = cache
         self.samples = None
 
