@@ -18,7 +18,8 @@
 from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, process_callback
 from .metrics import classification_metrics, three_set_metric
 from .convergence import max_iter_reached, metric_reached_threshold
+from .noise import random_noise_injector, gaussian_noise
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .types import FunctionList, Metrics, Callback, Convergence, InitialSampler, SeedSequence
+    from .types import FunctionList, Metrics, Callback, Convergence, InitialSampler, SeedSequence, NoiseInjector

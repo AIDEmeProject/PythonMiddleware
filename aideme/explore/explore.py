@@ -16,20 +16,20 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, List, TYPE_CHECKING, Sequence, Union
+from typing import Optional, List, TYPE_CHECKING, Sequence
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
-    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, SeedSequence
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, SeedSequence, NoiseInjector
 
 
 class PoolBasedExploration:
     def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
                  callback: FunctionList[Callback] = None, callback_skip: int = 1, print_callback_result: bool = False,
-                 convergence_criteria: FunctionList[Convergence] = None):
+                 convergence_criteria: FunctionList[Convergence] = None, noise_injector: Optional[NoiseInjector] = None):
         """
         :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
         :param subsampling: sample size of unlabeled points when looking for the next point to label
@@ -37,6 +37,7 @@ class PoolBasedExploration:
         :param callback_skip: compute callback every callback_skip iterations
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
+        :param noise_injector: a function for injecting labeling noise. For more info, check utils/noise.py
         """
         if subsampling is not None:
             assert_positive_integer(subsampling, 'subsampling')
@@ -49,6 +50,7 @@ class PoolBasedExploration:
         self.callback_skip = callback_skip
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
+        self.noise_injector = noise_injector
 
     def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: SeedSequence = None) -> List[List[Metrics]]:
         """
@@ -84,16 +86,21 @@ class PoolBasedExploration:
     def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> List[Metrics]:
         manager.clear(seed)
 
-        converged, new_labeled_set = False, None
+        labeled_set = self.__inject_noise(labeled_set)
 
-        iter_metrics = []
+        iter_metrics, converged, new_labeled_set = [], False, None
+
         while not converged:
             idx, metrics, converged = manager.advance(new_labeled_set)
             iter_metrics.append(metrics)
 
+            # TODO: Problem: small chance of flipping initial sampling labels. Is this expected behavior? What about other forms of initial sampling?
             new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
 
         return iter_metrics
+
+    def __inject_noise(self, labeled_set):
+        return labeled_set if self.noise_injector is None else self.noise_injector(labeled_set)
 
     def __get_seed(self, seed: SeedSequence, repeat: int) -> Sequence[int]:
         if seed is None:

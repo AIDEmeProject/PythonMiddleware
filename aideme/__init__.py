@@ -15,7 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .explore import *
 from .utils import *
+from .explore import *
 from .active_learning import *
 from .initial_sampling import *

@@ -17,11 +17,11 @@
 
 from typing import Union, Sequence, TypeVar, Callable, Dict, Any
 
-import numpy as np
-
 from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
 from aideme.explore.manager import ExplorationManager
 from aideme.explore.partitioned import PartitionedDataset
+from aideme.explore.labeledset import LabeledSet
+
 
 T = TypeVar('T')
 FunctionList = Union[None, T, Sequence[T]]
@@ -35,3 +35,5 @@ InitialSampler = Callable[[PartitionedDataset], Sequence]
 SeedSequence = Union[None, int, Sequence[int]]
 
 Partition = Sequence[Union[slice, Sequence[int]]]
+
+NoiseInjector = Callable[[LabeledSet], LabeledSet]
