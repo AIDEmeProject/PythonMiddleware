@@ -24,7 +24,7 @@ from ..utils import assert_positive_integer, process_callback
 if TYPE_CHECKING:
     import numpy as np
     from ..active_learning import ActiveLearner
-    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed, NoiseInjector
     RunType = Generator[Metrics, None, None]
     RunsType = Union[List[List[Metrics]], Generator[RunType, None, None]]
 
@@ -32,13 +32,14 @@ if TYPE_CHECKING:
 class PoolBasedExploration:
     def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
                  callback: FunctionList[Callback] = None, callback_skip: int = 1,
-                 convergence_criteria: FunctionList[Convergence] = None):
+                 convergence_criteria: FunctionList[Convergence] = None, noise_injector: Optional[NoiseInjector] = None):
         """
         :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
         :param subsampling: sample size of unlabeled points when looking for the next point to label
         :param callback: a list of callback functions. For more info, check utils/metrics.py
         :param callback_skip: compute callback every callback_skip iterations
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
+        :param noise_injector: a function for injecting labeling noise. For more info, check utils/noise.py
         """
         assert_positive_integer(subsampling, 'subsampling', allow_none=True)
         assert_positive_integer(callback_skip, 'callback_skip')
@@ -49,6 +50,7 @@ class PoolBasedExploration:
         self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
         self.convergence_criteria = process_callback(convergence_criteria)
+        self.noise_injector = noise_injector
 
     def run(self, data: np.ndarray, labeled_set: LabeledSet, active_learner: ActiveLearner, repeat: int = 1,
             seeds: Union[Seed, Sequence[Seed]] = None, copy: bool = True, return_generator: bool = True) -> RunsType:
@@ -91,12 +93,15 @@ class PoolBasedExploration:
     def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> RunType:
         manager.clear(seed)
 
+        labeled_set = self.__inject_noise(labeled_set)
+
         converged, new_labeled_set = False, None
         while not converged:
             idx, metrics, converged = manager.advance(new_labeled_set)
 
             yield metrics
 
+            # TODO: Problem: small chance of flipping initial sampling labels. Is this expected behavior? What about other forms of initial sampling?
             new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
 
     def __get_seed(self, seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
@@ -109,6 +114,9 @@ class PoolBasedExploration:
             raise ValueError("Expected {} seed values, but got {} instead.".format(repeat, len(seed)))
 
         return seed
+
+    def __inject_noise(self, labeled_set: LabeledSet) -> LabeledSet:
+        return labeled_set if self.noise_injector is None else self.noise_injector(labeled_set)
 
 
 class CommandLineExploration:

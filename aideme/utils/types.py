@@ -22,6 +22,8 @@ import numpy as np
 from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
 from aideme.explore.manager import ExplorationManager
 from aideme.explore.partitioned import PartitionedDataset
+from aideme.explore.labeledset import LabeledSet
+
 
 T = TypeVar('T')
 FunctionList = Union[None, T, Sequence[T]]
@@ -35,3 +37,5 @@ Seed = Optional[int]
 
 Partition = Sequence[Union[slice, Sequence[int]]]
 HyperPlane = Tuple[float, np.ndarray]
+
+NoiseInjector = Callable[[LabeledSet], LabeledSet]
