@@ -23,12 +23,17 @@ def assert_positive(value, name):
         raise ValueError("{0} must be a positive number, got {1}".format(name, value))
 
 
-def assert_positive_integer(value, name, allow_inf=False):
-    assert_non_negative_integer(value, name, allow_inf)
+def assert_positive_integer(value, name, allow_inf=False, allow_none=False):
+    assert_non_negative_integer(value, name, allow_inf, allow_none)
     if value == 0:
         raise ValueError("Expected positive integer for {}, got 0".format(name))
 
-def assert_non_negative_integer(value, name, allow_inf=False):
+def assert_non_negative_integer(value, name, allow_inf=False, allow_none=False):
+    if value is None:
+        if not allow_none:
+            raise ValueError("{} cannot be none.".format(name))
+        return
+
     if value == math.inf:
         if not allow_inf:
             raise ValueError("{0} cannot be infinity.".format(name))

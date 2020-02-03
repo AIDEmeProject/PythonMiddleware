@@ -38,8 +38,7 @@ class PoolBasedExploration:
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
-        if subsampling is not None:
-            assert_positive_integer(subsampling, 'subsampling')
+        assert_positive_integer(subsampling, 'subsampling', allow_none=True)
         assert_positive_integer(callback_skip, 'callback_skip')
 
         self.initial_sampler = initial_sampler
@@ -123,8 +122,7 @@ class CommandLineExploration:
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
-        if subsampling is not None:
-            assert_positive_integer(subsampling, 'subsampling')
+        assert_positive_integer(subsampling, 'subsampling', allow_none=True)
         assert_positive_integer(callback_skip, 'callback_skip')
 
         self.initial_sampler = initial_sampler

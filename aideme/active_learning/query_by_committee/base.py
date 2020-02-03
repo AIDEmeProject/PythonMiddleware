@@ -22,18 +22,19 @@ from ..uncertainty import UncertaintySampler
 
 class LinearQueryByCommittee(UncertaintySampler):
     def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=10, sigma=100,
-                 rounding=True, max_rounding_iters=None, cache=True, strategy='diag'):
+                 cache=True, rounding=True, max_rounding_iters=None, strategy='default'):
         clf = BayesianLogisticRegression(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
-                                         warmup=warmup, thin=thin, sigma=sigma,
-                                         rounding=rounding, max_rounding_iters=max_rounding_iters, cache=cache, strategy=strategy)
+                                         warmup=warmup, thin=thin, sigma=sigma, cache=cache,
+                                         rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy)
         UncertaintySampler.__init__(self, clf)
 
 
 class KernelQueryByCommittee(UncertaintySampler):
     def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=10, sigma=100,
-                 rounding=True, max_rounding_iters=None, cache=True, strategy='diag', kernel='rbf', gamma=None, degree=3, coef0=0.):
+                 cache=True, rounding=True, max_rounding_iters=None, strategy='diag',
+                 kernel='rbf', gamma=None, degree=3, coef0=0.):
         clf = KernelLogisticRegression(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
-                                       warmup=warmup, thin=thin, sigma=sigma,
-                                       rounding=rounding, max_rounding_iters=max_rounding_iters, cache=cache, strategy=strategy,
+                                       warmup=warmup, thin=thin, sigma=sigma, cache=cache,
+                                       rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy,
                                        kernel=kernel, gamma=gamma, degree=degree, coef0=coef0)
         UncertaintySampler.__init__(self, clf)

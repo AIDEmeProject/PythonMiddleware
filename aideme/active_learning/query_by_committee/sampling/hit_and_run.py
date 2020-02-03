@@ -19,7 +19,7 @@ from typing import Tuple, Optional, List
 import numpy as np
 from scipy.optimize import linprog
 
-from .ellipsoid import RoundingAlgorithm
+from .rounding import RoundingAlgorithm
 
 
 class LinearVersionSpace:
@@ -149,8 +149,8 @@ class HitAndRunSampler:
     Reference: https://link.springer.com/content/pdf/10.1007%2Fs101070050099.pdf
     """
 
-    def __init__(self, warmup: int = 100, thin: int = 1,
-                 rounding: bool = True, max_rounding_iters: Optional[int] = None, cache: bool = True, strategy='diag'):
+    def __init__(self, warmup: int = 100, thin: int = 1, cache: bool = True,
+                 rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy='default'):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
