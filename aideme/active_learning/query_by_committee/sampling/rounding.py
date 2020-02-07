@@ -29,19 +29,19 @@ if TYPE_CHECKING:
 
 
 class RoundingAlgorithm:
-    def __init__(self, max_iter: Optional[int] = None, strategy: str = 'default'):
+    def __init__(self, max_iter: Optional[int] = None, strategy: str = 'default', z_cut: bool = False):
         assert_positive_integer(max_iter, 'max_iter', allow_none=True)
 
         self.max_iter = max_iter if max_iter is not None else float('inf')
-        self.strategy, self.compute_scale_matrix = self.__get_strategy(strategy)
+        self.strategy, self.compute_scale_matrix = self.__get_strategy(strategy, z_cut)
 
     @staticmethod
-    def __get_strategy(strategy: str) -> Tuple[STRATEGY_TYPE, bool]:
+    def __get_strategy(strategy: str, z_cut: bool) -> Tuple[STRATEGY_TYPE, bool]:
         strategy = strategy.upper()
         if strategy == 'DEFAULT':
             return diagonalization_strategy, True
         if strategy == 'OPT':
-            return new_strategy, False
+            return OptimizedStrategy(z_cut=z_cut), False
         raise ValueError("Unknown strategy {}. Possible values are: 'default', 'opt'.")
 
     def fit(self, body: LinearVersionSpace) -> Ellipsoid:
@@ -68,14 +68,30 @@ def diagonalization_strategy(elp: Ellipsoid, body: LinearVersionSpace) -> bool:
     return False
 
 
-def new_strategy(elp: Ellipsoid, body: LinearVersionSpace) -> bool:
-    # find best cut
-    alphas = elp.compute_alpha(body.A)
-    idx_max = np.argmax(alphas)
-    alpha_max = alphas[idx_max]
+class OptimizedStrategy:
+    def __init__(self, z_cut: bool = False):
+        self.z_cut = z_cut
 
-    # stop criteria: gamma (= -alpha) >= threshold (= 1 / (n+1)*sqrt(n))
-    threshold = 1 / ((elp.dim + 1) * np.sqrt(elp.dim))
-    # TODO: can it happen that |z| >= 1 in the end?
+    def __call__(self, elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+        alpha, hyperplane = self._get_alpha_cut(elp, body)
 
-    return alpha_max >= -threshold and elp.cut(0, body.A[idx_max])
+        if self.z_cut and alpha != 0:
+            alpha_z, hyperplane_z = self._get_z_cut(elp)
+            if alpha_z > alpha:
+                alpha, hyperplane = alpha_z, hyperplane_z
+
+        threshold = 1 / ((elp.dim + 1) * np.sqrt(elp.dim))
+        if -alpha >= threshold:
+            return False
+
+        elp.cut(*hyperplane)
+        return True
+
+    def _get_alpha_cut(self, elp, body):
+        alphas = elp.compute_alpha(body.A)
+        idx_max = np.argmax(alphas)
+        return alphas[idx_max], (0, body.A[idx_max])
+
+    def _get_z_cut(self, elp):
+        hyperplane = np.linalg.norm(elp.center), elp.center
+        return elp.compute_alpha_single(*hyperplane), hyperplane

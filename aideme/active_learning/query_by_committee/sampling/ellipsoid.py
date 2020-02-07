@@ -50,6 +50,11 @@ class Ellipsoid:
         gamma = np.sqrt(np.square(a_hat).dot(self.D))
         return G.dot(self.center) / gamma
 
+    def compute_alpha_single(self, bias, g):
+        a_hat = self.L.T.dot(g)
+        gamma = np.sqrt(np.square(a_hat).dot(self.D))
+        return (g.dot(self.center) - bias) / gamma
+
     def cut(self, bias: float, g: np.ndarray) -> bool:
         a_hat = self.L.T.dot(g)
         gamma = np.sqrt(np.square(a_hat).dot(self.D))

@@ -31,7 +31,7 @@ class LinearVersionSpace:
 
     By defining a_i = -y_i x_i, we see that it defines a polytope:
 
-        a_i^T w <= 0   AND   |w| =< 1
+        a_i^T w <= 0   AND   |w| <= 1
     """
     def __init__(self, X: np.ndarray, y: np.ndarray):
         y = np.where(y == 1, 1, -1).reshape(-1, 1)
@@ -150,7 +150,7 @@ class HitAndRunSampler:
     """
 
     def __init__(self, warmup: int = 100, thin: int = 1, cache: bool = True,
-                 rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy='default'):
+                 rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy='default', z_cut=False):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
@@ -162,7 +162,7 @@ class HitAndRunSampler:
         self.warmup = warmup
         self.thin = thin
 
-        self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters, strategy=strategy) if rounding else None
+        self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters, strategy=strategy, z_cut=z_cut) if rounding else None
         self.cache = cache
         self.samples = None
 
