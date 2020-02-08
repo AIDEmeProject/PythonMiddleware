@@ -19,6 +19,7 @@ from typing import Tuple, Optional, List
 import numpy as np
 from scipy.optimize import linprog
 
+from .ellipsoid import Ellipsoid
 from .rounding import RoundingAlgorithm
 
 
@@ -150,7 +151,8 @@ class HitAndRunSampler:
     """
 
     def __init__(self, warmup: int = 100, thin: int = 1, cache: bool = True,
-                 rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy='default', z_cut=False):
+                 rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy: str = 'default',
+                 z_cut: bool = False, rounding_cache: bool = False):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
@@ -163,6 +165,10 @@ class HitAndRunSampler:
         self.thin = thin
 
         self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters, strategy=strategy, z_cut=z_cut) if rounding else None
+
+        self.rounding_cache = rounding_cache
+        self.ellipsoid_cache = None  # type: Optional[Ellipsoid]
+
         self.cache = cache
         self.samples = None
 
@@ -180,7 +186,11 @@ class HitAndRunSampler:
         # rounding
         elp, rounding_matrix = None, None
         if self.rounding_algorithm:
-            elp = self.rounding_algorithm.fit(version_space)  # Ellipsoid(version_space)
+            elp = self.rounding_algorithm.fit(version_space, self.__compute_new_ellipsoid(version_space.dim))
+
+            if self.rounding_cache:
+                self.ellipsoid_cache = elp
+
             rounding_matrix = elp.L * np.sqrt(elp.D).reshape(1, -1)
 
         center = self.__get_center(version_space, elp)
@@ -223,7 +233,8 @@ class HitAndRunSampler:
 
     def __get_center(self, version_space, ellipsoid):
         if self.rounding_algorithm:
-            return ellipsoid.center
+            norm = np.linalg.norm(ellipsoid.center)
+            return ellipsoid.center if norm < 1 else (0.99 / norm) * ellipsoid.center
 
         if self.cache and self.samples is not None:
             samples = self.__truncate_samples(version_space.dim)
@@ -241,3 +252,34 @@ class HitAndRunSampler:
             return self.samples[:, :new_dim]
 
         return np.hstack([self.samples, np.zeros((N, new_dim - dim))])
+
+    def __compute_new_ellipsoid(self, new_dim: int):
+        if self.ellipsoid_cache is None:  # no rounding
+            return None
+
+        d = self.ellipsoid_cache.dim
+
+        if new_dim == d:  # linear case: dimension does not grow
+            return self.ellipsoid_cache
+
+        if new_dim != d + 1:
+            # TODO: is it possible to perform more general updates?
+            # TODO: is it better to simply log this and return None (do not re-use cache)?
+            raise RuntimeError("Only +1 updates are supported.")
+
+        # kernel case: dimension grows with number of labeled points
+        elp = Ellipsoid(new_dim, compute_scale_matrix=False)
+
+        elp.center[:-1] = self.ellipsoid_cache.center
+
+        elp.D[:-1] = self.ellipsoid_cache.D * (1 + 1/d)
+        elp.D[-1] = 1 + d
+
+        elp.L[:-1, :-1] = self.ellipsoid_cache.L
+
+        if self.ellipsoid_cache.scale is not None:
+            elp.scale = np.zeros(shape=(new_dim, new_dim))
+            elp.scale[:-1, :-1] = self.ellipsoid_cache.scale * (1 + 1/d)
+            elp.scale[-1, -1] = 1 + d
+
+        return elp

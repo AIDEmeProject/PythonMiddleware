@@ -44,8 +44,9 @@ class RoundingAlgorithm:
             return OptimizedStrategy(z_cut=z_cut), False
         raise ValueError("Unknown strategy {}. Possible values are: 'default', 'opt'.")
 
-    def fit(self, body: LinearVersionSpace) -> Ellipsoid:
-        elp = Ellipsoid(body.dim, compute_scale_matrix=self.compute_scale_matrix)
+    def fit(self, body: LinearVersionSpace, elp: Optional[Ellipsoid] = None) -> Ellipsoid:
+        if elp is None:
+            elp = Ellipsoid(body.dim, compute_scale_matrix=self.compute_scale_matrix)
 
         count = 0
         while self.strategy(elp, body):

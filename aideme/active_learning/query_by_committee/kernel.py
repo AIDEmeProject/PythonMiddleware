@@ -17,9 +17,9 @@
 
 from functools import partial
 
+import numpy as np
+import scipy.linalg
 from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
-from sklearn.utils import check_array
-from sklearn.utils.validation import check_is_fitted
 
 from .linear import BayesianLogisticRegression
 
@@ -31,15 +31,18 @@ class KernelLogisticRegression:
     """
 
     def __init__(self, n_samples=8, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100.0,
-                 cache=True, rounding=True, max_rounding_iters=None, strategy='default', z_cut=False,
-                 kernel='rbf', gamma=None, degree=3, coef0=0.):
+                 cache=True, rounding=True, max_rounding_iters=None, strategy='default', z_cut=False, rounding_cache=True,
+                 kernel='rbf', gamma=None, degree=3, coef0=0., jitter=1e-12):
         self.logreg = BayesianLogisticRegression(sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
                                                  cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                                 strategy=strategy, z_cut=z_cut, add_intercept=add_intercept)
+                                                 strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
+                                                 add_intercept=add_intercept)
         self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
+        self.decompose = rounding_cache
+        self.jitter = jitter
 
     @staticmethod
-    def __get_kernel(kernel, gamma, degree, coef0):
+    def __get_kernel(kernel: str, gamma: float, degree: int, coef0: float):
         if kernel == 'linear':
             return linear_kernel
         elif kernel == 'poly':
@@ -51,17 +54,25 @@ class KernelLogisticRegression:
 
         raise ValueError("Unsupported kernel. Available options are 'linear', 'rbf', 'poly', or any custom K(X,Y) function.")
 
-    def __preprocess(self, X):
+    def __preprocess(self, X: np.ndarray) -> np.ndarray:
         return self.kernel(X, self.X_train)
 
-    def fit(self, X, y):
-        self.X_train = check_array(X, copy=True)
-        self.logreg.fit(self.__preprocess(X), y)
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
+        self.X_train = X
 
-    def predict(self, X):
-        check_is_fitted(self, 'X_train')
+        K = self.__preprocess(X)
+
+        if self.decompose:
+            K[np.diag_indices_from(K)] += self.jitter
+            K = np.linalg.cholesky(K)
+
+        self.logreg.fit(K, y)
+
+        if self.decompose:
+            self.logreg.weight = scipy.linalg.solve_triangular(K, self.logreg.weight.T, lower=True, trans=1).T
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
         return self.logreg.predict(self.__preprocess(X))
 
-    def predict_proba(self, X):
-        check_is_fitted(self, 'X_train')
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return self.logreg.predict_proba(self.__preprocess(X))
