@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Optional, Callable, Tuple
 
 import numpy as np
 
+from aideme.utils import assert_positive_integer, metric_logger
 from .ellipsoid import Ellipsoid
-from aideme.utils import assert_positive_integer
 
 if TYPE_CHECKING:
     from .hit_and_run import LinearVersionSpace
@@ -45,17 +45,16 @@ class RoundingAlgorithm:
             return OptimizedStrategy(z_cut=z_cut), False
         raise ValueError("Unknown strategy {}. Possible values are: 'default', 'opt'.")
 
+    @metric_logger.log_execution_time('rounding_fit_time')
     def fit(self, body: LinearVersionSpace, elp: Optional[Ellipsoid] = None) -> Ellipsoid:
         if elp is None:
             elp = Ellipsoid(body.dim, compute_scale_matrix=self.compute_scale_matrix)
 
         count = 0
-        while self.strategy(elp, body):
+        while count < self.max_iter and self.strategy(elp, body):
             count += 1
-            if count >= self.max_iter:
-                # TODO: log this
-                return elp
-        # TODO: log avg_time and count
+
+        metric_logger.log_metric('rounding_iter', count)
 
         return elp
 

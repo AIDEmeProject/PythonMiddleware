@@ -17,12 +17,11 @@
 from __future__ import annotations
 
 import random
-from time import perf_counter
 from typing import Tuple, Optional, TYPE_CHECKING, List, Sequence
 
 import numpy as np
 
-from ..utils import assert_positive_integer, process_callback
+from ..utils import assert_positive_integer, process_callback, metric_logger
 from ..utils.convergence import all_points_are_labeled
 
 if TYPE_CHECKING:
@@ -120,67 +119,67 @@ class ExplorationManager:
         np.random.seed(seed)  # Seeds numpy's internal RNG
         random.seed(seed)  # Seeds python's internal RNG
 
+
     def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
+        idx, converged = self.__advance(labeled_set)
+        return idx, self.__get_all_metrics(), converged
+
+    @metric_logger.log_execution_time('iter_time')
+    def __advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, bool]:
         """
         Updates current model with new labeled data and computes new point to be labeled.
         :param labeled_set: a LabeledSet instance containing the new labeled points by the user
         :return: index of next point to be labeled, metrics
         """
-        metrics = {'phase': self.phase}  # from which phase the new labeled points have been computed
+        metric_logger.log_metric('phase', self.phase)
+        self.__update_partitions(labeled_set)
+        idx = self.__initial_sampling_advance() if self.is_initial_sampling_phase else self.__exploration_advance()
+        return idx, self.__converged()
 
-        self.__update_partitions(labeled_set, metrics)
-
-        idx = self.__initial_sampling_advance(metrics) if self.is_initial_sampling_phase else self.__exploration_advance(metrics)
-
-        return idx, metrics, self.__converged(metrics)
-
-    def __update_partitions(self, labeled_set: Optional[LabeledSet], metrics: Metrics) -> None:
+    def __update_partitions(self, labeled_set: Optional[LabeledSet]) -> None:
         if labeled_set is not None:
             self.data.move_to_labeled(labeled_set)
-            metrics.update(labeled_set.asdict())
+            metric_logger.log_metrics(labeled_set.asdict())
 
-    def __initial_sampling_advance(self, metrics: Metrics) -> Sequence:
+    def __initial_sampling_advance(self) -> Sequence:
         if self.initial_sampler is None:
             raise RuntimeError("No initial sampler was provided.")
 
-        t0 = perf_counter()
         idx = self.initial_sampler(self.data)
-        metrics['iter_time'] = perf_counter() - t0
 
         self.__initial_sampling_iters += 1
 
         return idx
 
-    def __exploration_advance(self, metrics: Metrics) -> Sequence:
-        # fit active learning model
-        t0 = perf_counter()
-        self.active_learner.fit_data(self.data)
-        metrics['fit_time'] = perf_counter() - t0
+    def __exploration_advance(self) -> Sequence:
+        self.__fit_learner()
 
-        # find next point to label
         idx: List = []
         if self.data.unlabeled_size > 0:
-            t0 = perf_counter()
-            idx = self.active_learner.next_points_to_label(self.data, self.subsampling).index
-            metrics['get_next_time'] = perf_counter() - t0
-
-        metrics['iter_time'] = metrics['fit_time'] + metrics.get('get_next_time', 0)
+            idx = self.__get_next_point_to_label()
 
         self.__exploration_iters += 1
 
-        if self.__is_callback_computation_iter(metrics):
-            t0 = perf_counter()
-            metrics.update(self.__get_callback_metrics())
-            metrics['callback_time'] = perf_counter() - t0
+        if self.__is_callback_computation_iter():
+            metric_logger.log_metrics(self.__get_callback_metrics())
 
         return idx
 
-    def __converged(self, metrics: Metrics) -> bool:
-        return any((criterion(self, metrics) for criterion in self.convergence_criteria))
+    @metric_logger.log_execution_time('fit_time')
+    def __fit_learner(self):
+        self.active_learner.fit_data(self.data)
 
-    def __is_callback_computation_iter(self, metrics: Metrics) -> bool:
-        return (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged(metrics)
+    @metric_logger.log_execution_time('get_next_time')
+    def __get_next_point_to_label(self):
+        return self.active_learner.next_points_to_label(self.data, self.subsampling).index
 
+    def __is_callback_computation_iter(self) -> bool:
+        return (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged()
+
+    def __converged(self) -> bool:
+        return any((criterion(self, metric_logger.get_metrics()) for criterion in self.convergence_criteria))
+
+    @metric_logger.log_execution_time('callback_time')
     def __get_callback_metrics(self) -> Metrics:
         metrics: Metrics = {}
 
@@ -194,4 +193,10 @@ class ExplorationManager:
             scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
             print('iter: {0}, {1}'.format(self.exploration_iters, scores_str))
 
+        return metrics
+
+    @staticmethod
+    def __get_all_metrics():
+        metrics = metric_logger.get_metrics()
+        metric_logger.flush()
         return metrics
