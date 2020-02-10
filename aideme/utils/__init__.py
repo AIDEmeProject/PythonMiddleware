@@ -15,10 +15,11 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, process_callback
-from .metrics import classification_metrics, three_set_metric
-from .convergence import max_iter_reached, metric_reached_threshold
-
 from typing import TYPE_CHECKING
+
+from .convergence import max_iter_reached, metric_reached_threshold
+from .metrics import classification_metrics, three_set_metric
+from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, process_callback
+
 if TYPE_CHECKING:
     from .types import FunctionList, Metrics, Callback, Convergence, InitialSampler, Seed

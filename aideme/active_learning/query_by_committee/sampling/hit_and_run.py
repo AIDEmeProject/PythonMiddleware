@@ -19,9 +19,10 @@ from typing import Tuple, Optional, List
 import numpy as np
 from scipy.optimize import linprog
 
+from aideme.utils import assert_positive_integer
 from .ellipsoid import Ellipsoid
 from .rounding import RoundingAlgorithm
-from aideme.utils import assert_positive_integer
+
 
 class LinearVersionSpace:
     """
@@ -231,7 +232,7 @@ class HitAndRunSampler:
         return rounding_matrix.dot(direction) if rounding_matrix is not None else direction
 
     def __get_starting_point(self, version_space: LinearVersionSpace, ellipsoid: Optional[Ellipsoid]) -> np.ndarray:
-        if ellipsoid:
+        if ellipsoid and version_space.is_inside(ellipsoid.center):
             norm = np.linalg.norm(ellipsoid.center)
             return ellipsoid.center if norm < 1 else (0.99 / norm) * ellipsoid.center
 

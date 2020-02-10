@@ -22,7 +22,6 @@ from typing import Optional, TYPE_CHECKING, Sequence, List, Tuple
 import numpy as np
 
 from .model import PolytopeModelBase
-
 from ..active_learner import ActiveLearner
 
 if TYPE_CHECKING:

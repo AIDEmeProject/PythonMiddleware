@@ -15,8 +15,8 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # TODO: change signature to be compatible with new callback interface (no labeled_indexes param)

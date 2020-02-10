@@ -17,7 +17,9 @@
 from typing import Generator
 
 import numpy as np
+
 from aideme.utils import assert_positive_integer
+
 
 class Ellipsoid:
     def __init__(self, dim: int, compute_scale_matrix: bool = False):

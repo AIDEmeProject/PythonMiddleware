@@ -20,6 +20,7 @@ import pickle
 
 from pystan import StanModel
 
+
 class StanLogisticRegressionSampler:
     """
     Logistic regression posterior sampler. Uses pystan library, which is basically a wrapper over the Bayesian modeling

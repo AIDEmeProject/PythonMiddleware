@@ -43,9 +43,7 @@ def max_iter_reached(max_exploration_iter: int, max_initial_sampling_iter: Optio
     :return: a convergence criteria which stops the exploration process after the specified number of iterations
     """
     assert_non_negative_integer(max_exploration_iter, 'max_exploration_iter', allow_inf=True)
-
-    if max_initial_sampling_iter is not None:
-        assert_non_negative_integer(max_initial_sampling_iter, 'max_initial_sampling_iter', allow_inf=True)
+    assert_non_negative_integer(max_initial_sampling_iter, 'max_initial_sampling_iter', allow_inf=True, allow_none=True)
 
     def converged(manager: ExplorationManager, metrics: Metrics) -> bool:
         return manager.exploration_iters > max_exploration_iter or \

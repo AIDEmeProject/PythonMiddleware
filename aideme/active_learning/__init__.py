@@ -16,14 +16,13 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .active_learner import ActiveLearner, FactorizedActiveLearner
-from .query_by_committee import *
 from .random import RandomSampler
 from .svm import *
-from .uncertainty import UncertaintySampler
-from .entropy_reduction import EntropyReductionLearner
 from .dsm import DualSpaceModel, FactorizedDualSpaceModel
+from .uncertainty import UncertaintySampler
+from .query_by_committee import *
+from .entropy_reduction import EntropyReductionLearner
 from .nlp import TwoStepsLearner
-
 
 __all__ = [
     'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',

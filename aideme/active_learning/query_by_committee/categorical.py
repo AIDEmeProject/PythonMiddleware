@@ -17,8 +17,8 @@
 
 import numpy as np
 
-from ..dsm.polytope import CategoricalPolytope, MultiSetPolytope
 from ..active_learner import ActiveLearner
+from ..dsm.polytope import CategoricalPolytope, MultiSetPolytope
 
 
 class PolytopeLearner(ActiveLearner):
