@@ -25,7 +25,8 @@ from aideme.utils import assert_positive_integer
 
 if TYPE_CHECKING:
     from .hit_and_run import LinearVersionSpace
-    STRATEGY_TYPE = Callable[[Ellipsoid, LinearVersionSpace], bool]
+    Strategy = Callable[[Ellipsoid, LinearVersionSpace], bool]
+    HyperPlane = Tuple[float, np.ndarray]
 
 
 class RoundingAlgorithm:
@@ -36,7 +37,7 @@ class RoundingAlgorithm:
         self.strategy, self.compute_scale_matrix = self.__get_strategy(strategy, z_cut)
 
     @staticmethod
-    def __get_strategy(strategy: str, z_cut: bool) -> Tuple[STRATEGY_TYPE, bool]:
+    def __get_strategy(strategy: str, z_cut: bool) -> Tuple[Strategy, bool]:
         strategy = strategy.upper()
         if strategy == 'DEFAULT':
             return diagonalization_strategy, True
@@ -88,11 +89,11 @@ class OptimizedStrategy:
         elp.cut(*hyperplane)
         return True
 
-    def _get_alpha_cut(self, elp, body):
+    def _get_alpha_cut(self, elp: Ellipsoid, body: LinearVersionSpace) -> Tuple[float, HyperPlane]:
         alphas = elp.compute_alpha(body.A)
         idx_max = np.argmax(alphas)
         return alphas[idx_max], (0, body.A[idx_max])
 
-    def _get_z_cut(self, elp):
+    def _get_z_cut(self, elp: Ellipsoid) -> Tuple[float, HyperPlane]:
         hyperplane = np.linalg.norm(elp.center), elp.center
         return elp.compute_alpha_single(*hyperplane), hyperplane

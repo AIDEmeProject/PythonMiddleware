@@ -17,10 +17,12 @@
 from typing import Generator
 
 import numpy as np
-
+from aideme.utils import assert_positive_integer
 
 class Ellipsoid:
     def __init__(self, dim: int, compute_scale_matrix: bool = False):
+        assert_positive_integer(dim, 'dim')
+
         self.dim = dim
 
         self.center = np.zeros(self.dim)
@@ -33,7 +35,7 @@ class Ellipsoid:
         yield self.center
 
         scale = self.scale if self.scale is not None else self.L @ np.diag(self.D) @ self.L.T
-        eig, P = np.linalg.eigh(scale + 1e-15 * np.eye(self.dim))  # add small perturbation to diagonal to counter numerical errors
+        eig, P = np.linalg.eigh(scale + 1e-12 * np.eye(self.dim))  # add small perturbation to diagonal to counter numerical errors
 
         for i in range(len(eig)):
             if eig[i] <= 0:
@@ -50,7 +52,7 @@ class Ellipsoid:
         gamma = np.sqrt(np.square(a_hat).dot(self.D))
         return G.dot(self.center) / gamma
 
-    def compute_alpha_single(self, bias, g):
+    def compute_alpha_single(self, bias: float, g: np.ndarray) -> float:
         a_hat = self.L.T.dot(g)
         gamma = np.sqrt(np.square(a_hat).dot(self.D))
         return (g.dot(self.center) - bias) / gamma

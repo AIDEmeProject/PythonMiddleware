@@ -21,7 +21,7 @@ from scipy.optimize import linprog
 
 from .ellipsoid import Ellipsoid
 from .rounding import RoundingAlgorithm
-
+from aideme.utils import assert_positive_integer
 
 class LinearVersionSpace:
     """
@@ -145,7 +145,7 @@ class LinearVersionSpace:
 class HitAndRunSampler:
     """
     Hit-and-run is a MCMC sampling technique for sampling uniformly from a Convex Polytope. In our case, we restrict
-    this technique for sampling from the Linear Version Space body defined above.
+    this technique for sampling from the Linear Version Space convex body defined above.
 
     Reference: https://link.springer.com/content/pdf/10.1007%2Fs101070050099.pdf
     """
@@ -161,6 +161,9 @@ class HitAndRunSampler:
         :param cache: whether to cache samples between iterations
         the running time.
         """
+        assert_positive_integer(warmup, 'warmup')
+        assert_positive_integer(thin, 'thin')
+
         self.warmup = warmup
         self.thin = thin
 
@@ -169,8 +172,8 @@ class HitAndRunSampler:
         self.rounding_cache = rounding_cache
         self.ellipsoid_cache = None  # type: Optional[Ellipsoid]
 
-        self.cache = cache
-        self.samples = None
+        self.cache = cache and not self.rounding_cache  # disable sample caching when using rounding
+        self.samples = np.ndarray([])
 
     def sample(self, X: np.ndarray, y: np.ndarray, n_samples: int) -> np.ndarray:
         """
@@ -193,25 +196,25 @@ class HitAndRunSampler:
 
             rounding_matrix = elp.L * np.sqrt(elp.D).reshape(1, -1)
 
-        center = self.__get_center(version_space, elp)
-        samples = np.empty((n_samples, version_space.dim))
+        cur_sample = self.__get_starting_point(version_space, elp)
+        all_samples = np.empty((n_samples, version_space.dim))
 
         # skip samples
-        self.__advance(self.warmup, center, rounding_matrix, version_space)
-        samples[0] = center.copy()
+        self.__advance(self.warmup, cur_sample, rounding_matrix, version_space)
+        all_samples[0] = cur_sample.copy()
 
         # thin samples
         for i in range(1, n_samples):
-            self.__advance(self.thin, center, rounding_matrix, version_space)
-            samples[i] = center.copy()
+            self.__advance(self.thin, cur_sample, rounding_matrix, version_space)
+            all_samples[i] = cur_sample.copy()
 
         # cache samples
         if self.cache:
-            self.samples = samples
+            self.samples = all_samples
 
-        return samples
+        return all_samples
 
-    def __advance(self, n_iter, center, rounding_matrix, version_space):
+    def __advance(self, n_iter: int, center: np.ndarray, rounding_matrix: Optional[np.ndarray], version_space: LinearVersionSpace) -> None:
         for _ in range(n_iter):
             # sample random direction
             direction = self.__sample_direction(version_space.dim, rounding_matrix)
@@ -223,29 +226,25 @@ class HitAndRunSampler:
             t_rand = np.random.uniform(t1, t2)
             center += t_rand * direction
 
-    def __sample_direction(self, dim, rounding_matrix):
-        direction = np.random.normal(size=(dim,))
+    def __sample_direction(self, dim: int, rounding_matrix: Optional[np.ndarray]) -> np.ndarray:
+        direction = np.random.normal(size=dim)
+        return rounding_matrix.dot(direction) if rounding_matrix is not None else direction
 
-        if self.rounding_algorithm:
-            direction = rounding_matrix.dot(direction)
-
-        return direction
-
-    def __get_center(self, version_space, ellipsoid):
-        if self.rounding_algorithm:
+    def __get_starting_point(self, version_space: LinearVersionSpace, ellipsoid: Optional[Ellipsoid]) -> np.ndarray:
+        if ellipsoid:
             norm = np.linalg.norm(ellipsoid.center)
             return ellipsoid.center if norm < 1 else (0.99 / norm) * ellipsoid.center
 
-        if self.cache and self.samples is not None:
+        if self.cache and self.samples.shape[0] > 0:
             samples = self.__truncate_samples(version_space.dim)
             for sample in samples:
                 if version_space.is_inside(sample):
                     return sample
 
-        print('Falling back to linprog in Hit-and-Run sampler.')
+        print('Falling back to linprog in Hit-and-Run sampler.')  # TODO: log this / raise warning
         return version_space.get_interior_point()
 
-    def __truncate_samples(self, new_dim):
+    def __truncate_samples(self, new_dim: int) -> np.ndarray:
         N, dim = self.samples.shape
 
         if new_dim <= dim:
@@ -253,7 +252,7 @@ class HitAndRunSampler:
 
         return np.hstack([self.samples, np.zeros((N, new_dim - dim))])
 
-    def __compute_new_ellipsoid(self, new_dim: int):
+    def __compute_new_ellipsoid(self, new_dim: int) -> Optional[Ellipsoid]:
         if self.ellipsoid_cache is None:  # no rounding
             return None
 
@@ -264,7 +263,6 @@ class HitAndRunSampler:
 
         if new_dim != d + 1:
             # TODO: is it possible to perform more general updates?
-            # TODO: is it better to simply log this and return None (do not re-use cache)?
             raise RuntimeError("Only +1 updates are supported.")
 
         # kernel case: dimension grows with number of labeled points
