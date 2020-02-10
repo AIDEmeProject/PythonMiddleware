@@ -38,8 +38,9 @@ class BayesianLogisticRegression:
         better performance under these assumptions.
     """
 
-    def __init__(self, n_samples, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100,
-                 rounding=True, max_rounding_iters=None, cache=True):
+    def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=1, sigma=100, cache=True,
+                 rounding=True, max_rounding_iters=None, strategy='default', z_cut=False, rounding_cache=True,
+                 add_intercept=True):
         """
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not
@@ -48,11 +49,15 @@ class BayesianLogisticRegression:
         :param thin: how many iterations to skip between samples
         :param sigma: gaussian prior standard deviation. Works as a L2 regularization (the lower sigma is, the more regularization)
         :param rounding: whether to apply a rounding procedure in the 'deterministic' sampling.
+        :param max_rounding_iters: maximum number of iterations for rounding algorithm
+        :param strategy: rounding strategy. Available values are: 'default' and 'opt'
         """
         if sampling == 'bayesian':
             self.sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, sigma=sigma)
         elif sampling == 'deterministic':
-            self.sampler = HitAndRunSampler(warmup=warmup, thin=thin, rounding=rounding, max_rounding_iters=max_rounding_iters, cache=cache)
+            self.sampler = HitAndRunSampler(warmup=warmup, thin=thin, cache=cache,
+                                            rounding=rounding, max_rounding_iters=max_rounding_iters,
+                                            strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache)
         else:
             raise ValueError("Unknown sampling option. Options are 'deterministic' and 'bayesian'.")
 

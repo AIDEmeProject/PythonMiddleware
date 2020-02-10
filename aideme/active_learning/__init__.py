@@ -15,7 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .active_learner import ActiveLearner
+from .active_learner import ActiveLearner, FactorizedActiveLearner
 from .query_by_committee import *
 from .random import RandomSampler
 from .svm import *
@@ -26,7 +26,7 @@ from .nlp import TwoStepsLearner
 
 
 __all__ = [
-    'ActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
+    'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
     'DualSpaceModel', 'FactorizedDualSpaceModel',
     'LinearQueryByCommittee', 'KernelQueryByCommittee', 'EntropyReductionLearner',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner'

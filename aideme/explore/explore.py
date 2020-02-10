@@ -1,12 +1,12 @@
 #  Copyright (c) 2019 École Polytechnique
-# 
+#
 #  This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 #  If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0
-# 
+#
 #  Authors:
 #        Luciano Di Palma <luciano.di-palma@polytechnique.edu>
 #        Enhui Huang <enhui.huang@polytechnique.edu>
-# 
+#
 #  Description:
 #  AIDEme is a large-scale interactive data exploration system that is cast in a principled active learning (AL) framework: in this context,
 #  we consider the data content as a large set of records in a data source, and the user is interested in some of them but not all.
@@ -23,7 +23,7 @@ from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
-    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, SeedSequence
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed
 
 
 class PoolBasedExploration:
@@ -38,8 +38,7 @@ class PoolBasedExploration:
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
-        if subsampling is not None:
-            assert_positive_integer(subsampling, 'subsampling')
+        assert_positive_integer(subsampling, 'subsampling', allow_none=True)
         assert_positive_integer(callback_skip, 'callback_skip')
 
         self.initial_sampler = initial_sampler
@@ -50,7 +49,7 @@ class PoolBasedExploration:
         self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: SeedSequence = None) -> List[List[Metrics]]:
+    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: Union[Seed, Sequence[Seed]] = None) -> List[List[Metrics]]:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
@@ -95,7 +94,7 @@ class PoolBasedExploration:
 
         return iter_metrics
 
-    def __get_seed(self, seed: SeedSequence, repeat: int) -> Sequence[int]:
+    def __get_seed(self, seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
         if seed is None:
             seed = [None] * repeat
         elif isinstance(seed, int):
@@ -123,8 +122,7 @@ class CommandLineExploration:
         :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
-        if subsampling is not None:
-            assert_positive_integer(subsampling, 'subsampling')
+        assert_positive_integer(subsampling, 'subsampling', allow_none=True)
         assert_positive_integer(callback_skip, 'callback_skip')
 
         self.initial_sampler = initial_sampler
