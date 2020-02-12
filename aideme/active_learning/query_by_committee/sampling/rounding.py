@@ -24,9 +24,9 @@ from aideme.utils import assert_positive_integer, metric_logger
 from .ellipsoid import Ellipsoid
 
 if TYPE_CHECKING:
-    from .hit_and_run import LinearVersionSpace
+    from .version_space import LinearVersionSpace
+    from aideme.utils import HyperPlane
     Strategy = Callable[[Ellipsoid, LinearVersionSpace], bool]
-    HyperPlane = Tuple[float, np.ndarray]
 
 
 class RoundingAlgorithm:

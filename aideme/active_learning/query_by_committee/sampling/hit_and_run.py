@@ -14,133 +14,16 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-from typing import Tuple, Optional, List
+from typing import Optional
 
 import numpy as np
-from scipy.optimize import linprog
 
 from aideme.utils import assert_positive_integer
+from .version_space import LinearVersionSpace
 from .ellipsoid import Ellipsoid
 from .rounding import RoundingAlgorithm
 
-
-class LinearVersionSpace:
-    """
-    This class represents an instance of a centered linear classifiers Version Space. Basically, given a collection
-    of labeled data points (x_i, y_i), a vector "w" belongs to the Version Space if:
-
-        y_i x_i^T w >= 0   AND   |w| <= 1
-
-    By defining a_i = -y_i x_i, we see that it defines a polytope:
-
-        a_i^T w <= 0   AND   |w| <= 1
-    """
-    def __init__(self, X: np.ndarray, y: np.ndarray):
-        y = np.where(y == 1, 1, -1).reshape(-1, 1)
-        self.A = -X * y
-
-    @property
-    def dim(self) -> int:
-        return self.A.shape[1]
-
-    @staticmethod
-    def __solve_second_degree_equation(a: float, b: float, c: float) -> Tuple[float, float]:
-        delta = b ** 2 - a * c
-
-        if delta <= 0:
-            raise RuntimeError("Second degree equation has 1 or 0 solutions!")
-
-        sq_delta = np.sqrt(delta)
-        return (-b - sq_delta) / a, (-b + sq_delta) / a
-
-    def is_inside(self, X: np.ndarray) -> bool:
-        return np.all(np.dot(X, self.A.T) < 0, axis=-1)
-
-    def intersection(self, center: np.ndarray, direction: np.ndarray) -> Tuple[float, float]:
-        """
-        Finds the intersection between the version space and a straight line.
-
-        :param center: point on the line
-        :param direction: director vector of line. Does not need to be normalized.
-        :return: t1 and t2 such that center + t * direction are extremes of the line segment determined by the intersection
-        """
-        lower: List[float]
-        upper: List[float]
-        lower, upper = [], []
-
-        # polytope intersection
-        num = self.A.dot(center)
-        den = self.A.dot(direction)
-        extremes = -num / den
-        lower.extend(extremes[den < 0])
-        upper.extend(extremes[den > 0])
-
-        if np.any(num[den == 0] < 0):
-            raise RuntimeError("Line does not intersect polytope.")
-
-        # ball intersection
-        a, b, c = (
-            np.sum(direction ** 2),
-            center.dot(direction),
-            np.sum(center ** 2) - 1
-        )
-        lower_ball, upper_ball = self.__solve_second_degree_equation(a, b, c)
-        lower.append(lower_ball)
-        upper.append(upper_ball)
-
-        # get extremes
-        lower_extreme = max(lower)
-        upper_extreme = min(upper)
-
-        if lower_extreme >= upper_extreme:
-            raise RuntimeError("Line does not intersect polytope.")
-
-        return lower_extreme, upper_extreme
-
-    def get_interior_point(self) -> np.ndarray:
-        """
-        Finds an interior point to the version space by solving the following Linear Programming problem:
-
-            minimize s,  s.t.  |w_i| < 1  AND a_i^T w < s
-
-        Raises an error in case the polytope is degenerate (only 0 vector).
-
-        :return: point inside search space
-        """
-        n, dim = self.A.shape
-
-        res = linprog(
-            c=np.array([1.0] + [0.0] * dim),
-            A_ub=np.hstack([-np.ones(shape=(n, 1)), self.A]),
-            b_ub=np.zeros(n),
-            bounds=[(None, None)] + [(-1, 1)] * dim
-        )
-
-        # if optimization failed, raise error
-        if not res.success or res.x[0] >= 0:
-            print(res)
-            raise RuntimeError("Linear programming failed! Check constrains for degeneracy of Version Space.")
-
-        # return normalized point
-        point = res.x[1:]
-        return point / np.linalg.norm(point)
-
-    def get_separating_oracle(self, point: np.ndarray) -> Optional[Tuple[float, np.ndarray]]:
-        """
-        For any given point, find a hyperplane separating it from the polytope. Basically, we check whether any constrain
-        is not satisfied by the point. This method is used during the rounding procedure in Hit-and-Run sampler.
-
-        :param point: data point
-        :return: normal vector to separating hyperplane. If no such plane exists, returns None
-        """
-        if np.dot(point, point) >= 1:
-            return 1, point / np.linalg.norm(point)
-
-        for a in self.A:
-            if np.dot(a, point) >= 0:
-                return 0, a
-
-        return None
+from aideme.utils import metric_logger
 
 
 class HitAndRunSampler:
@@ -173,7 +56,7 @@ class HitAndRunSampler:
         self.rounding_cache = rounding_cache
         self.ellipsoid_cache = None  # type: Optional[Ellipsoid]
 
-        self.cache = cache and not self.rounding_cache  # disable sample caching when using rounding
+        self.cache = cache
         self.samples = np.ndarray([])
 
     def sample(self, X: np.ndarray, y: np.ndarray, n_samples: int) -> np.ndarray:
@@ -197,6 +80,17 @@ class HitAndRunSampler:
 
             rounding_matrix = elp.L * np.sqrt(elp.D).reshape(1, -1)
 
+        all_samples = self.__run_sampling_procedure(n_samples, elp, version_space, rounding_matrix)
+        metric_logger.log_metric('hit_and_run_steps', self.warmup + self.thin * (n_samples - 1))
+
+        # cache samples
+        if self.cache:
+            self.samples = all_samples
+
+        return all_samples
+
+    @metric_logger.log_execution_time('hit_and_run_time')
+    def __run_sampling_procedure(self, n_samples: int, elp: Ellipsoid, version_space: LinearVersionSpace, rounding_matrix: Optional[np.ndarray]):
         cur_sample = self.__get_starting_point(version_space, elp)
         all_samples = np.empty((n_samples, version_space.dim))
 
@@ -208,11 +102,6 @@ class HitAndRunSampler:
         for i in range(1, n_samples):
             self.__advance(self.thin, cur_sample, rounding_matrix, version_space)
             all_samples[i] = cur_sample.copy()
-
-        # cache samples
-        if self.cache:
-            self.samples = all_samples
-
         return all_samples
 
     def __advance(self, n_iter: int, center: np.ndarray, rounding_matrix: Optional[np.ndarray], version_space: LinearVersionSpace) -> None:
@@ -232,14 +121,14 @@ class HitAndRunSampler:
         return rounding_matrix.dot(direction) if rounding_matrix is not None else direction
 
     def __get_starting_point(self, version_space: LinearVersionSpace, ellipsoid: Optional[Ellipsoid]) -> np.ndarray:
-        if ellipsoid and version_space.is_inside(ellipsoid.center):
+        if ellipsoid and version_space.is_inside_polytope(ellipsoid.center):
             norm = np.linalg.norm(ellipsoid.center)
             return ellipsoid.center if norm < 1 else (0.99 / norm) * ellipsoid.center
 
         if self.cache and self.samples.shape[0] > 0:
             samples = self.__truncate_samples(version_space.dim)
             for sample in samples:
-                if version_space.is_inside(sample):
+                if version_space.is_inside_polytope(sample):
                     return sample
 
         print('Falling back to linprog in Hit-and-Run sampler.')  # TODO: log this / raise warning

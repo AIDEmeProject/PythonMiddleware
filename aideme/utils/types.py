@@ -15,7 +15,9 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from typing import Union, Sequence, TypeVar, Callable, Dict, Any, Optional
+from typing import Union, Sequence, TypeVar, Callable, Dict, Any, Optional, Tuple
+
+import numpy as np
 
 from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
 from aideme.explore.manager import ExplorationManager
@@ -32,3 +34,4 @@ InitialSampler = Callable[[PartitionedDataset], Sequence]
 Seed = Optional[int]
 
 Partition = Sequence[Union[slice, Sequence[int]]]
+HyperPlane = Tuple[float, np.ndarray]

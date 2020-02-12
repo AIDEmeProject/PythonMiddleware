@@ -122,7 +122,11 @@ class ExplorationManager:
 
     def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
         idx, converged = self.__advance(labeled_set)
-        return idx, self.__get_all_metrics(), converged
+
+        metrics = metric_logger.get_metrics()
+        metric_logger.flush()  # avoid overlapping metrics between iterations
+
+        return idx, metrics, converged
 
     @metric_logger.log_execution_time('iter_time')
     def __advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, bool]:
@@ -132,7 +136,9 @@ class ExplorationManager:
         :return: index of next point to be labeled, metrics
         """
         metric_logger.log_metric('phase', self.phase)
+
         self.__update_partitions(labeled_set)
+
         idx = self.__initial_sampling_advance() if self.is_initial_sampling_phase else self.__exploration_advance()
         return idx, self.__converged()
 
@@ -160,6 +166,7 @@ class ExplorationManager:
 
         self.__exploration_iters += 1
 
+        metric_logger.log_metric('callback_time', 0)  # if not callback computation iter, time is 0
         if self.__is_callback_computation_iter():
             metric_logger.log_metrics(self.__get_callback_metrics())
 
@@ -193,10 +200,4 @@ class ExplorationManager:
             scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
             print('iter: {0}, {1}'.format(self.exploration_iters, scores_str))
 
-        return metrics
-
-    @staticmethod
-    def __get_all_metrics():
-        metrics = metric_logger.get_metrics()
-        metric_logger.flush()
         return metrics
