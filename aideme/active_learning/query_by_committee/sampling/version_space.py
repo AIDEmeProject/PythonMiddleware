@@ -21,8 +21,11 @@ from typing import Tuple, Optional, TYPE_CHECKING
 import numpy as np
 import scipy.optimize
 
+import version_space_helper
+
 if TYPE_CHECKING:
     from aideme.utils import HyperPlane
+
 
 class LinearVersionSpace:
     """
@@ -36,8 +39,7 @@ class LinearVersionSpace:
         a_i^T w < 0   AND   |w| < 1
     """
     def __init__(self, X: np.ndarray, y: np.ndarray):
-        y = np.where(y == 1, 1, -1).reshape(-1, 1)
-        self.A = -X * y
+        self.A = -X * np.where(y == 1, 1, -1).reshape(-1, 1)
 
     @property
     def dim(self) -> int:
@@ -69,7 +71,7 @@ class LinearVersionSpace:
             c=np.array([1.0] + [0.0] * dim),
             A_ub=np.hstack([-np.ones(shape=(n, 1)), self.A]),
             b_ub=np.zeros(n),
-            bounds=[(None, None)] + [(-1, 1)] * dim
+            bounds=[(None, None)] + [(-1, 1)] * dim  # type: ignore
         )
 
         # if optimization failed, raise error
@@ -108,6 +110,9 @@ class LinearVersionSpace:
         :return: t1 and t2 such that 'center + t * direction' are extremes of the line segment determined by the intersection
         """
 
+        #lower_pol, upper_pol = self.__pol_extremes_cython_1(center, direction)
+        #lower_pol, upper_pol = version_space_helper.get_polytope_extremes_opt(self.A, center, direction)
+        #lower_ball, upper_ball = version_space_helper.get_ball_extremes(center, direction)
         lower_pol, upper_pol = self.__get_polytope_extremes(center, direction)
         lower_ball, upper_ball = self.__get_ball_extremes(center, direction)
 
@@ -118,6 +123,12 @@ class LinearVersionSpace:
             raise RuntimeError("Line does not intersect convex body.")
 
         return lower_extreme, upper_extreme
+
+    def __pol_extremes_cython_1(self, center, direction):
+        num = self.A.dot(center)
+        den = self.A.dot(direction)
+        lower_pol, upper_pol = version_space_helper.get_polytope_extremes(num, den)
+        return lower_pol, upper_pol
 
     def __get_polytope_extremes(self, center, direction):
         num = self.A.dot(center)
@@ -143,3 +154,32 @@ class LinearVersionSpace:
 
         sq_delta = np.sqrt(delta)
         return (-b - sq_delta) / a, (-b + sq_delta) / a
+
+#
+# if __name__ == '__main__':
+#     shape = (250, 2)
+#     p = 0.33
+#
+#     X = np.random.rand(*shape)
+#     X = X @ X.T + 1e-5 + np.eye(shape[0])
+#     y = (np.random.rand(shape[0]) < p).astype('int')
+#
+#     vs = LinearVersionSpace(X, y)
+#
+#     center = vs.get_interior_point()
+#     direction = np.random.normal(size=shape[0])
+#
+#     def avg(c, d):
+#         for i in range(50000):
+#             vs.intersection(c, d)
+#
+#     import line_profiler
+#
+#     lp = line_profiler.LineProfiler()
+#     lp.add_function(vs.intersection)
+#     lp_wrapper = lp(avg)
+#     lp_wrapper(center, direction)
+#     lp.print_stats()
+#     # A = np.array([[1, 2, 3], [3, 4, 5], [-1, 2, 3]], dtype='float')
+#     # b = np.array([1, 2, 3], dtype='float')
+#     # print(np.asarray(version_space_helper.matrix_vector_multiplication(A, b)))

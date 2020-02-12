@@ -24,12 +24,12 @@ AIDEme has the following dependencies:
   * NumPy
   * SciPy
   * Scikit-learn
-  * Cython
+
 
 ## Instructions
 After downloading this project, simply open a terminal and run:
 
-`pip install .`
+`python setup.py install`
 
 This should take care of installing all the above dependencies and linking our Cython code.  
 

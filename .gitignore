@@ -2,7 +2,7 @@
 /notebooks/
 .ipynb_checkpoints/
 
-# pytest cache
+# test caches
 /tests/.pytest_cache/
 
 # configuration files
@@ -29,3 +29,10 @@
 
 # python cache
 __pycache__/
+
+# setuptools builds
+build/
+dist/
+.eggs/
+aideme.egg-info/
+*.so
