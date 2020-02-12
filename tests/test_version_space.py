@@ -105,7 +105,7 @@ class TestVersionSpace:
             [0.2, 0.2],   # violates x > 2y constraint (not on border)
         ])
 
-        direction = np.array([1, 1])
+        direction = np.array([1., 1.])
 
         for center in centers:
             with pytest.raises(RuntimeError):

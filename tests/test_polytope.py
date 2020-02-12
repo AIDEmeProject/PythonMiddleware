@@ -15,9 +15,11 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+import numpy as np
 import pytest
 
-from aideme.active_learning.dsm.convex.geometry import *
+from aideme.active_learning.dsm.convex import *
+from aideme.active_learning.dsm.polytope import Polytope
 
 
 class TestPolytopeModel:

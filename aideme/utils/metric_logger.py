@@ -58,4 +58,4 @@ def log_execution_time(key: str):
 
 def flush() -> None:
     global __metrics
-    __metrics = {}  # type: Metrics
+    __metrics = {}
