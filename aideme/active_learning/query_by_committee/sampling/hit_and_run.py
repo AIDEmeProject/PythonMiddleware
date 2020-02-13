@@ -36,7 +36,7 @@ class HitAndRunSampler:
 
     def __init__(self, warmup: int = 100, thin: int = 1, cache: bool = True,
                  rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy: str = 'default',
-                 z_cut: bool = False, rounding_cache: bool = False):
+                 z_cut: bool = False, rounding_cache: bool = False, use_cython: bool = True):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
@@ -58,6 +58,7 @@ class HitAndRunSampler:
 
         self.cache = cache
         self.samples = np.ndarray([])
+        self.use_cython = use_cython
 
     def sample(self, X: np.ndarray, y: np.ndarray, n_samples: int) -> np.ndarray:
         """
@@ -68,7 +69,7 @@ class HitAndRunSampler:
         :param n_samples: number of samples
         :return: samples in a numpy array (one per line)
         """
-        version_space = LinearVersionSpace(X, y)
+        version_space = LinearVersionSpace(X, y, use_cython=self.use_cython)
 
         # rounding
         elp, rounding_matrix = None, None

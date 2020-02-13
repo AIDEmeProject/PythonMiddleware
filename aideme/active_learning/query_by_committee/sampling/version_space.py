@@ -38,8 +38,9 @@ class LinearVersionSpace:
 
         a_i^T w < 0   AND   |w| < 1
     """
-    def __init__(self, X: np.ndarray, y: np.ndarray):
+    def __init__(self, X: np.ndarray, y: np.ndarray, use_cython: bool = True):
         self.A = -X * np.where(y == 1, 1, -1).reshape(-1, 1)
+        self.intersection = self._get_extremes_cython if use_cython else self._get_extremes_python
 
     @property
     def dim(self) -> int:
@@ -101,18 +102,24 @@ class LinearVersionSpace:
 
         return None
 
-    def intersection(self, center: np.ndarray, direction: np.ndarray) -> Tuple[float, float]:
+    def _get_extremes_cython(self, center, direction):
         """
-        Finds the intersection between the version space and a straight line.
+        Finds the intersection between the version space and a straight line. Cython implementation.
+
+        :param center: point on the line
+        :param direction: director vector of line. Does not need to be normalized.
+        :return: t1 and t2 such that 'center + t * direction' are extremes of the line segment determined by the intersection
+       """
+        return version_space_helper.get_extremes(self.A, center, direction)
+
+    def _get_extremes_python(self, center, direction):
+        """
+        Finds the intersection between the version space and a straight line. Python + numpy implementation.
 
         :param center: point on the line
         :param direction: director vector of line. Does not need to be normalized.
         :return: t1 and t2 such that 'center + t * direction' are extremes of the line segment determined by the intersection
         """
-        #return self._get_extremes_python(center, direction)
-        return self._get_extremes_cython(center, direction)
-
-    def _get_extremes_python(self, center, direction):
         lower_pol, upper_pol = self.__get_polytope_extremes(center, direction)
         lower_ball, upper_ball = self.__get_ball_extremes(center, direction)
         lower_extreme, upper_extreme = max(lower_pol, lower_ball), min(upper_pol, upper_ball)
@@ -121,9 +128,6 @@ class LinearVersionSpace:
             raise RuntimeError("Line does not intersect convex body.")
 
         return lower_extreme, upper_extreme
-
-    def _get_extremes_cython(self, center, direction):
-        return version_space_helper.get_extremes(self.A, center, direction)
 
     def __get_polytope_extremes(self, center, direction):
         num = self.A.dot(center)

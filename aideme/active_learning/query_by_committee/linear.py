@@ -40,7 +40,7 @@ class BayesianLogisticRegression:
 
     def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=1, sigma=100, cache=True,
                  rounding=True, max_rounding_iters=None, strategy='default', z_cut=False, rounding_cache=True,
-                 add_intercept=True):
+                 use_cython: bool = True, add_intercept=True):
         """
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not
@@ -57,7 +57,8 @@ class BayesianLogisticRegression:
         elif sampling == 'deterministic':
             self.sampler = HitAndRunSampler(warmup=warmup, thin=thin, cache=cache,
                                             rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                            strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache)
+                                            strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
+                                            use_cython=use_cython)
         else:
             raise ValueError("Unknown sampling option. Options are 'deterministic' and 'bayesian'.")
 
