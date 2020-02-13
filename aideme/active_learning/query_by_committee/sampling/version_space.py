@@ -152,26 +152,3 @@ class LinearVersionSpace:
 
         sq_delta = np.sqrt(delta)
         return (-b - sq_delta) / a, (-b + sq_delta) / a
-
-#
-# if __name__ == '__main__':
-#     shape = (100, 2)
-#     p = 0.33
-#     rng = np.random.RandomState(seed=0)
-#
-#     X = rng.rand(*shape)
-#     X = X @ X.T + 1e-5 + np.eye(shape[0])
-#     y = (rng.rand(shape[0]) < p).astype('int')
-#
-#     vs = LinearVersionSpace(X, y)
-#
-#     center = vs.get_interior_point()
-#     direction = np.random.normal(size=shape[0])
-#
-#     gl = {'center': center, 'direction': direction, 'vs': vs}
-#
-#     from timeit import timeit
-#     N = 100000
-#     print('avg python (us): ', timeit('vs._get_extremes_python(center, direction)', number=N, globals=gl) * 100000 / N)
-#     print('avg cython (us): ', timeit('vs._get_extremes_cython(center, direction)', number=N, globals=gl) * 100000 / N)
-#     print('avg cython_opt (us): ', timeit('vs._get_extremes_cython_opt(center, direction)', number=N, globals=gl) * 100000 / N)
