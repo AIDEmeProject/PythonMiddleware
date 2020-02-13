@@ -23,7 +23,7 @@ def get_extension_modules(use_cython):
 
     if use_cython:
         from Cython.Build import cythonize
-        extension_modules = cythonize(extension_modules, language_level = '3')
+        extension_modules = cythonize(extension_modules, language_level='3')
 
     return extension_modules
 

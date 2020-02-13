@@ -17,67 +17,94 @@
 from libc.math cimport sqrt, INFINITY
 from libc.stdlib cimport malloc, free
 
-from cython import boundscheck, wraparound, nonecheck, cdivision
-
+from cython import boundscheck, wraparound, cdivision, NULL
 from scipy.linalg.cython_blas cimport dgemv
 
 
-cpdef get_polytope_extremes(double[::1] num, double[::1] den):
-    cdef int n = num.shape[0]
-    cdef double* res = compute_extremes_min_max(&num[0], &den[0], n)
-    return res[0], res[1]
-
-
-cpdef get_polytope_extremes_opt(double[:, ::1] A, double[::1] center, double[::1] direction):
+@boundscheck(False)
+@wraparound(False)
+def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
     cdef int m = A.shape[1], n = A.shape[0]
-    cdef double* res = compute_pol_extremes(&A[0, 0], &center[0], &direction[0], m, n)
+    cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+
+    if res == NULL:
+        raise RuntimeError("Line does not intersect version space.")
+
     return res[0], res[1]
 
 
 @boundscheck(False)
 @wraparound(False)
-@nonecheck(False)
-@cdivision(False)
-cdef double* compute_pol_extremes(double* A, double* center, double* direction, int m, int n) nogil:
+@cdivision(True)
+cdef double* compute_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:
+    cdef:
+        double *extremes, *ball_extremes
+        double lower, upper
+
+    extremes = compute_polytope_extremes_opt(A, center, direction, m, n)
+    if extremes == NULL:
+        return NULL
+
+    ball_extremes = compute_ball_extremes_opt(center, direction, n)
+    if ball_extremes == NULL:
+        return NULL
+
+    if ball_extremes[0] > extremes[0]:
+        extremes[0] = ball_extremes[0]
+
+    if ball_extremes[1] < extremes[1]:
+        extremes[1] = ball_extremes[1]
+
+    free(ball_extremes)
+
+    return extremes
+
+
+@cdivision(True)
+cdef double* compute_polytope_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:
     cdef:
         char *transa = 't'
-        int inc = 1, i
-        double alpha = 1, beta = 0, e
-        double *num = <double*> malloc(sizeof(double) * m)
-        double *den = <double*> malloc(sizeof(double) * m)
+        int inc = 1
+        double alpha = 1, beta = 0
+        double *num = <double*> malloc(sizeof(double) * n)
+        double *den = <double*> malloc(sizeof(double) * n)
 
-    dgemv(transa, &m, &n, &alpha,  A, &m, center, &inc, &beta, num, &inc)
-    dgemv(transa, &m, &n, &alpha, A, &m, direction, &inc, &beta, den, &inc)
+    dgemv(transa, &n, &m, &alpha,  A, &n, center, &inc, &beta, num, &inc)
+    dgemv(transa, &n, &m, &alpha, A, &n, direction, &inc, &beta, den, &inc)
 
-    cdef double* res = compute_extremes_min_max(num, den, n)
-
+    cdef double* vals = compute_extremes_min_max(num, den, m)
     free(num)
     free(den)
-
-    return res
+    return vals
 
 
 @boundscheck(False)
 @wraparound(False)
-@nonecheck(False)
-@cdivision(False)
-cdef double* compute_extremes_min_max(double* num, double* den, unsigned int n) nogil:
+@cdivision(True)
+cdef double* compute_extremes_min_max(double* num, double* den, unsigned int m) nogil:
     cdef:
         unsigned int i
-        double l = -INFINITY, u = INFINITY, d, e
+        double l = -INFINITY, u = INFINITY, d, n, e
 
-    for i in range(n):
+    for i in range(m):
+        n = num[i]
         d = den[i]
 
-        if d != 0:
-            e = - num[i] / d
+        if d < 0:
+            e =  - n / d
+            if e > l:
+                l = e
 
-            if d < 0:
-                if e > l:
-                    l = e
+        elif d > 0:
+            e =  - n / d
+            if e < u:
+                u = e
 
-            elif e < u:
-                 u = e
+        elif n > 0:
+            return NULL
+
+    if l >= u:
+        return NULL
 
     cdef double *vals = <double*> malloc(sizeof(double) * 2)
     vals[0] = l
@@ -87,23 +114,29 @@ cdef double* compute_extremes_min_max(double* num, double* den, unsigned int n) 
 
 @boundscheck(False)
 @wraparound(False)
-@nonecheck(False)
-@cdivision(False)
-cpdef get_ball_extremes(double[::1] center, double[::1] direction):
+@cdivision(True)
+cdef double* compute_ball_extremes_opt(double* center, double* direction, unsigned int n) nogil:
     cdef:
         unsigned int i
         double a = 0, b = 0, c = -1
-        double delta, sq_delta
+        double di, ci, delta, sq_delta
 
-    for i in range(len(center)):
-        a += direction[i] * direction[i]
-        b += center[i] * direction[i]
-        c += center[i] * center[i]
+    for i in range(n):
+        ci = center[i]
+        di = direction[i]
+
+        a += di * di
+        b += ci * di
+        c +=ci * ci
 
     delta = b ** 2 - a * c
 
     if delta <= 0:
-        raise RuntimeError("Line does not intersect unit ball.")
+        return NULL
 
     sq_delta = sqrt(delta)
-    return (-b - sq_delta) / a, (-b + sq_delta) / a
+
+    cdef double *vals = <double*> malloc(sizeof(double) * 2)
+    vals[0] = (-b - sq_delta) / a
+    vals[1] = (-b + sq_delta) / a
+    return vals

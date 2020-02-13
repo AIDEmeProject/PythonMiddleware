@@ -109,26 +109,21 @@ class LinearVersionSpace:
         :param direction: director vector of line. Does not need to be normalized.
         :return: t1 and t2 such that 'center + t * direction' are extremes of the line segment determined by the intersection
         """
+        #return self._get_extremes_python(center, direction)
+        return self._get_extremes_cython(center, direction)
 
-        #lower_pol, upper_pol = self.__pol_extremes_cython_1(center, direction)
-        #lower_pol, upper_pol = version_space_helper.get_polytope_extremes_opt(self.A, center, direction)
-        #lower_ball, upper_ball = version_space_helper.get_ball_extremes(center, direction)
+    def _get_extremes_python(self, center, direction):
         lower_pol, upper_pol = self.__get_polytope_extremes(center, direction)
         lower_ball, upper_ball = self.__get_ball_extremes(center, direction)
-
-        lower_extreme = max(lower_pol, lower_ball)
-        upper_extreme = min(upper_pol, upper_ball)
+        lower_extreme, upper_extreme = max(lower_pol, lower_ball), min(upper_pol, upper_ball)
 
         if lower_extreme >= upper_extreme:
             raise RuntimeError("Line does not intersect convex body.")
 
         return lower_extreme, upper_extreme
 
-    def __pol_extremes_cython_1(self, center, direction):
-        num = self.A.dot(center)
-        den = self.A.dot(direction)
-        lower_pol, upper_pol = version_space_helper.get_polytope_extremes(num, den)
-        return lower_pol, upper_pol
+    def _get_extremes_cython(self, center, direction):
+        return version_space_helper.get_extremes(self.A, center, direction)
 
     def __get_polytope_extremes(self, center, direction):
         num = self.A.dot(center)
@@ -157,29 +152,23 @@ class LinearVersionSpace:
 
 #
 # if __name__ == '__main__':
-#     shape = (250, 2)
+#     shape = (100, 2)
 #     p = 0.33
+#     rng = np.random.RandomState(seed=0)
 #
-#     X = np.random.rand(*shape)
+#     X = rng.rand(*shape)
 #     X = X @ X.T + 1e-5 + np.eye(shape[0])
-#     y = (np.random.rand(shape[0]) < p).astype('int')
+#     y = (rng.rand(shape[0]) < p).astype('int')
 #
 #     vs = LinearVersionSpace(X, y)
 #
 #     center = vs.get_interior_point()
 #     direction = np.random.normal(size=shape[0])
 #
-#     def avg(c, d):
-#         for i in range(50000):
-#             vs.intersection(c, d)
+#     gl = {'center': center, 'direction': direction, 'vs': vs}
 #
-#     import line_profiler
-#
-#     lp = line_profiler.LineProfiler()
-#     lp.add_function(vs.intersection)
-#     lp_wrapper = lp(avg)
-#     lp_wrapper(center, direction)
-#     lp.print_stats()
-#     # A = np.array([[1, 2, 3], [3, 4, 5], [-1, 2, 3]], dtype='float')
-#     # b = np.array([1, 2, 3], dtype='float')
-#     # print(np.asarray(version_space_helper.matrix_vector_multiplication(A, b)))
+#     from timeit import timeit
+#     N = 100000
+#     print('avg python (us): ', timeit('vs._get_extremes_python(center, direction)', number=N, globals=gl) * 100000 / N)
+#     print('avg cython (us): ', timeit('vs._get_extremes_cython(center, direction)', number=N, globals=gl) * 100000 / N)
+#     print('avg cython_opt (us): ', timeit('vs._get_extremes_cython_opt(center, direction)', number=N, globals=gl) * 100000 / N)

@@ -100,7 +100,7 @@ class TestVersionSpace:
     def test_intersection_center_outside_version_space_throws_exception(self):
         centers = np.array([
             [0, 0],       # vertex
-            [3, 4],       # violates norm constraint
+            [10, 4],      # violates norm constraint
             [-0.1, -0.1], # violates x > 0 constraint (not on border)
             [0.2, 0.2],   # violates x > 2y constraint (not on border)
         ])
