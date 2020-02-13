@@ -28,10 +28,12 @@ __metrics: Metrics = {}
 
 
 def get_metrics() -> Metrics:
-    return __metrics
+    return __metrics.copy()
 
 
-def log_metric(key: str, value: Any) -> None:
+def log_metric(key: str, value: Any, aggregate=False) -> None:
+    if aggregate and key in __metrics:
+        value = __metrics[key] + value
     __metrics[key] = value
 
 
@@ -39,17 +41,13 @@ def log_metrics(d: Metrics) -> None:
     __metrics.update(d)
 
 
-def get_metric(key: str) -> Any:
-    return __metrics[key]
-
-
-def log_execution_time(key: str):
+def log_execution_time(key: str, aggregate=False):
     def time_decorator(func):
         @wraps(func)
         def wrapped_func(*args, **kwargs):
             t0 = perf_counter()
             res = func(*args, **kwargs)
-            log_metric(key, perf_counter() - t0)
+            log_metric(key, perf_counter() - t0, aggregate=aggregate)
             return res
         return wrapped_func
 
@@ -57,5 +55,4 @@ def log_execution_time(key: str):
 
 
 def flush() -> None:
-    global __metrics
-    __metrics = {}
+    __metrics.clear()

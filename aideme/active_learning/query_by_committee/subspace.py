@@ -170,7 +170,7 @@ class SubspatialVersionSpace(SubspaceLearner):
     def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
                  sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100,
                  cache=True, rounding=True, max_rounding_iters=None, strategy='diag', z_cut=False, rounding_cache=True,
-                 add_intercept=True, kernel='rbf', gamma=None, degree=3, coef0=0., jitter=1e-12):
+                 add_intercept=True, kernel='rbf', gamma=None, degree=3, coef0=0., jitter=1e-12, use_cython=True):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
 
@@ -199,7 +199,7 @@ class SubspatialVersionSpace(SubspaceLearner):
             KernelQueryByCommittee,
             sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
             cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
-            strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
+            strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython,
             kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter,
             add_intercept=add_intercept
         )

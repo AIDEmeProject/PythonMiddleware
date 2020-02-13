@@ -123,6 +123,9 @@ class ExplorationManager:
     def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
         idx, converged = self.__advance(labeled_set)
 
+        if self.__is_callback_computation_iter():
+            metric_logger.log_metrics(self.__get_callback_metrics())
+
         metrics = metric_logger.get_metrics()
         metric_logger.flush()  # avoid overlapping metrics between iterations
 
@@ -166,10 +169,6 @@ class ExplorationManager:
 
         self.__exploration_iters += 1
 
-        metric_logger.log_metric('callback_time', 0)  # if not callback computation iter, time is 0
-        if self.__is_callback_computation_iter():
-            metric_logger.log_metrics(self.__get_callback_metrics())
-
         return idx
 
     @metric_logger.log_execution_time('fit_time')
@@ -181,7 +180,7 @@ class ExplorationManager:
         return self.active_learner.next_points_to_label(self.data, self.subsampling).index
 
     def __is_callback_computation_iter(self) -> bool:
-        return (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged()
+        return self.exploration_iters > 0 and (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged()
 
     def __converged(self) -> bool:
         return any((criterion(self, metric_logger.get_metrics()) for criterion in self.convergence_criteria))
