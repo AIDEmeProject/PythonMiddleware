@@ -1704,10 +1704,6 @@ static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_d_dc_d
 /* ObjectToMemviewSlice.proto */
 static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dc_double(PyObject *, int writable_flag);
 
-/* MemviewDtypeToObject.proto */
-static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp);
-static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj);
-
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_unsigned_int(unsigned int value);
 
@@ -1875,10 +1871,11 @@ static PyObject *contiguous = 0;
 static PyObject *indirect_contiguous = 0;
 static int __pyx_memoryview_thread_locks_used;
 static PyThread_type_lock __pyx_memoryview_thread_locks[8];
-static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *, double *, double *, int, int); /*proto*/
-static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(double *, double *, double *, int, int); /*proto*/
-static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *, double *, unsigned int); /*proto*/
-static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *, double *, unsigned int); /*proto*/
+static double *__pyx_f_20version_space_helper_compute_version_space_intersection_opt(double *, double *, double *, int, int); /*proto*/
+static double *__pyx_f_20version_space_helper_compute_polytope_intersection(double *, double *, double *, int, int); /*proto*/
+static double *__pyx_f_20version_space_helper_polytope_intersection_min_max(double *, double *, unsigned int); /*proto*/
+static double *__pyx_f_20version_space_helper_compute_ball_intersection(double *, double *, unsigned int); /*proto*/
+static double *__pyx_f_20version_space_helper_create_two_dimensional_array(double, double); /*proto*/
 static struct __pyx_array_obj *__pyx_array_new(PyObject *, Py_ssize_t, char *, char *, char *); /*proto*/
 static void *__pyx_align_pointer(void *, size_t); /*proto*/
 static PyObject *__pyx_memoryview_new(PyObject *, int, int, __Pyx_TypeInfo *); /*proto*/
@@ -1983,7 +1980,6 @@ static const char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static const char __pyx_k_MemoryError[] = "MemoryError";
 static const char __pyx_k_PickleError[] = "PickleError";
 static const char __pyx_k_RuntimeError[] = "RuntimeError";
-static const char __pyx_k_get_extremes[] = "get_extremes";
 static const char __pyx_k_pyx_checksum[] = "__pyx_checksum";
 static const char __pyx_k_stringsource[] = "stringsource";
 static const char __pyx_k_pyx_getbuffer[] = "__pyx_getbuffer";
@@ -1993,14 +1989,12 @@ static const char __pyx_k_allocate_buffer[] = "allocate_buffer";
 static const char __pyx_k_dtype_is_object[] = "dtype_is_object";
 static const char __pyx_k_pyx_PickleError[] = "__pyx_PickleError";
 static const char __pyx_k_setstate_cython[] = "__setstate_cython__";
-static const char __pyx_k_get_ball_extremes[] = "get_ball_extremes";
 static const char __pyx_k_pyx_unpickle_Enum[] = "__pyx_unpickle_Enum";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_strided_and_direct[] = "<strided and direct>";
 static const char __pyx_k_strided_and_indirect[] = "<strided and indirect>";
 static const char __pyx_k_version_space_helper[] = "version_space_helper";
 static const char __pyx_k_contiguous_and_direct[] = "<contiguous and direct>";
-static const char __pyx_k_get_polytope_extremes[] = "get_polytope_extremes";
 static const char __pyx_k_MemoryView_of_r_object[] = "<MemoryView of %r object>";
 static const char __pyx_k_MemoryView_of_r_at_0x_x[] = "<MemoryView of %r at 0x%x>";
 static const char __pyx_k_contiguous_and_indirect[] = "<contiguous and indirect>";
@@ -2019,10 +2013,9 @@ static const char __pyx_k_Empty_shape_tuple_for_cython_arr[] = "Empty shape tupl
 static const char __pyx_k_Incompatible_checksums_s_vs_0xb0[] = "Incompatible checksums (%s vs 0xb068931 = (name))";
 static const char __pyx_k_Indirect_dimensions_not_supporte[] = "Indirect dimensions not supported";
 static const char __pyx_k_Invalid_mode_expected_c_or_fortr[] = "Invalid mode, expected 'c' or 'fortran', got %s";
-static const char __pyx_k_Line_does_not_intersect_polytope[] = "Line does not intersect polytope.";
-static const char __pyx_k_Line_does_not_intersect_unit_bal[] = "Line does not intersect unit ball.";
 static const char __pyx_k_Out_of_bounds_on_buffer_access_a[] = "Out of bounds on buffer access (axis %d)";
 static const char __pyx_k_Unable_to_convert_item_to_object[] = "Unable to convert item to object";
+static const char __pyx_k_compute_version_space_intersecti[] = "compute_version_space_intersection";
 static const char __pyx_k_got_differing_extents_in_dimensi[] = "got differing extents in dimension %d (got %d and %d)";
 static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __reduce__ due to non-trivial __cinit__";
 static const char __pyx_k_unable_to_allocate_shape_and_str[] = "unable to allocate shape and strides.";
@@ -2040,8 +2033,6 @@ static PyObject *__pyx_n_s_IndexError;
 static PyObject *__pyx_kp_s_Indirect_dimensions_not_supporte;
 static PyObject *__pyx_kp_s_Invalid_mode_expected_c_or_fortr;
 static PyObject *__pyx_kp_s_Invalid_shape_in_axis_d_d;
-static PyObject *__pyx_kp_u_Line_does_not_intersect_polytope;
-static PyObject *__pyx_kp_u_Line_does_not_intersect_unit_bal;
 static PyObject *__pyx_kp_u_Line_does_not_intersect_version;
 static PyObject *__pyx_n_s_MemoryError;
 static PyObject *__pyx_kp_s_MemoryView_of_r_at_0x_x;
@@ -2062,6 +2053,7 @@ static PyObject *__pyx_n_u_c;
 static PyObject *__pyx_n_s_center;
 static PyObject *__pyx_n_s_class;
 static PyObject *__pyx_n_s_cline_in_traceback;
+static PyObject *__pyx_n_s_compute_version_space_intersecti;
 static PyObject *__pyx_kp_s_contiguous_and_direct;
 static PyObject *__pyx_kp_s_contiguous_and_indirect;
 static PyObject *__pyx_n_s_dict;
@@ -2074,9 +2066,6 @@ static PyObject *__pyx_n_s_flags;
 static PyObject *__pyx_n_s_format;
 static PyObject *__pyx_n_s_fortran;
 static PyObject *__pyx_n_u_fortran;
-static PyObject *__pyx_n_s_get_ball_extremes;
-static PyObject *__pyx_n_s_get_extremes;
-static PyObject *__pyx_n_s_get_polytope_extremes;
 static PyObject *__pyx_n_s_getstate;
 static PyObject *__pyx_kp_s_got_differing_extents_in_dimensi;
 static PyObject *__pyx_n_s_id;
@@ -2127,9 +2116,7 @@ static PyObject *__pyx_kp_s_unable_to_allocate_shape_and_str;
 static PyObject *__pyx_n_s_unpack;
 static PyObject *__pyx_n_s_update;
 static PyObject *__pyx_n_s_version_space_helper;
-static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_A, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction); /* proto */
-static PyObject *__pyx_pf_20version_space_helper_2get_polytope_extremes(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_A, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction); /* proto */
-static PyObject *__pyx_pf_20version_space_helper_4get_ball_extremes(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction); /* proto */
+static PyObject *__pyx_pf_20version_space_helper_compute_version_space_intersection(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_A, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2189,51 +2176,45 @@ static PyObject *__pyx_tuple__6;
 static PyObject *__pyx_tuple__7;
 static PyObject *__pyx_tuple__8;
 static PyObject *__pyx_tuple__9;
-static PyObject *__pyx_slice__18;
+static PyObject *__pyx_slice__16;
 static PyObject *__pyx_tuple__10;
 static PyObject *__pyx_tuple__11;
 static PyObject *__pyx_tuple__12;
 static PyObject *__pyx_tuple__13;
 static PyObject *__pyx_tuple__14;
 static PyObject *__pyx_tuple__15;
-static PyObject *__pyx_tuple__16;
 static PyObject *__pyx_tuple__17;
+static PyObject *__pyx_tuple__18;
 static PyObject *__pyx_tuple__19;
 static PyObject *__pyx_tuple__20;
-static PyObject *__pyx_tuple__21;
 static PyObject *__pyx_tuple__22;
+static PyObject *__pyx_tuple__23;
 static PyObject *__pyx_tuple__24;
+static PyObject *__pyx_tuple__25;
 static PyObject *__pyx_tuple__26;
-static PyObject *__pyx_tuple__28;
-static PyObject *__pyx_tuple__29;
-static PyObject *__pyx_tuple__30;
-static PyObject *__pyx_tuple__31;
-static PyObject *__pyx_tuple__32;
-static PyObject *__pyx_tuple__33;
-static PyObject *__pyx_codeobj__23;
-static PyObject *__pyx_codeobj__25;
-static PyObject *__pyx_codeobj__27;
-static PyObject *__pyx_codeobj__34;
+static PyObject *__pyx_tuple__27;
+static PyObject *__pyx_codeobj__21;
+static PyObject *__pyx_codeobj__28;
 /* Late includes */
 
-/* "version_space_helper.pyx":34
+/* "version_space_helper.pyx":26
  * @boundscheck(False)
  * @wraparound(False)
- * def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef int m = A.shape[1], n = A.shape[0]
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+ * def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
+ *     cdef int m = A.shape[0], n = A.shape[1]
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_20version_space_helper_1get_extremes(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_20version_space_helper_1get_extremes = {"get_extremes", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_20version_space_helper_1get_extremes, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_20version_space_helper_1get_extremes(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_20version_space_helper_1compute_version_space_intersection(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_20version_space_helper_1compute_version_space_intersection = {"compute_version_space_intersection", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_20version_space_helper_1compute_version_space_intersection, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_20version_space_helper_1compute_version_space_intersection(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_A = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_center = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_direction = { 0, 0, { 0 }, { 0 }, { 0 } };
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("get_extremes (wrapper)", 0);
+  __Pyx_RefNannySetupContext("compute_version_space_intersection (wrapper)", 0);
   {
     static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_A,&__pyx_n_s_center,&__pyx_n_s_direction,0};
     PyObject* values[3] = {0,0,0};
@@ -2259,17 +2240,17 @@ static PyObject *__pyx_pw_20version_space_helper_1get_extremes(PyObject *__pyx_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_center)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("get_extremes", 1, 3, 3, 1); __PYX_ERR(0, 34, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_version_space_intersection", 1, 3, 3, 1); __PYX_ERR(0, 26, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_direction)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("get_extremes", 1, 3, 3, 2); __PYX_ERR(0, 34, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_version_space_intersection", 1, 3, 3, 2); __PYX_ERR(0, 26, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_extremes") < 0)) __PYX_ERR(0, 34, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_version_space_intersection") < 0)) __PYX_ERR(0, 26, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -2278,26 +2259,26 @@ static PyObject *__pyx_pw_20version_space_helper_1get_extremes(PyObject *__pyx_s
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
-    __pyx_v_A = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_A.memview)) __PYX_ERR(0, 34, __pyx_L3_error)
-    __pyx_v_center = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_center.memview)) __PYX_ERR(0, 34, __pyx_L3_error)
-    __pyx_v_direction = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_direction.memview)) __PYX_ERR(0, 34, __pyx_L3_error)
+    __pyx_v_A = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_A.memview)) __PYX_ERR(0, 26, __pyx_L3_error)
+    __pyx_v_center = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_center.memview)) __PYX_ERR(0, 26, __pyx_L3_error)
+    __pyx_v_direction = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_direction.memview)) __PYX_ERR(0, 26, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_extremes", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 34, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("compute_version_space_intersection", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 26, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("version_space_helper.get_extremes", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("version_space_helper.compute_version_space_intersection", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_20version_space_helper_get_extremes(__pyx_self, __pyx_v_A, __pyx_v_center, __pyx_v_direction);
+  __pyx_r = __pyx_pf_20version_space_helper_compute_version_space_intersection(__pyx_self, __pyx_v_A, __pyx_v_center, __pyx_v_direction);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_A, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction) {
+static PyObject *__pyx_pf_20version_space_helper_compute_version_space_intersection(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_A, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction) {
   int __pyx_v_m;
   int __pyx_v_n;
   double *__pyx_v_res;
@@ -2311,22 +2292,22 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
   PyObject *__pyx_t_6 = NULL;
   PyObject *__pyx_t_7 = NULL;
   PyObject *__pyx_t_8 = NULL;
-  __Pyx_RefNannySetupContext("get_extremes", 0);
+  __Pyx_RefNannySetupContext("compute_version_space_intersection", 0);
 
-  /* "version_space_helper.pyx":35
+  /* "version_space_helper.pyx":27
  * @wraparound(False)
- * def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
- *     cdef int m = A.shape[1], n = A.shape[0]             # <<<<<<<<<<<<<<
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+ * def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):
+ *     cdef int m = A.shape[0], n = A.shape[1]             # <<<<<<<<<<<<<<
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  * 
  */
-  __pyx_v_m = (__pyx_v_A.shape[1]);
-  __pyx_v_n = (__pyx_v_A.shape[0]);
+  __pyx_v_m = (__pyx_v_A.shape[0]);
+  __pyx_v_n = (__pyx_v_A.shape[1]);
 
-  /* "version_space_helper.pyx":36
- * def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
- *     cdef int m = A.shape[1], n = A.shape[0]
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)             # <<<<<<<<<<<<<<
+  /* "version_space_helper.pyx":28
+ * def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):
+ *     cdef int m = A.shape[0], n = A.shape[1]
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)             # <<<<<<<<<<<<<<
  * 
  *     if res == NULL:
  */
@@ -2334,10 +2315,10 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
   __pyx_t_2 = 0;
   __pyx_t_3 = 0;
   __pyx_t_4 = 0;
-  __pyx_v_res = __pyx_f_20version_space_helper_compute_extremes_opt((&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_A.data + __pyx_t_1 * __pyx_v_A.strides[0]) )) + __pyx_t_2)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_center.data) + __pyx_t_3)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_direction.data) + __pyx_t_4)) )))), __pyx_v_m, __pyx_v_n);
+  __pyx_v_res = __pyx_f_20version_space_helper_compute_version_space_intersection_opt((&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_A.data + __pyx_t_1 * __pyx_v_A.strides[0]) )) + __pyx_t_2)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_center.data) + __pyx_t_3)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_direction.data) + __pyx_t_4)) )))), __pyx_v_m, __pyx_v_n);
 
-  /* "version_space_helper.pyx":38
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+  /* "version_space_helper.pyx":30
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  * 
  *     if res == NULL:             # <<<<<<<<<<<<<<
  *         raise RuntimeError("Line does not intersect version space.")
@@ -2346,21 +2327,21 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
   __pyx_t_5 = ((__pyx_v_res == NULL) != 0);
   if (unlikely(__pyx_t_5)) {
 
-    /* "version_space_helper.pyx":39
+    /* "version_space_helper.pyx":31
  * 
  *     if res == NULL:
  *         raise RuntimeError("Line does not intersect version space.")             # <<<<<<<<<<<<<<
  * 
  *     return res[0], res[1]
  */
-    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 39, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 31, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_Raise(__pyx_t_6, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __PYX_ERR(0, 39, __pyx_L1_error)
+    __PYX_ERR(0, 31, __pyx_L1_error)
 
-    /* "version_space_helper.pyx":38
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+    /* "version_space_helper.pyx":30
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  * 
  *     if res == NULL:             # <<<<<<<<<<<<<<
  *         raise RuntimeError("Line does not intersect version space.")
@@ -2368,7 +2349,7 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
  */
   }
 
-  /* "version_space_helper.pyx":41
+  /* "version_space_helper.pyx":33
  *         raise RuntimeError("Line does not intersect version space.")
  * 
  *     return res[0], res[1]             # <<<<<<<<<<<<<<
@@ -2376,11 +2357,11 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_6 = PyFloat_FromDouble((__pyx_v_res[0])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __pyx_t_6 = PyFloat_FromDouble((__pyx_v_res[0])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = PyFloat_FromDouble((__pyx_v_res[1])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __pyx_t_7 = PyFloat_FromDouble((__pyx_v_res[1])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_8 = PyTuple_New(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __pyx_t_8 = PyTuple_New(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_GIVEREF(__pyx_t_6);
   PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6);
@@ -2392,12 +2373,12 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
   __pyx_t_8 = 0;
   goto __pyx_L0;
 
-  /* "version_space_helper.pyx":34
+  /* "version_space_helper.pyx":26
  * @boundscheck(False)
  * @wraparound(False)
- * def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef int m = A.shape[1], n = A.shape[0]
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+ * def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
+ *     cdef int m = A.shape[0], n = A.shape[1]
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  */
 
   /* function exit code */
@@ -2405,7 +2386,7 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("version_space_helper.get_extremes", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("version_space_helper.compute_version_space_intersection", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_A, 1);
@@ -2416,416 +2397,34 @@ static PyObject *__pyx_pf_20version_space_helper_get_extremes(CYTHON_UNUSED PyOb
   return __pyx_r;
 }
 
-/* "version_space_helper.pyx":46
+/* "version_space_helper.pyx":38
  * @boundscheck(False)
  * @wraparound(False)
- * def get_polytope_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef int m = A.shape[0], n = A.shape[1]
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_20version_space_helper_3get_polytope_extremes(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_20version_space_helper_3get_polytope_extremes = {"get_polytope_extremes", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_20version_space_helper_3get_polytope_extremes, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_20version_space_helper_3get_polytope_extremes(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  __Pyx_memviewslice __pyx_v_A = { 0, 0, { 0 }, { 0 }, { 0 } };
-  __Pyx_memviewslice __pyx_v_center = { 0, 0, { 0 }, { 0 }, { 0 } };
-  __Pyx_memviewslice __pyx_v_direction = { 0, 0, { 0 }, { 0 }, { 0 } };
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("get_polytope_extremes (wrapper)", 0);
-  {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_A,&__pyx_n_s_center,&__pyx_n_s_direction,0};
-    PyObject* values[3] = {0,0,0};
-    if (unlikely(__pyx_kwds)) {
-      Py_ssize_t kw_args;
-      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
-      switch (pos_args) {
-        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
-        CYTHON_FALLTHROUGH;
-        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-        CYTHON_FALLTHROUGH;
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        CYTHON_FALLTHROUGH;
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = PyDict_Size(__pyx_kwds);
-      switch (pos_args) {
-        case  0:
-        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_A)) != 0)) kw_args--;
-        else goto __pyx_L5_argtuple_error;
-        CYTHON_FALLTHROUGH;
-        case  1:
-        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_center)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("get_polytope_extremes", 1, 3, 3, 1); __PYX_ERR(0, 46, __pyx_L3_error)
-        }
-        CYTHON_FALLTHROUGH;
-        case  2:
-        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_direction)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("get_polytope_extremes", 1, 3, 3, 2); __PYX_ERR(0, 46, __pyx_L3_error)
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_polytope_extremes") < 0)) __PYX_ERR(0, 46, __pyx_L3_error)
-      }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
-      goto __pyx_L5_argtuple_error;
-    } else {
-      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
-    }
-    __pyx_v_A = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_A.memview)) __PYX_ERR(0, 46, __pyx_L3_error)
-    __pyx_v_center = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_center.memview)) __PYX_ERR(0, 46, __pyx_L3_error)
-    __pyx_v_direction = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_direction.memview)) __PYX_ERR(0, 46, __pyx_L3_error)
-  }
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_polytope_extremes", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 46, __pyx_L3_error)
-  __pyx_L3_error:;
-  __Pyx_AddTraceback("version_space_helper.get_polytope_extremes", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return NULL;
-  __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_20version_space_helper_2get_polytope_extremes(__pyx_self, __pyx_v_A, __pyx_v_center, __pyx_v_direction);
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_20version_space_helper_2get_polytope_extremes(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_A, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction) {
-  int __pyx_v_m;
-  int __pyx_v_n;
-  double *__pyx_v_res;
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  Py_ssize_t __pyx_t_1;
-  Py_ssize_t __pyx_t_2;
-  Py_ssize_t __pyx_t_3;
-  Py_ssize_t __pyx_t_4;
-  int __pyx_t_5;
-  PyObject *__pyx_t_6 = NULL;
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  __Pyx_RefNannySetupContext("get_polytope_extremes", 0);
-
-  /* "version_space_helper.pyx":47
- * @wraparound(False)
- * def get_polytope_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
- *     cdef int m = A.shape[0], n = A.shape[1]             # <<<<<<<<<<<<<<
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- * 
- */
-  __pyx_v_m = (__pyx_v_A.shape[0]);
-  __pyx_v_n = (__pyx_v_A.shape[1]);
-
-  /* "version_space_helper.pyx":48
- * def get_polytope_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
- *     cdef int m = A.shape[0], n = A.shape[1]
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)             # <<<<<<<<<<<<<<
- * 
- *     if res == NULL:
- */
-  __pyx_t_1 = 0;
-  __pyx_t_2 = 0;
-  __pyx_t_3 = 0;
-  __pyx_t_4 = 0;
-  __pyx_v_res = __pyx_f_20version_space_helper_compute_polytope_extremes_opt((&(*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_A.data + __pyx_t_1 * __pyx_v_A.strides[0]) )) + __pyx_t_2)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_center.data) + __pyx_t_3)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_direction.data) + __pyx_t_4)) )))), __pyx_v_m, __pyx_v_n);
-
-  /* "version_space_helper.pyx":50
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- * 
- *     if res == NULL:             # <<<<<<<<<<<<<<
- *         raise RuntimeError("Line does not intersect polytope.")
- * 
- */
-  __pyx_t_5 = ((__pyx_v_res == NULL) != 0);
-  if (unlikely(__pyx_t_5)) {
-
-    /* "version_space_helper.pyx":51
- * 
- *     if res == NULL:
- *         raise RuntimeError("Line does not intersect polytope.")             # <<<<<<<<<<<<<<
- * 
- *     return res[0], res[1]
- */
-    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 51, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_6);
-    __Pyx_Raise(__pyx_t_6, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __PYX_ERR(0, 51, __pyx_L1_error)
-
-    /* "version_space_helper.pyx":50
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- * 
- *     if res == NULL:             # <<<<<<<<<<<<<<
- *         raise RuntimeError("Line does not intersect polytope.")
- * 
- */
-  }
-
-  /* "version_space_helper.pyx":53
- *         raise RuntimeError("Line does not intersect polytope.")
- * 
- *     return res[0], res[1]             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_6 = PyFloat_FromDouble((__pyx_v_res[0])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = PyFloat_FromDouble((__pyx_v_res[1])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_8 = PyTuple_New(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 53, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_8);
-  __Pyx_GIVEREF(__pyx_t_6);
-  PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6);
-  __Pyx_GIVEREF(__pyx_t_7);
-  PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_t_7);
-  __pyx_t_6 = 0;
-  __pyx_t_7 = 0;
-  __pyx_r = __pyx_t_8;
-  __pyx_t_8 = 0;
-  goto __pyx_L0;
-
-  /* "version_space_helper.pyx":46
- * @boundscheck(False)
- * @wraparound(False)
- * def get_polytope_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef int m = A.shape[0], n = A.shape[1]
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("version_space_helper.get_polytope_extremes", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __PYX_XDEC_MEMVIEW(&__pyx_v_A, 1);
-  __PYX_XDEC_MEMVIEW(&__pyx_v_center, 1);
-  __PYX_XDEC_MEMVIEW(&__pyx_v_direction, 1);
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "version_space_helper.pyx":58
- * @boundscheck(False)
- * @wraparound(False)
- * def get_ball_extremes(double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef unsigned int n = len(center)
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_20version_space_helper_5get_ball_extremes(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_20version_space_helper_5get_ball_extremes = {"get_ball_extremes", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_20version_space_helper_5get_ball_extremes, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_20version_space_helper_5get_ball_extremes(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  __Pyx_memviewslice __pyx_v_center = { 0, 0, { 0 }, { 0 }, { 0 } };
-  __Pyx_memviewslice __pyx_v_direction = { 0, 0, { 0 }, { 0 }, { 0 } };
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("get_ball_extremes (wrapper)", 0);
-  {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_center,&__pyx_n_s_direction,0};
-    PyObject* values[2] = {0,0};
-    if (unlikely(__pyx_kwds)) {
-      Py_ssize_t kw_args;
-      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
-      switch (pos_args) {
-        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-        CYTHON_FALLTHROUGH;
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        CYTHON_FALLTHROUGH;
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = PyDict_Size(__pyx_kwds);
-      switch (pos_args) {
-        case  0:
-        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_center)) != 0)) kw_args--;
-        else goto __pyx_L5_argtuple_error;
-        CYTHON_FALLTHROUGH;
-        case  1:
-        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_direction)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("get_ball_extremes", 1, 2, 2, 1); __PYX_ERR(0, 58, __pyx_L3_error)
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_ball_extremes") < 0)) __PYX_ERR(0, 58, __pyx_L3_error)
-      }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
-      goto __pyx_L5_argtuple_error;
-    } else {
-      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-    }
-    __pyx_v_center = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_center.memview)) __PYX_ERR(0, 58, __pyx_L3_error)
-    __pyx_v_direction = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_direction.memview)) __PYX_ERR(0, 58, __pyx_L3_error)
-  }
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_ball_extremes", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 58, __pyx_L3_error)
-  __pyx_L3_error:;
-  __Pyx_AddTraceback("version_space_helper.get_ball_extremes", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return NULL;
-  __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_20version_space_helper_4get_ball_extremes(__pyx_self, __pyx_v_center, __pyx_v_direction);
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_20version_space_helper_4get_ball_extremes(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_center, __Pyx_memviewslice __pyx_v_direction) {
-  unsigned int __pyx_v_n;
-  double *__pyx_v_res;
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  size_t __pyx_t_1;
-  Py_ssize_t __pyx_t_2;
-  Py_ssize_t __pyx_t_3;
-  int __pyx_t_4;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
-  PyObject *__pyx_t_7 = NULL;
-  __Pyx_RefNannySetupContext("get_ball_extremes", 0);
-
-  /* "version_space_helper.pyx":59
- * @wraparound(False)
- * def get_ball_extremes(double[::1] center, double[::1] direction):
- *     cdef unsigned int n = len(center)             # <<<<<<<<<<<<<<
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- * 
- */
-  __pyx_t_1 = __Pyx_MemoryView_Len(__pyx_v_center); 
-  __pyx_v_n = __pyx_t_1;
-
-  /* "version_space_helper.pyx":60
- * def get_ball_extremes(double[::1] center, double[::1] direction):
- *     cdef unsigned int n = len(center)
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)             # <<<<<<<<<<<<<<
- * 
- *     if res == NULL:
- */
-  __pyx_t_2 = 0;
-  __pyx_t_3 = 0;
-  __pyx_v_res = __pyx_f_20version_space_helper_compute_ball_extremes_opt((&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_center.data) + __pyx_t_2)) )))), (&(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_direction.data) + __pyx_t_3)) )))), __pyx_v_n);
-
-  /* "version_space_helper.pyx":62
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- * 
- *     if res == NULL:             # <<<<<<<<<<<<<<
- *         raise RuntimeError("Line does not intersect unit ball.")
- * 
- */
-  __pyx_t_4 = ((__pyx_v_res == NULL) != 0);
-  if (unlikely(__pyx_t_4)) {
-
-    /* "version_space_helper.pyx":63
- * 
- *     if res == NULL:
- *         raise RuntimeError("Line does not intersect unit ball.")             # <<<<<<<<<<<<<<
- * 
- *     return res[0], res[1]
- */
-    __pyx_t_5 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 63, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __Pyx_Raise(__pyx_t_5, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __PYX_ERR(0, 63, __pyx_L1_error)
-
-    /* "version_space_helper.pyx":62
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- * 
- *     if res == NULL:             # <<<<<<<<<<<<<<
- *         raise RuntimeError("Line does not intersect unit ball.")
- * 
- */
-  }
-
-  /* "version_space_helper.pyx":65
- *         raise RuntimeError("Line does not intersect unit ball.")
- * 
- *     return res[0], res[1]             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = PyFloat_FromDouble((__pyx_v_res[0])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 65, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = PyFloat_FromDouble((__pyx_v_res[1])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 65, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 65, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
-  __Pyx_GIVEREF(__pyx_t_5);
-  PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5);
-  __Pyx_GIVEREF(__pyx_t_6);
-  PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_6);
-  __pyx_t_5 = 0;
-  __pyx_t_6 = 0;
-  __pyx_r = __pyx_t_7;
-  __pyx_t_7 = 0;
-  goto __pyx_L0;
-
-  /* "version_space_helper.pyx":58
- * @boundscheck(False)
- * @wraparound(False)
- * def get_ball_extremes(double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef unsigned int n = len(center)
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("version_space_helper.get_ball_extremes", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __PYX_XDEC_MEMVIEW(&__pyx_v_center, 1);
-  __PYX_XDEC_MEMVIEW(&__pyx_v_direction, 1);
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "version_space_helper.pyx":71
- * @wraparound(False)
- * @cdivision(True)
- * cdef double* compute_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:             # <<<<<<<<<<<<<<
+ * cdef double* compute_version_space_intersection_opt(double* A, double* center, double* direction, int m, int n):             # <<<<<<<<<<<<<<
  *     cdef:
  *         double *extremes, *ball_extremes
  */
 
-static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx_v_A, double *__pyx_v_center, double *__pyx_v_direction, int __pyx_v_m, int __pyx_v_n) {
+static double *__pyx_f_20version_space_helper_compute_version_space_intersection_opt(double *__pyx_v_A, double *__pyx_v_center, double *__pyx_v_direction, int __pyx_v_m, int __pyx_v_n) {
   double *__pyx_v_extremes;
   double *__pyx_v_ball_extremes;
   double *__pyx_r;
+  __Pyx_RefNannyDeclarations
   int __pyx_t_1;
+  __Pyx_RefNannySetupContext("compute_version_space_intersection_opt", 0);
 
-  /* "version_space_helper.pyx":76
+  /* "version_space_helper.pyx":43
  *         double lower, upper
  * 
- *     extremes = compute_polytope_extremes_opt(A, center, direction, m, n)             # <<<<<<<<<<<<<<
+ *     extremes = compute_polytope_intersection(A, center, direction, m, n)             # <<<<<<<<<<<<<<
  *     if extremes == NULL:
  *         return NULL
  */
-  __pyx_v_extremes = __pyx_f_20version_space_helper_compute_polytope_extremes_opt(__pyx_v_A, __pyx_v_center, __pyx_v_direction, __pyx_v_m, __pyx_v_n);
+  __pyx_v_extremes = __pyx_f_20version_space_helper_compute_polytope_intersection(__pyx_v_A, __pyx_v_center, __pyx_v_direction, __pyx_v_m, __pyx_v_n);
 
-  /* "version_space_helper.pyx":77
+  /* "version_space_helper.pyx":44
  * 
- *     extremes = compute_polytope_extremes_opt(A, center, direction, m, n)
+ *     extremes = compute_polytope_intersection(A, center, direction, m, n)
  *     if extremes == NULL:             # <<<<<<<<<<<<<<
  *         return NULL
  * 
@@ -2833,37 +2432,37 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
   __pyx_t_1 = ((__pyx_v_extremes == NULL) != 0);
   if (__pyx_t_1) {
 
-    /* "version_space_helper.pyx":78
- *     extremes = compute_polytope_extremes_opt(A, center, direction, m, n)
+    /* "version_space_helper.pyx":45
+ *     extremes = compute_polytope_intersection(A, center, direction, m, n)
  *     if extremes == NULL:
  *         return NULL             # <<<<<<<<<<<<<<
  * 
- *     ball_extremes = compute_ball_extremes_opt(center, direction, n)
+ *     ball_extremes = compute_ball_intersection(center, direction, n)
  */
     __pyx_r = NULL;
     goto __pyx_L0;
 
-    /* "version_space_helper.pyx":77
+    /* "version_space_helper.pyx":44
  * 
- *     extremes = compute_polytope_extremes_opt(A, center, direction, m, n)
+ *     extremes = compute_polytope_intersection(A, center, direction, m, n)
  *     if extremes == NULL:             # <<<<<<<<<<<<<<
  *         return NULL
  * 
  */
   }
 
-  /* "version_space_helper.pyx":80
+  /* "version_space_helper.pyx":47
  *         return NULL
  * 
- *     ball_extremes = compute_ball_extremes_opt(center, direction, n)             # <<<<<<<<<<<<<<
+ *     ball_extremes = compute_ball_intersection(center, direction, n)             # <<<<<<<<<<<<<<
  *     if ball_extremes == NULL:
  *         return NULL
  */
-  __pyx_v_ball_extremes = __pyx_f_20version_space_helper_compute_ball_extremes_opt(__pyx_v_center, __pyx_v_direction, __pyx_v_n);
+  __pyx_v_ball_extremes = __pyx_f_20version_space_helper_compute_ball_intersection(__pyx_v_center, __pyx_v_direction, __pyx_v_n);
 
-  /* "version_space_helper.pyx":81
+  /* "version_space_helper.pyx":48
  * 
- *     ball_extremes = compute_ball_extremes_opt(center, direction, n)
+ *     ball_extremes = compute_ball_intersection(center, direction, n)
  *     if ball_extremes == NULL:             # <<<<<<<<<<<<<<
  *         return NULL
  * 
@@ -2871,8 +2470,8 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
   __pyx_t_1 = ((__pyx_v_ball_extremes == NULL) != 0);
   if (__pyx_t_1) {
 
-    /* "version_space_helper.pyx":82
- *     ball_extremes = compute_ball_extremes_opt(center, direction, n)
+    /* "version_space_helper.pyx":49
+ *     ball_extremes = compute_ball_intersection(center, direction, n)
  *     if ball_extremes == NULL:
  *         return NULL             # <<<<<<<<<<<<<<
  * 
@@ -2881,16 +2480,16 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
     __pyx_r = NULL;
     goto __pyx_L0;
 
-    /* "version_space_helper.pyx":81
+    /* "version_space_helper.pyx":48
  * 
- *     ball_extremes = compute_ball_extremes_opt(center, direction, n)
+ *     ball_extremes = compute_ball_intersection(center, direction, n)
  *     if ball_extremes == NULL:             # <<<<<<<<<<<<<<
  *         return NULL
  * 
  */
   }
 
-  /* "version_space_helper.pyx":84
+  /* "version_space_helper.pyx":51
  *         return NULL
  * 
  *     if ball_extremes[0] > extremes[0]:             # <<<<<<<<<<<<<<
@@ -2900,7 +2499,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
   __pyx_t_1 = (((__pyx_v_ball_extremes[0]) > (__pyx_v_extremes[0])) != 0);
   if (__pyx_t_1) {
 
-    /* "version_space_helper.pyx":85
+    /* "version_space_helper.pyx":52
  * 
  *     if ball_extremes[0] > extremes[0]:
  *         extremes[0] = ball_extremes[0]             # <<<<<<<<<<<<<<
@@ -2909,7 +2508,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
  */
     (__pyx_v_extremes[0]) = (__pyx_v_ball_extremes[0]);
 
-    /* "version_space_helper.pyx":84
+    /* "version_space_helper.pyx":51
  *         return NULL
  * 
  *     if ball_extremes[0] > extremes[0]:             # <<<<<<<<<<<<<<
@@ -2918,7 +2517,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
  */
   }
 
-  /* "version_space_helper.pyx":87
+  /* "version_space_helper.pyx":54
  *         extremes[0] = ball_extremes[0]
  * 
  *     if ball_extremes[1] < extremes[1]:             # <<<<<<<<<<<<<<
@@ -2928,7 +2527,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
   __pyx_t_1 = (((__pyx_v_ball_extremes[1]) < (__pyx_v_extremes[1])) != 0);
   if (__pyx_t_1) {
 
-    /* "version_space_helper.pyx":88
+    /* "version_space_helper.pyx":55
  * 
  *     if ball_extremes[1] < extremes[1]:
  *         extremes[1] = ball_extremes[1]             # <<<<<<<<<<<<<<
@@ -2937,7 +2536,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
  */
     (__pyx_v_extremes[1]) = (__pyx_v_ball_extremes[1]);
 
-    /* "version_space_helper.pyx":87
+    /* "version_space_helper.pyx":54
  *         extremes[0] = ball_extremes[0]
  * 
  *     if ball_extremes[1] < extremes[1]:             # <<<<<<<<<<<<<<
@@ -2946,7 +2545,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
  */
   }
 
-  /* "version_space_helper.pyx":90
+  /* "version_space_helper.pyx":57
  *         extremes[1] = ball_extremes[1]
  * 
  *     free(ball_extremes)             # <<<<<<<<<<<<<<
@@ -2955,7 +2554,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
  */
   free(__pyx_v_ball_extremes);
 
-  /* "version_space_helper.pyx":92
+  /* "version_space_helper.pyx":59
  *     free(ball_extremes)
  * 
  *     return extremes             # <<<<<<<<<<<<<<
@@ -2965,28 +2564,29 @@ static double *__pyx_f_20version_space_helper_compute_extremes_opt(double *__pyx
   __pyx_r = __pyx_v_extremes;
   goto __pyx_L0;
 
-  /* "version_space_helper.pyx":71
+  /* "version_space_helper.pyx":38
+ * @boundscheck(False)
  * @wraparound(False)
- * @cdivision(True)
- * cdef double* compute_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:             # <<<<<<<<<<<<<<
+ * cdef double* compute_version_space_intersection_opt(double* A, double* center, double* direction, int m, int n):             # <<<<<<<<<<<<<<
  *     cdef:
  *         double *extremes, *ball_extremes
  */
 
   /* function exit code */
   __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "version_space_helper.pyx":96
+/* "version_space_helper.pyx":62
  * 
- * @cdivision(True)
- * cdef double* compute_polytope_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:             # <<<<<<<<<<<<<<
+ * 
+ * cdef double* compute_polytope_intersection(double* A, double* center, double* direction, int m, int n):             # <<<<<<<<<<<<<<
  *     cdef:
  *         char *transa = 't'
  */
 
-static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(double *__pyx_v_A, double *__pyx_v_center, double *__pyx_v_direction, int __pyx_v_m, int __pyx_v_n) {
+static double *__pyx_f_20version_space_helper_compute_polytope_intersection(double *__pyx_v_A, double *__pyx_v_center, double *__pyx_v_direction, int __pyx_v_m, int __pyx_v_n) {
   char *__pyx_v_transa;
   int __pyx_v_inc;
   double __pyx_v_alpha;
@@ -2995,9 +2595,11 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
   double *__pyx_v_den;
   double *__pyx_v_vals;
   double *__pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("compute_polytope_intersection", 0);
 
-  /* "version_space_helper.pyx":98
- * cdef double* compute_polytope_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:
+  /* "version_space_helper.pyx":64
+ * cdef double* compute_polytope_intersection(double* A, double* center, double* direction, int m, int n):
  *     cdef:
  *         char *transa = 't'             # <<<<<<<<<<<<<<
  *         int inc = 1
@@ -3005,7 +2607,7 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
  */
   __pyx_v_transa = ((char *)"t");
 
-  /* "version_space_helper.pyx":99
+  /* "version_space_helper.pyx":65
  *     cdef:
  *         char *transa = 't'
  *         int inc = 1             # <<<<<<<<<<<<<<
@@ -3014,7 +2616,7 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
  */
   __pyx_v_inc = 1;
 
-  /* "version_space_helper.pyx":100
+  /* "version_space_helper.pyx":66
  *         char *transa = 't'
  *         int inc = 1
  *         double alpha = 1, beta = 0             # <<<<<<<<<<<<<<
@@ -3024,7 +2626,7 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
   __pyx_v_alpha = 1.0;
   __pyx_v_beta = 0.0;
 
-  /* "version_space_helper.pyx":101
+  /* "version_space_helper.pyx":67
  *         int inc = 1
  *         double alpha = 1, beta = 0
  *         double *num = <double*> malloc(sizeof(double) * n)             # <<<<<<<<<<<<<<
@@ -3033,7 +2635,7 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
  */
   __pyx_v_num = ((double *)malloc(((sizeof(double)) * __pyx_v_n)));
 
-  /* "version_space_helper.pyx":102
+  /* "version_space_helper.pyx":68
  *         double alpha = 1, beta = 0
  *         double *num = <double*> malloc(sizeof(double) * n)
  *         double *den = <double*> malloc(sizeof(double) * n)             # <<<<<<<<<<<<<<
@@ -3042,7 +2644,7 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
  */
   __pyx_v_den = ((double *)malloc(((sizeof(double)) * __pyx_v_n)));
 
-  /* "version_space_helper.pyx":104
+  /* "version_space_helper.pyx":70
  *         double *den = <double*> malloc(sizeof(double) * n)
  * 
  *     dgemv(transa, &n, &m, &alpha,  A, &n, center, &inc, &beta, num, &inc)             # <<<<<<<<<<<<<<
@@ -3051,35 +2653,35 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
  */
   __pyx_f_5scipy_6linalg_11cython_blas_dgemv(__pyx_v_transa, (&__pyx_v_n), (&__pyx_v_m), (&__pyx_v_alpha), __pyx_v_A, (&__pyx_v_n), __pyx_v_center, (&__pyx_v_inc), (&__pyx_v_beta), __pyx_v_num, (&__pyx_v_inc));
 
-  /* "version_space_helper.pyx":105
+  /* "version_space_helper.pyx":71
  * 
  *     dgemv(transa, &n, &m, &alpha,  A, &n, center, &inc, &beta, num, &inc)
  *     dgemv(transa, &n, &m, &alpha, A, &n, direction, &inc, &beta, den, &inc)             # <<<<<<<<<<<<<<
  * 
- *     cdef double* vals = compute_extremes_min_max(num, den, m)
+ *     cdef double* vals = polytope_intersection_min_max(num, den, m)
  */
   __pyx_f_5scipy_6linalg_11cython_blas_dgemv(__pyx_v_transa, (&__pyx_v_n), (&__pyx_v_m), (&__pyx_v_alpha), __pyx_v_A, (&__pyx_v_n), __pyx_v_direction, (&__pyx_v_inc), (&__pyx_v_beta), __pyx_v_den, (&__pyx_v_inc));
 
-  /* "version_space_helper.pyx":107
+  /* "version_space_helper.pyx":73
  *     dgemv(transa, &n, &m, &alpha, A, &n, direction, &inc, &beta, den, &inc)
  * 
- *     cdef double* vals = compute_extremes_min_max(num, den, m)             # <<<<<<<<<<<<<<
+ *     cdef double* vals = polytope_intersection_min_max(num, den, m)             # <<<<<<<<<<<<<<
  *     free(num)
  *     free(den)
  */
-  __pyx_v_vals = __pyx_f_20version_space_helper_compute_extremes_min_max(__pyx_v_num, __pyx_v_den, __pyx_v_m);
+  __pyx_v_vals = __pyx_f_20version_space_helper_polytope_intersection_min_max(__pyx_v_num, __pyx_v_den, __pyx_v_m);
 
-  /* "version_space_helper.pyx":108
+  /* "version_space_helper.pyx":74
  * 
- *     cdef double* vals = compute_extremes_min_max(num, den, m)
+ *     cdef double* vals = polytope_intersection_min_max(num, den, m)
  *     free(num)             # <<<<<<<<<<<<<<
  *     free(den)
  *     return vals
  */
   free(__pyx_v_num);
 
-  /* "version_space_helper.pyx":109
- *     cdef double* vals = compute_extremes_min_max(num, den, m)
+  /* "version_space_helper.pyx":75
+ *     cdef double* vals = polytope_intersection_min_max(num, den, m)
  *     free(num)
  *     free(den)             # <<<<<<<<<<<<<<
  *     return vals
@@ -3087,7 +2689,7 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
  */
   free(__pyx_v_den);
 
-  /* "version_space_helper.pyx":110
+  /* "version_space_helper.pyx":76
  *     free(num)
  *     free(den)
  *     return vals             # <<<<<<<<<<<<<<
@@ -3097,42 +2699,44 @@ static double *__pyx_f_20version_space_helper_compute_polytope_extremes_opt(doub
   __pyx_r = __pyx_v_vals;
   goto __pyx_L0;
 
-  /* "version_space_helper.pyx":96
+  /* "version_space_helper.pyx":62
  * 
- * @cdivision(True)
- * cdef double* compute_polytope_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:             # <<<<<<<<<<<<<<
+ * 
+ * cdef double* compute_polytope_intersection(double* A, double* center, double* direction, int m, int n):             # <<<<<<<<<<<<<<
  *     cdef:
  *         char *transa = 't'
  */
 
   /* function exit code */
   __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "version_space_helper.pyx":116
+/* "version_space_helper.pyx":82
  * @wraparound(False)
  * @cdivision(True)
- * cdef double* compute_extremes_min_max(double* num, double* den, unsigned int m) nogil:             # <<<<<<<<<<<<<<
+ * cdef double* polytope_intersection_min_max(double* num, double* den, unsigned int m):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i
  */
 
-static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *__pyx_v_num, double *__pyx_v_den, unsigned int __pyx_v_m) {
+static double *__pyx_f_20version_space_helper_polytope_intersection_min_max(double *__pyx_v_num, double *__pyx_v_den, unsigned int __pyx_v_m) {
   unsigned int __pyx_v_i;
   double __pyx_v_l;
   double __pyx_v_u;
   double __pyx_v_d;
   double __pyx_v_n;
   double __pyx_v_e;
-  double *__pyx_v_vals;
   double *__pyx_r;
+  __Pyx_RefNannyDeclarations
   unsigned int __pyx_t_1;
   unsigned int __pyx_t_2;
   unsigned int __pyx_t_3;
   int __pyx_t_4;
+  __Pyx_RefNannySetupContext("polytope_intersection_min_max", 0);
 
-  /* "version_space_helper.pyx":119
+  /* "version_space_helper.pyx":85
  *     cdef:
  *         unsigned int i
  *         double l = -INFINITY, u = INFINITY, d, n, e             # <<<<<<<<<<<<<<
@@ -3142,7 +2746,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
   __pyx_v_l = (-INFINITY);
   __pyx_v_u = INFINITY;
 
-  /* "version_space_helper.pyx":121
+  /* "version_space_helper.pyx":87
  *         double l = -INFINITY, u = INFINITY, d, n, e
  * 
  *     for i in range(m):             # <<<<<<<<<<<<<<
@@ -3154,7 +2758,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "version_space_helper.pyx":122
+    /* "version_space_helper.pyx":88
  * 
  *     for i in range(m):
  *         n = num[i]             # <<<<<<<<<<<<<<
@@ -3163,7 +2767,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
  */
     __pyx_v_n = (__pyx_v_num[__pyx_v_i]);
 
-    /* "version_space_helper.pyx":123
+    /* "version_space_helper.pyx":89
  *     for i in range(m):
  *         n = num[i]
  *         d = den[i]             # <<<<<<<<<<<<<<
@@ -3172,7 +2776,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
  */
     __pyx_v_d = (__pyx_v_den[__pyx_v_i]);
 
-    /* "version_space_helper.pyx":125
+    /* "version_space_helper.pyx":91
  *         d = den[i]
  * 
  *         if d < 0:             # <<<<<<<<<<<<<<
@@ -3182,7 +2786,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
     __pyx_t_4 = ((__pyx_v_d < 0.0) != 0);
     if (__pyx_t_4) {
 
-      /* "version_space_helper.pyx":126
+      /* "version_space_helper.pyx":92
  * 
  *         if d < 0:
  *             e =  - n / d             # <<<<<<<<<<<<<<
@@ -3191,35 +2795,35 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
  */
       __pyx_v_e = ((-__pyx_v_n) / __pyx_v_d);
 
-      /* "version_space_helper.pyx":127
+      /* "version_space_helper.pyx":93
  *         if d < 0:
  *             e =  - n / d
  *             if e > l:             # <<<<<<<<<<<<<<
  *                 l = e
- * 
+ *         elif d > 0:
  */
       __pyx_t_4 = ((__pyx_v_e > __pyx_v_l) != 0);
       if (__pyx_t_4) {
 
-        /* "version_space_helper.pyx":128
+        /* "version_space_helper.pyx":94
  *             e =  - n / d
  *             if e > l:
  *                 l = e             # <<<<<<<<<<<<<<
- * 
  *         elif d > 0:
+ *             e =  - n / d
  */
         __pyx_v_l = __pyx_v_e;
 
-        /* "version_space_helper.pyx":127
+        /* "version_space_helper.pyx":93
  *         if d < 0:
  *             e =  - n / d
  *             if e > l:             # <<<<<<<<<<<<<<
  *                 l = e
- * 
+ *         elif d > 0:
  */
       }
 
-      /* "version_space_helper.pyx":125
+      /* "version_space_helper.pyx":91
  *         d = den[i]
  * 
  *         if d < 0:             # <<<<<<<<<<<<<<
@@ -3229,9 +2833,9 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
       goto __pyx_L5;
     }
 
-    /* "version_space_helper.pyx":130
+    /* "version_space_helper.pyx":95
+ *             if e > l:
  *                 l = e
- * 
  *         elif d > 0:             # <<<<<<<<<<<<<<
  *             e =  - n / d
  *             if e < u:
@@ -3239,8 +2843,8 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
     __pyx_t_4 = ((__pyx_v_d > 0.0) != 0);
     if (__pyx_t_4) {
 
-      /* "version_space_helper.pyx":131
- * 
+      /* "version_space_helper.pyx":96
+ *                 l = e
  *         elif d > 0:
  *             e =  - n / d             # <<<<<<<<<<<<<<
  *             if e < u:
@@ -3248,37 +2852,37 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
  */
       __pyx_v_e = ((-__pyx_v_n) / __pyx_v_d);
 
-      /* "version_space_helper.pyx":132
+      /* "version_space_helper.pyx":97
  *         elif d > 0:
  *             e =  - n / d
  *             if e < u:             # <<<<<<<<<<<<<<
  *                 u = e
- * 
+ *         elif n > 0:
  */
       __pyx_t_4 = ((__pyx_v_e < __pyx_v_u) != 0);
       if (__pyx_t_4) {
 
-        /* "version_space_helper.pyx":133
+        /* "version_space_helper.pyx":98
  *             e =  - n / d
  *             if e < u:
  *                 u = e             # <<<<<<<<<<<<<<
- * 
  *         elif n > 0:
+ *             return NULL
  */
         __pyx_v_u = __pyx_v_e;
 
-        /* "version_space_helper.pyx":132
+        /* "version_space_helper.pyx":97
  *         elif d > 0:
  *             e =  - n / d
  *             if e < u:             # <<<<<<<<<<<<<<
  *                 u = e
- * 
+ *         elif n > 0:
  */
       }
 
-      /* "version_space_helper.pyx":130
+      /* "version_space_helper.pyx":95
+ *             if e > l:
  *                 l = e
- * 
  *         elif d > 0:             # <<<<<<<<<<<<<<
  *             e =  - n / d
  *             if e < u:
@@ -3286,9 +2890,9 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
       goto __pyx_L5;
     }
 
-    /* "version_space_helper.pyx":135
+    /* "version_space_helper.pyx":99
+ *             if e < u:
  *                 u = e
- * 
  *         elif n > 0:             # <<<<<<<<<<<<<<
  *             return NULL
  * 
@@ -3296,8 +2900,8 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
     __pyx_t_4 = ((__pyx_v_n > 0.0) != 0);
     if (__pyx_t_4) {
 
-      /* "version_space_helper.pyx":136
- * 
+      /* "version_space_helper.pyx":100
+ *                 u = e
  *         elif n > 0:
  *             return NULL             # <<<<<<<<<<<<<<
  * 
@@ -3306,9 +2910,9 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
       __pyx_r = NULL;
       goto __pyx_L0;
 
-      /* "version_space_helper.pyx":135
+      /* "version_space_helper.pyx":99
+ *             if e < u:
  *                 u = e
- * 
  *         elif n > 0:             # <<<<<<<<<<<<<<
  *             return NULL
  * 
@@ -3317,7 +2921,7 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
     __pyx_L5:;
   }
 
-  /* "version_space_helper.pyx":138
+  /* "version_space_helper.pyx":102
  *             return NULL
  * 
  *     if l >= u:             # <<<<<<<<<<<<<<
@@ -3327,17 +2931,17 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
   __pyx_t_4 = ((__pyx_v_l >= __pyx_v_u) != 0);
   if (__pyx_t_4) {
 
-    /* "version_space_helper.pyx":139
+    /* "version_space_helper.pyx":103
  * 
  *     if l >= u:
  *         return NULL             # <<<<<<<<<<<<<<
  * 
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
+ *     return create_two_dimensional_array(l, u)
  */
     __pyx_r = NULL;
     goto __pyx_L0;
 
-    /* "version_space_helper.pyx":138
+    /* "version_space_helper.pyx":102
  *             return NULL
  * 
  *     if l >= u:             # <<<<<<<<<<<<<<
@@ -3346,65 +2950,39 @@ static double *__pyx_f_20version_space_helper_compute_extremes_min_max(double *_
  */
   }
 
-  /* "version_space_helper.pyx":141
+  /* "version_space_helper.pyx":105
  *         return NULL
  * 
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)             # <<<<<<<<<<<<<<
- *     vals[0] = l
- *     vals[1] = u
- */
-  __pyx_v_vals = ((double *)malloc(((sizeof(double)) * 2)));
-
-  /* "version_space_helper.pyx":142
- * 
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
- *     vals[0] = l             # <<<<<<<<<<<<<<
- *     vals[1] = u
- *     return vals
- */
-  (__pyx_v_vals[0]) = __pyx_v_l;
-
-  /* "version_space_helper.pyx":143
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
- *     vals[0] = l
- *     vals[1] = u             # <<<<<<<<<<<<<<
- *     return vals
- * 
- */
-  (__pyx_v_vals[1]) = __pyx_v_u;
-
-  /* "version_space_helper.pyx":144
- *     vals[0] = l
- *     vals[1] = u
- *     return vals             # <<<<<<<<<<<<<<
+ *     return create_two_dimensional_array(l, u)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_r = __pyx_v_vals;
+  __pyx_r = __pyx_f_20version_space_helper_create_two_dimensional_array(__pyx_v_l, __pyx_v_u);
   goto __pyx_L0;
 
-  /* "version_space_helper.pyx":116
+  /* "version_space_helper.pyx":82
  * @wraparound(False)
  * @cdivision(True)
- * cdef double* compute_extremes_min_max(double* num, double* den, unsigned int m) nogil:             # <<<<<<<<<<<<<<
+ * cdef double* polytope_intersection_min_max(double* num, double* den, unsigned int m):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i
  */
 
   /* function exit code */
   __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "version_space_helper.pyx":150
+/* "version_space_helper.pyx":111
  * @wraparound(False)
  * @cdivision(True)
- * cdef double* compute_ball_extremes_opt(double* center, double* direction, unsigned int n) nogil:             # <<<<<<<<<<<<<<
+ * cdef double* compute_ball_intersection(double* center, double* direction, unsigned int n):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i
  */
 
-static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *__pyx_v_center, double *__pyx_v_direction, unsigned int __pyx_v_n) {
+static double *__pyx_f_20version_space_helper_compute_ball_intersection(double *__pyx_v_center, double *__pyx_v_direction, unsigned int __pyx_v_n) {
   unsigned int __pyx_v_i;
   double __pyx_v_a;
   double __pyx_v_b;
@@ -3413,14 +2991,15 @@ static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *
   double __pyx_v_ci;
   double __pyx_v_delta;
   double __pyx_v_sq_delta;
-  double *__pyx_v_vals;
   double *__pyx_r;
+  __Pyx_RefNannyDeclarations
   unsigned int __pyx_t_1;
   unsigned int __pyx_t_2;
   unsigned int __pyx_t_3;
   int __pyx_t_4;
+  __Pyx_RefNannySetupContext("compute_ball_intersection", 0);
 
-  /* "version_space_helper.pyx":153
+  /* "version_space_helper.pyx":114
  *     cdef:
  *         unsigned int i
  *         double a = 0, b = 0, c = -1             # <<<<<<<<<<<<<<
@@ -3431,7 +3010,7 @@ static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *
   __pyx_v_b = 0.0;
   __pyx_v_c = -1.0;
 
-  /* "version_space_helper.pyx":156
+  /* "version_space_helper.pyx":117
  *         double di, ci, delta, sq_delta
  * 
  *     for i in range(n):             # <<<<<<<<<<<<<<
@@ -3443,35 +3022,35 @@ static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "version_space_helper.pyx":157
+    /* "version_space_helper.pyx":118
  * 
  *     for i in range(n):
  *         ci = center[i]             # <<<<<<<<<<<<<<
  *         di = direction[i]
- * 
+ *         a += di * di
  */
     __pyx_v_ci = (__pyx_v_center[__pyx_v_i]);
 
-    /* "version_space_helper.pyx":158
+    /* "version_space_helper.pyx":119
  *     for i in range(n):
  *         ci = center[i]
  *         di = direction[i]             # <<<<<<<<<<<<<<
- * 
  *         a += di * di
+ *         b += ci * di
  */
     __pyx_v_di = (__pyx_v_direction[__pyx_v_i]);
 
-    /* "version_space_helper.pyx":160
+    /* "version_space_helper.pyx":120
+ *         ci = center[i]
  *         di = direction[i]
- * 
  *         a += di * di             # <<<<<<<<<<<<<<
  *         b += ci * di
  *         c +=ci * ci
  */
     __pyx_v_a = (__pyx_v_a + (__pyx_v_di * __pyx_v_di));
 
-    /* "version_space_helper.pyx":161
- * 
+    /* "version_space_helper.pyx":121
+ *         di = direction[i]
  *         a += di * di
  *         b += ci * di             # <<<<<<<<<<<<<<
  *         c +=ci * ci
@@ -3479,7 +3058,7 @@ static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *
  */
     __pyx_v_b = (__pyx_v_b + (__pyx_v_ci * __pyx_v_di));
 
-    /* "version_space_helper.pyx":162
+    /* "version_space_helper.pyx":122
  *         a += di * di
  *         b += ci * di
  *         c +=ci * ci             # <<<<<<<<<<<<<<
@@ -3489,97 +3068,136 @@ static double *__pyx_f_20version_space_helper_compute_ball_extremes_opt(double *
     __pyx_v_c = (__pyx_v_c + (__pyx_v_ci * __pyx_v_ci));
   }
 
-  /* "version_space_helper.pyx":164
+  /* "version_space_helper.pyx":124
  *         c +=ci * ci
  * 
  *     delta = b ** 2 - a * c             # <<<<<<<<<<<<<<
- * 
  *     if delta <= 0:
+ *         return NULL
  */
   __pyx_v_delta = (pow(__pyx_v_b, 2.0) - (__pyx_v_a * __pyx_v_c));
 
-  /* "version_space_helper.pyx":166
- *     delta = b ** 2 - a * c
+  /* "version_space_helper.pyx":125
  * 
+ *     delta = b ** 2 - a * c
  *     if delta <= 0:             # <<<<<<<<<<<<<<
  *         return NULL
- * 
+ *     sq_delta = sqrt(delta)
  */
   __pyx_t_4 = ((__pyx_v_delta <= 0.0) != 0);
   if (__pyx_t_4) {
 
-    /* "version_space_helper.pyx":167
- * 
+    /* "version_space_helper.pyx":126
+ *     delta = b ** 2 - a * c
  *     if delta <= 0:
  *         return NULL             # <<<<<<<<<<<<<<
- * 
  *     sq_delta = sqrt(delta)
+ * 
  */
     __pyx_r = NULL;
     goto __pyx_L0;
 
-    /* "version_space_helper.pyx":166
- *     delta = b ** 2 - a * c
+    /* "version_space_helper.pyx":125
  * 
+ *     delta = b ** 2 - a * c
  *     if delta <= 0:             # <<<<<<<<<<<<<<
  *         return NULL
- * 
+ *     sq_delta = sqrt(delta)
  */
   }
 
-  /* "version_space_helper.pyx":169
+  /* "version_space_helper.pyx":127
+ *     if delta <= 0:
  *         return NULL
- * 
  *     sq_delta = sqrt(delta)             # <<<<<<<<<<<<<<
  * 
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
+ *     return create_two_dimensional_array((-b - sq_delta) / a, (-b + sq_delta) / a)
  */
   __pyx_v_sq_delta = sqrt(__pyx_v_delta);
 
-  /* "version_space_helper.pyx":171
+  /* "version_space_helper.pyx":129
  *     sq_delta = sqrt(delta)
  * 
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)             # <<<<<<<<<<<<<<
- *     vals[0] = (-b - sq_delta) / a
- *     vals[1] = (-b + sq_delta) / a
- */
-  __pyx_v_vals = ((double *)malloc(((sizeof(double)) * 2)));
-
-  /* "version_space_helper.pyx":172
+ *     return create_two_dimensional_array((-b - sq_delta) / a, (-b + sq_delta) / a)             # <<<<<<<<<<<<<<
  * 
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
- *     vals[0] = (-b - sq_delta) / a             # <<<<<<<<<<<<<<
- *     vals[1] = (-b + sq_delta) / a
- *     return vals
+ * 
  */
-  (__pyx_v_vals[0]) = (((-__pyx_v_b) - __pyx_v_sq_delta) / __pyx_v_a);
-
-  /* "version_space_helper.pyx":173
- *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
- *     vals[0] = (-b - sq_delta) / a
- *     vals[1] = (-b + sq_delta) / a             # <<<<<<<<<<<<<<
- *     return vals
- */
-  (__pyx_v_vals[1]) = (((-__pyx_v_b) + __pyx_v_sq_delta) / __pyx_v_a);
-
-  /* "version_space_helper.pyx":174
- *     vals[0] = (-b - sq_delta) / a
- *     vals[1] = (-b + sq_delta) / a
- *     return vals             # <<<<<<<<<<<<<<
- */
-  __pyx_r = __pyx_v_vals;
+  __pyx_r = __pyx_f_20version_space_helper_create_two_dimensional_array((((-__pyx_v_b) - __pyx_v_sq_delta) / __pyx_v_a), (((-__pyx_v_b) + __pyx_v_sq_delta) / __pyx_v_a));
   goto __pyx_L0;
 
-  /* "version_space_helper.pyx":150
+  /* "version_space_helper.pyx":111
  * @wraparound(False)
  * @cdivision(True)
- * cdef double* compute_ball_extremes_opt(double* center, double* direction, unsigned int n) nogil:             # <<<<<<<<<<<<<<
+ * cdef double* compute_ball_intersection(double* center, double* direction, unsigned int n):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i
  */
 
   /* function exit code */
   __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "version_space_helper.pyx":134
+ * @boundscheck(False)
+ * @wraparound(False)
+ * cdef double* create_two_dimensional_array(double a, double b):             # <<<<<<<<<<<<<<
+ *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
+ *     vals[0] = a
+ */
+
+static double *__pyx_f_20version_space_helper_create_two_dimensional_array(double __pyx_v_a, double __pyx_v_b) {
+  double *__pyx_v_vals;
+  double *__pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("create_two_dimensional_array", 0);
+
+  /* "version_space_helper.pyx":135
+ * @wraparound(False)
+ * cdef double* create_two_dimensional_array(double a, double b):
+ *     cdef double *vals = <double*> malloc(sizeof(double) * 2)             # <<<<<<<<<<<<<<
+ *     vals[0] = a
+ *     vals[1] = b
+ */
+  __pyx_v_vals = ((double *)malloc(((sizeof(double)) * 2)));
+
+  /* "version_space_helper.pyx":136
+ * cdef double* create_two_dimensional_array(double a, double b):
+ *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
+ *     vals[0] = a             # <<<<<<<<<<<<<<
+ *     vals[1] = b
+ *     return vals
+ */
+  (__pyx_v_vals[0]) = __pyx_v_a;
+
+  /* "version_space_helper.pyx":137
+ *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
+ *     vals[0] = a
+ *     vals[1] = b             # <<<<<<<<<<<<<<
+ *     return vals
+ */
+  (__pyx_v_vals[1]) = __pyx_v_b;
+
+  /* "version_space_helper.pyx":138
+ *     vals[0] = a
+ *     vals[1] = b
+ *     return vals             # <<<<<<<<<<<<<<
+ */
+  __pyx_r = __pyx_v_vals;
+  goto __pyx_L0;
+
+  /* "version_space_helper.pyx":134
+ * @boundscheck(False)
+ * @wraparound(False)
+ * cdef double* create_two_dimensional_array(double a, double b):             # <<<<<<<<<<<<<<
+ *     cdef double *vals = <double*> malloc(sizeof(double) * 2)
+ *     vals[0] = a
+ */
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
@@ -3780,7 +3398,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  *         if itemsize <= 0:
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 133, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 133, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3812,7 +3430,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  *         if not isinstance(format, bytes):
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 136, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 136, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3939,7 +3557,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  * 
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 148, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 148, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4213,7 +3831,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  *             if self.dtype_is_object:
  */
-      __pyx_t_10 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 176, __pyx_L1_error)
+      __pyx_t_10 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_10)) __PYX_ERR(1, 176, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_10);
       __Pyx_Raise(__pyx_t_10, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
@@ -4454,7 +4072,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(stru
  *         info.buf = self.data
  *         info.len = self.len
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 192, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 192, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -5170,7 +4788,7 @@ static PyObject *__pyx_pf___pyx_array___reduce_cython__(CYTHON_UNUSED struct __p
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -5223,7 +4841,7 @@ static PyObject *__pyx_pf___pyx_array_2__setstate_cython__(CYTHON_UNUSED struct 
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -6906,7 +6524,7 @@ static int __pyx_memoryview___pyx_pf_15View_dot_MemoryView_10memoryview_6__setit
  * 
  *         have_slices, index = _unellipsify(index, self.view.ndim)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 418, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 418, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -7939,7 +7557,7 @@ static PyObject *__pyx_memoryview_convert_item_to_object(struct __pyx_memoryview
  *         else:
  *             if len(self.view.format) == 1:
  */
-      __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 495, __pyx_L5_except_error)
+      __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 495, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_Raise(__pyx_t_6, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -8295,7 +7913,7 @@ static int __pyx_memoryview___pyx_pf_15View_dot_MemoryView_10memoryview_8__getbu
  * 
  *         if flags & PyBUF_ND:
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 520, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 520, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -8835,7 +8453,7 @@ static PyObject *__pyx_pf_15View_dot_MemoryView_10memoryview_7strides___get__(st
  * 
  *         return tuple([stride for stride in self.view.strides[:self.view.ndim]])
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__14, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 570, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 570, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -8949,7 +8567,7 @@ static PyObject *__pyx_pf_15View_dot_MemoryView_10memoryview_10suboffsets___get_
     __Pyx_XDECREF(__pyx_r);
     __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_self->view.ndim); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 577, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = PyNumber_Multiply(__pyx_tuple__15, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 577, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Multiply(__pyx_tuple__13, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 577, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_r = __pyx_t_3;
@@ -9954,7 +9572,7 @@ static PyObject *__pyx_pf___pyx_memoryview___reduce_cython__(CYTHON_UNUSED struc
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__16, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__14, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -10007,7 +9625,7 @@ static PyObject *__pyx_pf___pyx_memoryview_2__setstate_cython__(CYTHON_UNUSED st
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__17, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__15, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -10358,9 +9976,9 @@ static PyObject *_unellipsify(PyObject *__pyx_v_index, int __pyx_v_ndim) {
         __Pyx_GOTREF(__pyx_t_7);
         { Py_ssize_t __pyx_temp;
           for (__pyx_temp=0; __pyx_temp < ((__pyx_v_ndim - __pyx_t_8) + 1); __pyx_temp++) {
-            __Pyx_INCREF(__pyx_slice__18);
-            __Pyx_GIVEREF(__pyx_slice__18);
-            PyList_SET_ITEM(__pyx_t_7, __pyx_temp, __pyx_slice__18);
+            __Pyx_INCREF(__pyx_slice__16);
+            __Pyx_GIVEREF(__pyx_slice__16);
+            PyList_SET_ITEM(__pyx_t_7, __pyx_temp, __pyx_slice__16);
           }
         }
         __pyx_t_9 = __Pyx_PyList_Extend(__pyx_v_result, __pyx_t_7); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(1, 682, __pyx_L1_error)
@@ -10393,7 +10011,7 @@ static PyObject *_unellipsify(PyObject *__pyx_v_index, int __pyx_v_ndim) {
  *         else:
  */
       /*else*/ {
-        __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_result, __pyx_slice__18); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(1, 685, __pyx_L1_error)
+        __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_result, __pyx_slice__16); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(1, 685, __pyx_L1_error)
       }
       __pyx_L7:;
 
@@ -10533,9 +10151,9 @@ static PyObject *_unellipsify(PyObject *__pyx_v_index, int __pyx_v_ndim) {
     __Pyx_GOTREF(__pyx_t_3);
     { Py_ssize_t __pyx_temp;
       for (__pyx_temp=0; __pyx_temp < __pyx_v_nslices; __pyx_temp++) {
-        __Pyx_INCREF(__pyx_slice__18);
-        __Pyx_GIVEREF(__pyx_slice__18);
-        PyList_SET_ITEM(__pyx_t_3, __pyx_temp, __pyx_slice__18);
+        __Pyx_INCREF(__pyx_slice__16);
+        __Pyx_GIVEREF(__pyx_slice__16);
+        PyList_SET_ITEM(__pyx_t_3, __pyx_temp, __pyx_slice__16);
       }
     }
     __pyx_t_9 = __Pyx_PyList_Extend(__pyx_v_result, __pyx_t_3); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(1, 696, __pyx_L1_error)
@@ -10659,7 +10277,7 @@ static PyObject *assert_direct_dimensions(Py_ssize_t *__pyx_v_suboffsets, int __
  * 
  * 
  */
-      __pyx_t_5 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__19, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 703, __pyx_L1_error)
+      __pyx_t_5 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__17, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 703, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_Raise(__pyx_t_5, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -12822,7 +12440,7 @@ static PyObject *__pyx_pf___pyx_memoryviewslice___reduce_cython__(CYTHON_UNUSED 
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__20, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__18, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -12875,7 +12493,7 @@ static PyObject *__pyx_pf___pyx_memoryviewslice_2__setstate_cython__(CYTHON_UNUS
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__21, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__19, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -17181,8 +16799,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_Indirect_dimensions_not_supporte, __pyx_k_Indirect_dimensions_not_supporte, sizeof(__pyx_k_Indirect_dimensions_not_supporte), 0, 0, 1, 0},
   {&__pyx_kp_s_Invalid_mode_expected_c_or_fortr, __pyx_k_Invalid_mode_expected_c_or_fortr, sizeof(__pyx_k_Invalid_mode_expected_c_or_fortr), 0, 0, 1, 0},
   {&__pyx_kp_s_Invalid_shape_in_axis_d_d, __pyx_k_Invalid_shape_in_axis_d_d, sizeof(__pyx_k_Invalid_shape_in_axis_d_d), 0, 0, 1, 0},
-  {&__pyx_kp_u_Line_does_not_intersect_polytope, __pyx_k_Line_does_not_intersect_polytope, sizeof(__pyx_k_Line_does_not_intersect_polytope), 0, 1, 0, 0},
-  {&__pyx_kp_u_Line_does_not_intersect_unit_bal, __pyx_k_Line_does_not_intersect_unit_bal, sizeof(__pyx_k_Line_does_not_intersect_unit_bal), 0, 1, 0, 0},
   {&__pyx_kp_u_Line_does_not_intersect_version, __pyx_k_Line_does_not_intersect_version, sizeof(__pyx_k_Line_does_not_intersect_version), 0, 1, 0, 0},
   {&__pyx_n_s_MemoryError, __pyx_k_MemoryError, sizeof(__pyx_k_MemoryError), 0, 0, 1, 1},
   {&__pyx_kp_s_MemoryView_of_r_at_0x_x, __pyx_k_MemoryView_of_r_at_0x_x, sizeof(__pyx_k_MemoryView_of_r_at_0x_x), 0, 0, 1, 0},
@@ -17203,6 +16819,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_center, __pyx_k_center, sizeof(__pyx_k_center), 0, 0, 1, 1},
   {&__pyx_n_s_class, __pyx_k_class, sizeof(__pyx_k_class), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
+  {&__pyx_n_s_compute_version_space_intersecti, __pyx_k_compute_version_space_intersecti, sizeof(__pyx_k_compute_version_space_intersecti), 0, 0, 1, 1},
   {&__pyx_kp_s_contiguous_and_direct, __pyx_k_contiguous_and_direct, sizeof(__pyx_k_contiguous_and_direct), 0, 0, 1, 0},
   {&__pyx_kp_s_contiguous_and_indirect, __pyx_k_contiguous_and_indirect, sizeof(__pyx_k_contiguous_and_indirect), 0, 0, 1, 0},
   {&__pyx_n_s_dict, __pyx_k_dict, sizeof(__pyx_k_dict), 0, 0, 1, 1},
@@ -17215,9 +16832,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_format, __pyx_k_format, sizeof(__pyx_k_format), 0, 0, 1, 1},
   {&__pyx_n_s_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 0, 1, 1},
   {&__pyx_n_u_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 1, 0, 1},
-  {&__pyx_n_s_get_ball_extremes, __pyx_k_get_ball_extremes, sizeof(__pyx_k_get_ball_extremes), 0, 0, 1, 1},
-  {&__pyx_n_s_get_extremes, __pyx_k_get_extremes, sizeof(__pyx_k_get_extremes), 0, 0, 1, 1},
-  {&__pyx_n_s_get_polytope_extremes, __pyx_k_get_polytope_extremes, sizeof(__pyx_k_get_polytope_extremes), 0, 0, 1, 1},
   {&__pyx_n_s_getstate, __pyx_k_getstate, sizeof(__pyx_k_getstate), 0, 0, 1, 1},
   {&__pyx_kp_s_got_differing_extents_in_dimensi, __pyx_k_got_differing_extents_in_dimensi, sizeof(__pyx_k_got_differing_extents_in_dimensi), 0, 0, 1, 0},
   {&__pyx_n_s_id, __pyx_k_id, sizeof(__pyx_k_id), 0, 0, 1, 1},
@@ -17271,8 +16885,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 39, __pyx_L1_error)
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 121, __pyx_L1_error)
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 31, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 87, __pyx_L1_error)
   __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 133, __pyx_L1_error)
   __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(1, 148, __pyx_L1_error)
   __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(1, 151, __pyx_L1_error)
@@ -17289,38 +16903,16 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "version_space_helper.pyx":39
+  /* "version_space_helper.pyx":31
  * 
  *     if res == NULL:
  *         raise RuntimeError("Line does not intersect version space.")             # <<<<<<<<<<<<<<
  * 
  *     return res[0], res[1]
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_Line_does_not_intersect_version); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_Line_does_not_intersect_version); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 31, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
-
-  /* "version_space_helper.pyx":51
- * 
- *     if res == NULL:
- *         raise RuntimeError("Line does not intersect polytope.")             # <<<<<<<<<<<<<<
- * 
- *     return res[0], res[1]
- */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_Line_does_not_intersect_polytope); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 51, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__2);
-  __Pyx_GIVEREF(__pyx_tuple__2);
-
-  /* "version_space_helper.pyx":63
- * 
- *     if res == NULL:
- *         raise RuntimeError("Line does not intersect unit ball.")             # <<<<<<<<<<<<<<
- * 
- *     return res[0], res[1]
- */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_Line_does_not_intersect_unit_bal); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 63, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__3);
-  __Pyx_GIVEREF(__pyx_tuple__3);
 
   /* "View.MemoryView":133
  * 
@@ -17329,9 +16921,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if itemsize <= 0:
  */
-  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_Empty_shape_tuple_for_cython_arr); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(1, 133, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__4);
-  __Pyx_GIVEREF(__pyx_tuple__4);
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_s_Empty_shape_tuple_for_cython_arr); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(1, 133, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__2);
+  __Pyx_GIVEREF(__pyx_tuple__2);
 
   /* "View.MemoryView":136
  * 
@@ -17340,9 +16932,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if not isinstance(format, bytes):
  */
-  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_s_itemsize_0_for_cython_array); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(1, 136, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__5);
-  __Pyx_GIVEREF(__pyx_tuple__5);
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_s_itemsize_0_for_cython_array); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(1, 136, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
 
   /* "View.MemoryView":148
  * 
@@ -17351,9 +16943,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_shape_and_str); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(1, 148, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__6);
-  __Pyx_GIVEREF(__pyx_tuple__6);
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_shape_and_str); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(1, 148, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__4);
+  __Pyx_GIVEREF(__pyx_tuple__4);
 
   /* "View.MemoryView":176
  *             self.data = <char *>malloc(self.len)
@@ -17362,9 +16954,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *             if self.dtype_is_object:
  */
-  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_array_data); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(1, 176, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__7);
-  __Pyx_GIVEREF(__pyx_tuple__7);
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_array_data); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(1, 176, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__5);
+  __Pyx_GIVEREF(__pyx_tuple__5);
 
   /* "View.MemoryView":192
  *             bufmode = PyBUF_F_CONTIGUOUS | PyBUF_ANY_CONTIGUOUS
@@ -17373,9 +16965,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *         info.buf = self.data
  *         info.len = self.len
  */
-  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_s_Can_only_create_a_buffer_that_is); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(1, 192, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__8);
-  __Pyx_GIVEREF(__pyx_tuple__8);
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_s_Can_only_create_a_buffer_that_is); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(1, 192, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__6);
+  __Pyx_GIVEREF(__pyx_tuple__6);
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
@@ -17383,18 +16975,18 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(1, 2, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__9);
-  __Pyx_GIVEREF(__pyx_tuple__9);
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__7);
+  __Pyx_GIVEREF(__pyx_tuple__7);
 
   /* "(tree fragment)":4
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(1, 4, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__10);
-  __Pyx_GIVEREF(__pyx_tuple__10);
+  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__8);
+  __Pyx_GIVEREF(__pyx_tuple__8);
 
   /* "View.MemoryView":418
  *     def __setitem__(memoryview self, object index, object value):
@@ -17403,9 +16995,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         have_slices, index = _unellipsify(index, self.view.ndim)
  */
-  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_s_Cannot_assign_to_read_only_memor); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(1, 418, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__11);
-  __Pyx_GIVEREF(__pyx_tuple__11);
+  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_Cannot_assign_to_read_only_memor); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(1, 418, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__9);
+  __Pyx_GIVEREF(__pyx_tuple__9);
 
   /* "View.MemoryView":495
  *             result = struct.unpack(self.view.format, bytesitem)
@@ -17414,9 +17006,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *         else:
  *             if len(self.view.format) == 1:
  */
-  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_s_Unable_to_convert_item_to_object); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(1, 495, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__12);
-  __Pyx_GIVEREF(__pyx_tuple__12);
+  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_kp_s_Unable_to_convert_item_to_object); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(1, 495, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__10);
+  __Pyx_GIVEREF(__pyx_tuple__10);
 
   /* "View.MemoryView":520
  *     def __getbuffer__(self, Py_buffer *info, int flags):
@@ -17425,9 +17017,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if flags & PyBUF_ND:
  */
-  __pyx_tuple__13 = PyTuple_Pack(1, __pyx_kp_s_Cannot_create_writable_memory_vi); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(1, 520, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__13);
-  __Pyx_GIVEREF(__pyx_tuple__13);
+  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_s_Cannot_create_writable_memory_vi); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(1, 520, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__11);
+  __Pyx_GIVEREF(__pyx_tuple__11);
 
   /* "View.MemoryView":570
  *         if self.view.strides == NULL:
@@ -17436,9 +17028,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         return tuple([stride for stride in self.view.strides[:self.view.ndim]])
  */
-  __pyx_tuple__14 = PyTuple_Pack(1, __pyx_kp_s_Buffer_view_does_not_expose_stri); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(1, 570, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__14);
-  __Pyx_GIVEREF(__pyx_tuple__14);
+  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_s_Buffer_view_does_not_expose_stri); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(1, 570, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__12);
+  __Pyx_GIVEREF(__pyx_tuple__12);
 
   /* "View.MemoryView":577
  *     def suboffsets(self):
@@ -17447,12 +17039,12 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         return tuple([suboffset for suboffset in self.view.suboffsets[:self.view.ndim]])
  */
-  __pyx_tuple__15 = PyTuple_New(1); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(1, 577, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__15);
+  __pyx_tuple__13 = PyTuple_New(1); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(1, 577, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__13);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
-  PyTuple_SET_ITEM(__pyx_tuple__15, 0, __pyx_int_neg_1);
-  __Pyx_GIVEREF(__pyx_tuple__15);
+  PyTuple_SET_ITEM(__pyx_tuple__13, 0, __pyx_int_neg_1);
+  __Pyx_GIVEREF(__pyx_tuple__13);
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
@@ -17460,18 +17052,18 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple__16 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__16)) __PYX_ERR(1, 2, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__16);
-  __Pyx_GIVEREF(__pyx_tuple__16);
+  __pyx_tuple__14 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__14);
+  __Pyx_GIVEREF(__pyx_tuple__14);
 
   /* "(tree fragment)":4
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__17 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(1, 4, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__17);
-  __Pyx_GIVEREF(__pyx_tuple__17);
+  __pyx_tuple__15 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__15);
+  __Pyx_GIVEREF(__pyx_tuple__15);
 
   /* "View.MemoryView":682
  *         if item is Ellipsis:
@@ -17480,9 +17072,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *                 seen_ellipsis = True
  *             else:
  */
-  __pyx_slice__18 = PySlice_New(Py_None, Py_None, Py_None); if (unlikely(!__pyx_slice__18)) __PYX_ERR(1, 682, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_slice__18);
-  __Pyx_GIVEREF(__pyx_slice__18);
+  __pyx_slice__16 = PySlice_New(Py_None, Py_None, Py_None); if (unlikely(!__pyx_slice__16)) __PYX_ERR(1, 682, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_slice__16);
+  __Pyx_GIVEREF(__pyx_slice__16);
 
   /* "View.MemoryView":703
  *     for suboffset in suboffsets[:ndim]:
@@ -17491,9 +17083,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__19 = PyTuple_Pack(1, __pyx_kp_s_Indirect_dimensions_not_supporte); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(1, 703, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__19);
-  __Pyx_GIVEREF(__pyx_tuple__19);
+  __pyx_tuple__17 = PyTuple_Pack(1, __pyx_kp_s_Indirect_dimensions_not_supporte); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(1, 703, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__17);
+  __Pyx_GIVEREF(__pyx_tuple__17);
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
@@ -17501,54 +17093,30 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple__20 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__20)) __PYX_ERR(1, 2, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__20);
-  __Pyx_GIVEREF(__pyx_tuple__20);
+  __pyx_tuple__18 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__18)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__18);
+  __Pyx_GIVEREF(__pyx_tuple__18);
 
   /* "(tree fragment)":4
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__21 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(1, 4, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__21);
-  __Pyx_GIVEREF(__pyx_tuple__21);
+  __pyx_tuple__19 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__19);
+  __Pyx_GIVEREF(__pyx_tuple__19);
 
-  /* "version_space_helper.pyx":34
+  /* "version_space_helper.pyx":26
  * @boundscheck(False)
  * @wraparound(False)
- * def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef int m = A.shape[1], n = A.shape[0]
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- */
-  __pyx_tuple__22 = PyTuple_Pack(6, __pyx_n_s_A, __pyx_n_s_center, __pyx_n_s_direction, __pyx_n_s_m, __pyx_n_s_n, __pyx_n_s_res); if (unlikely(!__pyx_tuple__22)) __PYX_ERR(0, 34, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__22);
-  __Pyx_GIVEREF(__pyx_tuple__22);
-  __pyx_codeobj__23 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__22, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_query_by, __pyx_n_s_get_extremes, 34, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__23)) __PYX_ERR(0, 34, __pyx_L1_error)
-
-  /* "version_space_helper.pyx":46
- * @boundscheck(False)
- * @wraparound(False)
- * def get_polytope_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
+ * def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
  *     cdef int m = A.shape[0], n = A.shape[1]
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  */
-  __pyx_tuple__24 = PyTuple_Pack(6, __pyx_n_s_A, __pyx_n_s_center, __pyx_n_s_direction, __pyx_n_s_m, __pyx_n_s_n, __pyx_n_s_res); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__24);
-  __Pyx_GIVEREF(__pyx_tuple__24);
-  __pyx_codeobj__25 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__24, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_query_by, __pyx_n_s_get_polytope_extremes, 46, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__25)) __PYX_ERR(0, 46, __pyx_L1_error)
-
-  /* "version_space_helper.pyx":58
- * @boundscheck(False)
- * @wraparound(False)
- * def get_ball_extremes(double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef unsigned int n = len(center)
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- */
-  __pyx_tuple__26 = PyTuple_Pack(4, __pyx_n_s_center, __pyx_n_s_direction, __pyx_n_s_n, __pyx_n_s_res); if (unlikely(!__pyx_tuple__26)) __PYX_ERR(0, 58, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__26);
-  __Pyx_GIVEREF(__pyx_tuple__26);
-  __pyx_codeobj__27 = (PyObject*)__Pyx_PyCode_New(2, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__26, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_query_by, __pyx_n_s_get_ball_extremes, 58, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__27)) __PYX_ERR(0, 58, __pyx_L1_error)
+  __pyx_tuple__20 = PyTuple_Pack(6, __pyx_n_s_A, __pyx_n_s_center, __pyx_n_s_direction, __pyx_n_s_m, __pyx_n_s_n, __pyx_n_s_res); if (unlikely(!__pyx_tuple__20)) __PYX_ERR(0, 26, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__20);
+  __Pyx_GIVEREF(__pyx_tuple__20);
+  __pyx_codeobj__21 = (PyObject*)__Pyx_PyCode_New(3, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__20, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_query_by, __pyx_n_s_compute_version_space_intersecti, 26, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__21)) __PYX_ERR(0, 26, __pyx_L1_error)
 
   /* "View.MemoryView":286
  *         return self.name
@@ -17557,9 +17125,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(1, 286, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__28);
-  __Pyx_GIVEREF(__pyx_tuple__28);
+  __pyx_tuple__22 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__22)) __PYX_ERR(1, 286, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__22);
+  __Pyx_GIVEREF(__pyx_tuple__22);
 
   /* "View.MemoryView":287
  * 
@@ -17568,9 +17136,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_tuple__29 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(1, 287, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__29);
-  __Pyx_GIVEREF(__pyx_tuple__29);
+  __pyx_tuple__23 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(1, 287, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__23);
+  __Pyx_GIVEREF(__pyx_tuple__23);
 
   /* "View.MemoryView":288
  * cdef generic = Enum("<strided and direct or indirect>")
@@ -17579,9 +17147,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__30 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(1, 288, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__30);
-  __Pyx_GIVEREF(__pyx_tuple__30);
+  __pyx_tuple__24 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(1, 288, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__24);
+  __Pyx_GIVEREF(__pyx_tuple__24);
 
   /* "View.MemoryView":291
  * 
@@ -17590,9 +17158,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_tuple__31 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(1, 291, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__31);
-  __Pyx_GIVEREF(__pyx_tuple__31);
+  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(1, 291, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__25);
+  __Pyx_GIVEREF(__pyx_tuple__25);
 
   /* "View.MemoryView":292
  * 
@@ -17601,19 +17169,19 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__32 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__32)) __PYX_ERR(1, 292, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__32);
-  __Pyx_GIVEREF(__pyx_tuple__32);
+  __pyx_tuple__26 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__26)) __PYX_ERR(1, 292, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__26);
+  __Pyx_GIVEREF(__pyx_tuple__26);
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_Enum(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
  */
-  __pyx_tuple__33 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__33)) __PYX_ERR(1, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__33);
-  __Pyx_GIVEREF(__pyx_tuple__33);
-  __pyx_codeobj__34 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__33, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__34)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_tuple__27 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__27);
+  __Pyx_GIVEREF(__pyx_tuple__27);
+  __pyx_codeobj__28 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__27, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__28)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -17961,40 +17529,16 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "version_space_helper.pyx":34
+  /* "version_space_helper.pyx":26
  * @boundscheck(False)
  * @wraparound(False)
- * def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef int m = A.shape[1], n = A.shape[0]
- *     cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
- */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_20version_space_helper_1get_extremes, NULL, __pyx_n_s_version_space_helper); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_extremes, __pyx_t_1) < 0) __PYX_ERR(0, 34, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "version_space_helper.pyx":46
- * @boundscheck(False)
- * @wraparound(False)
- * def get_polytope_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
+ * def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
  *     cdef int m = A.shape[0], n = A.shape[1]
- *     cdef double* res = compute_polytope_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+ *     cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_20version_space_helper_3get_polytope_extremes, NULL, __pyx_n_s_version_space_helper); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 46, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_20version_space_helper_1compute_version_space_intersection, NULL, __pyx_n_s_version_space_helper); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 26, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_polytope_extremes, __pyx_t_1) < 0) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "version_space_helper.pyx":58
- * @boundscheck(False)
- * @wraparound(False)
- * def get_ball_extremes(double[::1] center, double[::1] direction):             # <<<<<<<<<<<<<<
- *     cdef unsigned int n = len(center)
- *     cdef double* res = compute_ball_extremes_opt(&center[0], &direction[0], n)
- */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_20version_space_helper_5get_ball_extremes, NULL, __pyx_n_s_version_space_helper); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 58, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_ball_extremes, __pyx_t_1) < 0) __PYX_ERR(0, 58, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_version_space_intersecti, __pyx_t_1) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "version_space_helper.pyx":1
@@ -18027,7 +17571,7 @@ if (!__Pyx_RefNanny) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 286, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__22, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 286, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(generic);
   __Pyx_DECREF_SET(generic, __pyx_t_1);
@@ -18041,7 +17585,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__29, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 287, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__23, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 287, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(strided);
   __Pyx_DECREF_SET(strided, __pyx_t_1);
@@ -18055,7 +17599,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__30, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 288, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 288, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(indirect);
   __Pyx_DECREF_SET(indirect, __pyx_t_1);
@@ -18069,7 +17613,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__31, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 291, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__25, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 291, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(contiguous);
   __Pyx_DECREF_SET(contiguous, __pyx_t_1);
@@ -18083,7 +17627,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__32, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 292, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__26, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 292, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(indirect_contiguous);
   __Pyx_DECREF_SET(indirect_contiguous, __pyx_t_1);
@@ -21136,18 +20680,6 @@ __pyx_fail:
     result.memview = NULL;
     result.data = NULL;
     return result;
-}
-
-/* MemviewDtypeToObject */
-  static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp) {
-    return (PyObject *) PyFloat_FromDouble(*(double *) itemp);
-}
-static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj) {
-    double value = __pyx_PyFloat_AsDouble(obj);
-    if ((value == (double)-1) && PyErr_Occurred())
-        return 0;
-    *(double *) itemp = value;
-    return 1;
 }
 
 /* CIntToPy */

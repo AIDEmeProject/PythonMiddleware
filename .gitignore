@@ -35,4 +35,7 @@ build/
 dist/
 .eggs/
 aideme.egg-info/
+
+# cython files
 *.so
+*.html

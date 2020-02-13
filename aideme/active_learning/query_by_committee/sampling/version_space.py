@@ -16,11 +16,10 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Tuple, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import scipy.optimize
-
 import version_space_helper
 
 if TYPE_CHECKING:
@@ -109,8 +108,8 @@ class LinearVersionSpace:
         :param center: point on the line
         :param direction: director vector of line. Does not need to be normalized.
         :return: t1 and t2 such that 'center + t * direction' are extremes of the line segment determined by the intersection
-       """
-        return version_space_helper.get_extremes(self.A, center, direction)
+        """
+        return version_space_helper.compute_version_space_intersection(self.A, center, direction)
 
     def _get_extremes_python(self, center, direction):
         """

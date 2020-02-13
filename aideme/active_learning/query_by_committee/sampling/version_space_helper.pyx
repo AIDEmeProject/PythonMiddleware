@@ -23,9 +23,9 @@ from scipy.linalg.cython_blas cimport dgemv
 
 @boundscheck(False)
 @wraparound(False)
-def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
-    cdef int m = A.shape[1], n = A.shape[0]
-    cdef double* res = compute_extremes_opt(&A[0, 0], &center[0], &direction[0], m, n)
+def compute_version_space_intersection(double[:, ::1] A, double[::1] center, double[::1] direction):
+    cdef int m = A.shape[0], n = A.shape[1]
+    cdef double* res = compute_version_space_intersection_opt(&A[0, 0], &center[0], &direction[0], m, n)
 
     if res == NULL:
         raise RuntimeError("Line does not intersect version space.")
@@ -35,17 +35,16 @@ def get_extremes(double[:, ::1] A, double[::1] center, double[::1] direction):
 
 @boundscheck(False)
 @wraparound(False)
-@cdivision(True)
-cdef double* compute_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:
+cdef double* compute_version_space_intersection_opt(double* A, double* center, double* direction, int m, int n):
     cdef:
         double *extremes, *ball_extremes
         double lower, upper
 
-    extremes = compute_polytope_extremes_opt(A, center, direction, m, n)
+    extremes = compute_polytope_intersection(A, center, direction, m, n)
     if extremes == NULL:
         return NULL
 
-    ball_extremes = compute_ball_extremes_opt(center, direction, n)
+    ball_extremes = compute_ball_intersection(center, direction, n)
     if ball_extremes == NULL:
         return NULL
 
@@ -60,8 +59,7 @@ cdef double* compute_extremes_opt(double* A, double* center, double* direction, 
     return extremes
 
 
-@cdivision(True)
-cdef double* compute_polytope_extremes_opt(double* A, double* center, double* direction, int m, int n) nogil:
+cdef double* compute_polytope_intersection(double* A, double* center, double* direction, int m, int n):
     cdef:
         char *transa = 't'
         int inc = 1
@@ -72,7 +70,7 @@ cdef double* compute_polytope_extremes_opt(double* A, double* center, double* di
     dgemv(transa, &n, &m, &alpha,  A, &n, center, &inc, &beta, num, &inc)
     dgemv(transa, &n, &m, &alpha, A, &n, direction, &inc, &beta, den, &inc)
 
-    cdef double* vals = compute_extremes_min_max(num, den, m)
+    cdef double* vals = polytope_intersection_min_max(num, den, m)
     free(num)
     free(den)
     return vals
@@ -81,7 +79,7 @@ cdef double* compute_polytope_extremes_opt(double* A, double* center, double* di
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-cdef double* compute_extremes_min_max(double* num, double* den, unsigned int m) nogil:
+cdef double* polytope_intersection_min_max(double* num, double* den, unsigned int m):
     cdef:
         unsigned int i
         double l = -INFINITY, u = INFINITY, d, n, e
@@ -94,28 +92,23 @@ cdef double* compute_extremes_min_max(double* num, double* den, unsigned int m) 
             e =  - n / d
             if e > l:
                 l = e
-
         elif d > 0:
             e =  - n / d
             if e < u:
                 u = e
-
         elif n > 0:
             return NULL
 
     if l >= u:
         return NULL
 
-    cdef double *vals = <double*> malloc(sizeof(double) * 2)
-    vals[0] = l
-    vals[1] = u
-    return vals
+    return create_two_dimensional_array(l, u)
 
 
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-cdef double* compute_ball_extremes_opt(double* center, double* direction, unsigned int n) nogil:
+cdef double* compute_ball_intersection(double* center, double* direction, unsigned int n):
     cdef:
         unsigned int i
         double a = 0, b = 0, c = -1
@@ -124,19 +117,22 @@ cdef double* compute_ball_extremes_opt(double* center, double* direction, unsign
     for i in range(n):
         ci = center[i]
         di = direction[i]
-
         a += di * di
         b += ci * di
         c +=ci * ci
 
     delta = b ** 2 - a * c
-
     if delta <= 0:
         return NULL
-
     sq_delta = sqrt(delta)
 
+    return create_two_dimensional_array((-b - sq_delta) / a, (-b + sq_delta) / a)
+
+
+@boundscheck(False)
+@wraparound(False)
+cdef double* create_two_dimensional_array(double a, double b):
     cdef double *vals = <double*> malloc(sizeof(double) * 2)
-    vals[0] = (-b - sq_delta) / a
-    vals[1] = (-b + sq_delta) / a
+    vals[0] = a
+    vals[1] = b
     return vals
