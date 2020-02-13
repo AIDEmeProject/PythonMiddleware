@@ -31,7 +31,7 @@ class KernelLogisticRegression:
     """
 
     def __init__(self, n_samples=8, add_intercept=True, sampling='deterministic', warmup=100, thin=1, sigma=100.0,
-                 cache=True, rounding=True, max_rounding_iters=None, strategy='default', z_cut=False, rounding_cache=True,
+                 cache=True, rounding=True, max_rounding_iters=None, strategy='default', z_cut=True, rounding_cache=True,
                  use_cython=True, kernel='rbf', gamma=None, degree=3, coef0=0., jitter=1e-12):
         self.logreg = BayesianLogisticRegression(sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
                                                  cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,

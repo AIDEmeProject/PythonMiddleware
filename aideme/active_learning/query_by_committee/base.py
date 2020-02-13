@@ -22,7 +22,7 @@ from ..uncertainty import UncertaintySampler
 
 class LinearQueryByCommittee(UncertaintySampler):
     def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100,
-                 cache=True, rounding=True, max_rounding_iters=None, strategy='default', z_cut=False,
+                 cache=True, rounding=True, max_rounding_iters=None, strategy='default', z_cut=True,
                  rounding_cache=True, use_cython=True, add_intercept=True):
         clf = BayesianLogisticRegression(sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
                                          cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
@@ -33,7 +33,7 @@ class LinearQueryByCommittee(UncertaintySampler):
 
 class KernelQueryByCommittee(UncertaintySampler):
     def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100,
-                 cache=True, rounding=True, max_rounding_iters=None, strategy='diag', z_cut=False, rounding_cache=True,
+                 cache=True, rounding=True, max_rounding_iters=None, strategy='diag', z_cut=True, rounding_cache=True,
                  use_cython=True, add_intercept=True, kernel='rbf', gamma=None, degree=3, coef0=0., jitter=1e-12):
         clf = KernelLogisticRegression(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
                                        warmup=warmup, thin=thin, sigma=sigma, cache=cache,

@@ -39,7 +39,7 @@ class BayesianLogisticRegression:
     """
 
     def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=1, sigma=100, cache=True,
-                 rounding=True, max_rounding_iters=None, strategy='default', z_cut=False, rounding_cache=True,
+                 rounding=True, max_rounding_iters=None, strategy='default', z_cut=True, rounding_cache=True,
                  use_cython: bool = True, add_intercept=True):
         """
         :param n_samples: number of samples to compute from posterior
