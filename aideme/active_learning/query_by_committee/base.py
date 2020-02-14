@@ -30,6 +30,9 @@ class LinearQueryByCommittee(UncertaintySampler):
                                          use_cython=use_cython, add_intercept=add_intercept)
         UncertaintySampler.__init__(self, clf)
 
+    def clear(self):
+        self.clf.clear()
+
 
 class KernelQueryByCommittee(UncertaintySampler):
     def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100,
@@ -41,3 +44,6 @@ class KernelQueryByCommittee(UncertaintySampler):
                                        strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython,
                                        kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter)
         UncertaintySampler.__init__(self, clf)
+
+    def clear(self):
+        self.clf.clear()

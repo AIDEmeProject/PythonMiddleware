@@ -57,6 +57,9 @@ class KernelLogisticRegression:
     def __preprocess(self, X: np.ndarray) -> np.ndarray:
         return self.kernel(X, self.X_train)
 
+    def clear(self):
+        self.logreg.clear()
+
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         self.X_train = X
 

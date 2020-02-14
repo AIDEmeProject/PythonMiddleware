@@ -17,7 +17,6 @@
 
 import numpy as np
 from scipy.special import expit
-from sklearn.utils.validation import check_is_fitted
 
 from .sampling import StanLogisticRegressionSampler, HitAndRunSampler
 
@@ -66,6 +65,9 @@ class BayesianLogisticRegression:
         self.add_intercept = add_intercept
         self.sampling = sampling
 
+    def clear(self):
+        self.sampler.clear()
+
     def fit(self, X, y):
         # add intercept if needed
         if self.add_intercept:
@@ -85,8 +87,6 @@ class BayesianLogisticRegression:
         return (self.predict_proba(X) > 0.5).astype('float')
 
     def predict_proba(self, X):
-        check_is_fitted(self, ('weight', 'bias'))
-
         return np.mean(self.__likelihood(X), axis=0)
 
     def __likelihood(self, X):

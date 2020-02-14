@@ -62,6 +62,8 @@ class StanLogisticRegressionSampler:
             self.model = StanModel(model_code=self.__stan_model)
             pickle.dump(self.model, open(model_path, 'wb'))
 
+    def clear(self):
+        pass
 
     def sample(self, X, y, n_samples):
         """
