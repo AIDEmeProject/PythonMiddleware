@@ -57,8 +57,13 @@ class HitAndRunSampler:
         self.ellipsoid_cache = None  # type: Optional[Ellipsoid]
 
         self.cache = cache
-        self.samples = np.ndarray([])
+        self.samples = np.array([])
+
         self.use_cython = use_cython
+
+    def clear(self):
+        self.ellipsoid_cache = None
+        self.samples = np.array([])
 
     def sample(self, X: np.ndarray, y: np.ndarray, n_samples: int) -> np.ndarray:
         """
