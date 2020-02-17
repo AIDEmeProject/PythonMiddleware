@@ -14,21 +14,6 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-#
-#  This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
-#  If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0
-#
-#  Authors:
-#        Luciano Di Palma <luciano.di-palma@polytechnique.edu>
-#        Enhui Huang <enhui.huang@polytechnique.edu>
-#
-#  Description:
-#  AIDEme is a large-scale interactive data exploration system that is cast in a principled active learning (AL) framework: in this context,
-#  we consider the data content as a large set of records in a data source, and the user is interested in some of them but not all.
-#  In the data exploration process, the system allows the user to label a record as “interesting” or “not interesting” in each iteration,
-#  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
-#  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
-#  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
 import datetime
@@ -36,9 +21,10 @@ import json
 import os
 from typing import TYPE_CHECKING, List
 
+import numpy as np
+import pandas as pd
 
 if TYPE_CHECKING:
-    import pandas as pd
     from ..utils import Config
 
 
@@ -67,6 +53,25 @@ class ExperimentFolder:
         path = os.path.join(self._folder, filename)
         df.to_csv(path, sep='\t', index_label='iter')
 
+    def save_run(self, run, filename):
+        path = os.path.join(self._folder, filename)
+
+        run_metrics = {}
+        with open(path, 'w') as file:
+            for i, metrics in enumerate(run):
+                json.dump(metrics, file, cls=JsonEncoder)
+                file.write('\n')
+                run_metrics[i] = metrics
+
+        return pd.DataFrame.from_dict(run_metrics, orient='index')
+
+    def read_run_files(self):
+        return [pd.read_csv(os.path.join(self._folder, file), sep='\t', index_col='iter') for file in os.listdir(self._folder) if file.startswith('run')]
+
+    def delete(self, filename) -> None:
+        path = os.path.join(self._folder, filename)
+        os.remove(path)
+
 
 class RootFolder:
     def __init__(self):
@@ -91,3 +96,17 @@ class RootFolder:
     @staticmethod
     def __get_all_files(path):
         return [f for f in os.listdir(path) if not (f.endswith('.log') or f.startswith('.'))]
+
+
+class JsonEncoder(json.JSONEncoder):
+    """
+    Custom JsonEncoder supporting numpy data types
+    """
+    def default(self, o):
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        return super().default(o)
