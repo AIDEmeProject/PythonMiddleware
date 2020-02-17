@@ -16,16 +16,14 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, List, TYPE_CHECKING, Sequence, Union, Generator
+from typing import Optional, TYPE_CHECKING, Sequence, Union
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
-    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed
-    RunType = Generator[Metrics, None, None]
-    RunsType = Union[List[List[Metrics]], Generator[RunType, None, None]]
+    from ..utils import Callback, Convergence, InitialSampler, FunctionList, Seed, RunType, RunsType
 
 
 class PoolBasedExploration:

@@ -96,7 +96,6 @@ for TASK in task_list:
             'subsampling': SUBSAMPLING,
             'callbacks': [c.to_json() for c in CALLBACKS],
             'callback_skip': CALLBACK_SKIP,
-            'print_callback_results': PRINT_CALLBACK_RESULT,
             'convergence_criteria': [c.to_json() for c in CONVERGENCE_CRITERIA],
         }
 

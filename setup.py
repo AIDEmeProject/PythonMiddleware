@@ -31,6 +31,7 @@ def get_extension_modules(use_cython):
 def get_install_requirements(use_cython):
     install_req = [
         'numpy>=1.17.4',
+        'pandas>=0.25.3',
         'scipy>=1.3.1',
         'scikit-learn>=0.22.1',
     ]

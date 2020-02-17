@@ -15,7 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from typing import Union, Sequence, TypeVar, Callable, Dict, Any, Optional, Tuple
+from typing import Union, Sequence, TypeVar, Callable, Dict, Any, Optional, Tuple, Generator, List
 
 import numpy as np
 
@@ -27,6 +27,7 @@ T = TypeVar('T')
 FunctionList = Union[None, T, Sequence[T]]
 
 Metrics = Dict[str, Any]
+Config = Metrics
 Callback = Callable[[PartitionedDataset, ActiveLearner], Metrics]
 Convergence = Callable[[ExplorationManager, Metrics], bool]
 
@@ -35,3 +36,6 @@ Seed = Optional[int]
 
 Partition = Sequence[Union[slice, Sequence[int]]]
 HyperPlane = Tuple[float, np.ndarray]
+
+RunType = Generator[Metrics, None, None]
+RunsType = Union[List[List[Metrics]], Generator[RunType, None, None]]

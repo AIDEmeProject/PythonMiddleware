@@ -75,17 +75,17 @@ def classification_metrics(y_test, score_functions: Sequence[str], X_test=None) 
     return compute
 
 
+def __true_divide(x: float, y: float) -> float:
+    return 0. if y == 0 else x / y
+
+
 __classification_metrics = {
     'true_positive': lambda cm: cm[1, 1],
     'false_positive': lambda cm: cm[0, 1],
     'false_negative': lambda cm: cm[1, 0],
     'true_negative': lambda cm: cm[0, 0],
-    'accuracy': lambda cm: true_divide(cm[0, 0] + cm[1, 1], cm.sum()),
-    'precision': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[0, 1]),
-    'recall': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[1, 0]),
-    'fscore': lambda cm: true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
+    'accuracy': lambda cm: __true_divide(cm[0, 0] + cm[1, 1], cm.sum()),
+    'precision': lambda cm: __true_divide(cm[1, 1], cm[1, 1] + cm[0, 1]),
+    'recall': lambda cm: __true_divide(cm[1, 1], cm[1, 1] + cm[1, 0]),
+    'fscore': lambda cm: __true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
 }
-
-
-def true_divide(x: float, y: float) -> float:
-    return 0. if y == 0 else x / y
