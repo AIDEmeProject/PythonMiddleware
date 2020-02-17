@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, List, TYPE_CHECKING, Sequence, Union
+from typing import Optional, List, TYPE_CHECKING, Sequence, Union, Generator
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback
@@ -24,18 +24,19 @@ from ..utils import assert_positive_integer, process_callback
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
     from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed
+    RunType = Generator[Metrics, None, None]
+    RunsType = Union[List[List[Metrics]], Generator[RunType, None, None]]
 
 
 class PoolBasedExploration:
     def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
-                 callback: FunctionList[Callback] = None, callback_skip: int = 1, print_callback_result: bool = False,
+                 callback: FunctionList[Callback] = None, callback_skip: int = 1,
                  convergence_criteria: FunctionList[Convergence] = None):
         """
         :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
         :param subsampling: sample size of unlabeled points when looking for the next point to label
         :param callback: a list of callback functions. For more info, check utils/metrics.py
         :param callback_skip: compute callback every callback_skip iterations
-        :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
         assert_positive_integer(subsampling, 'subsampling', allow_none=True)
@@ -46,10 +47,10 @@ class PoolBasedExploration:
 
         self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
-        self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1, seeds: Union[Seed, Sequence[Seed]] = None) -> List[List[Metrics]]:
+    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1,
+            seeds: Union[Seed, Sequence[Seed]] = None, return_generator=True) -> RunsType:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
@@ -57,10 +58,10 @@ class PoolBasedExploration:
         :param labeled_set: object containing the user labels, as a LabeledSet instance or array-like (no factorization in this case)
         :param active_learner: ActiveLearner instance to simulate
         :param repeat: number of times to repeat exploration
-        :param seed: random number generator seed. Set this if you wish for reproducible results. If repeat > 1, each run
-        "i" will be assigned its own seed, given by "seed + i".
-        :return: a list of metrics collected after every iteration run. For each iteration we have a dictionary
-        containing:
+        :param seeds: list of random number generator seeds for each run. Set this if you wish for reproducible results.
+        :param return_generator: whether to return a run and metrics as a generator. This way, you can get access to metrics
+        as they are computed, not only when all runs are finished computing.
+        :return: a list (or generator) of metrics collected after every iteration run. For each iteration we have a dictionary containing:
                 - Labeled points (index, labels, partial_labels)
                 - Timing measurements (fit, get next point, ...)
                 - Any metrics returned by the callback function
@@ -74,25 +75,23 @@ class PoolBasedExploration:
 
         manager = ExplorationManager(
             data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,
-            callback=self.callbacks, callback_skip=self.callback_skip, print_callback_result=self.print_callback_result,
+            callback=self.callbacks, callback_skip=self.callback_skip,
             convergence_criteria=self.convergence_criteria
         )
 
-        return [self._run(manager, labeled_set, seed) for seed in seeds]
+        runs = (self._run(manager, labeled_set, seed) for seed in seeds)
+        return runs if return_generator else [list(run) for run in runs]
 
-    def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> List[Metrics]:
+    def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> RunType:
         manager.clear(seed)
 
         converged, new_labeled_set = False, None
-
-        iter_metrics = []
         while not converged:
             idx, metrics, converged = manager.advance(new_labeled_set)
-            iter_metrics.append(metrics)
+
+            yield metrics
 
             new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
-
-        return iter_metrics
 
     def __get_seed(self, seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
         if seed is None:
@@ -112,14 +111,13 @@ class CommandLineExploration:
     """
 
     def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
-                 callback: FunctionList[Callback] = None, callback_skip: int = 1, print_callback_result: bool = False,
+                 callback: FunctionList[Callback] = None, callback_skip: int = 1,
                  convergence_criteria: FunctionList[Convergence] = None):
         """
         :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
         :param subsampling: sample size of unlabeled points when looking for the next point to label
         :param callback: a list of callback functions. For more info, check utils/metrics.py
         :param callback_skip: compute callback every callback_skip iterations
-        :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
         assert_positive_integer(subsampling, 'subsampling', allow_none=True)
@@ -130,7 +128,6 @@ class CommandLineExploration:
 
         self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
-        self.print_callback_result = print_callback_result
         self.convergence_criteria = process_callback(convergence_criteria)
 
     def run(self, X, active_learner: ActiveLearner) -> None:
@@ -138,7 +135,7 @@ class CommandLineExploration:
 
         manager = ExplorationManager(
             data, active_learner, self.subsampling, self.initial_sampler,
-            self.callbacks, self.callback_skip, self.print_callback_result,
+            self.callbacks, self.callback_skip,
             self.convergence_criteria
         )
 
