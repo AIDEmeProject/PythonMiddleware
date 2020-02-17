@@ -37,7 +37,7 @@ class ExplorationManager:
     """
     def __init__(self, data: PartitionedDataset, active_learner: ActiveLearner, subsampling: Optional[int],
                  initial_sampler: Optional[InitialSampler] = None,
-                 callback: FunctionList[Callback] = None, callback_skip: int = 1, print_callback_result: bool = False,
+                 callback: FunctionList[Callback] = None, callback_skip: int = 1,
                  convergence_criteria: FunctionList[Convergence] = None):
         """
         :param data: a PartitionedDataset instance
@@ -46,7 +46,6 @@ class ExplorationManager:
         :param subsampling: sample size of unlabeled points when looking for the next point to label.
         :param callback: a list of callback functions. For more info, check utils/metrics.py
         :param callback_skip: compute callback every callback_skip iterations
-        :param print_callback_result: whether to print all callback metrics to stdout
         :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
         """
         assert_positive_integer(subsampling, 'subsampling', allow_none=True)
@@ -59,7 +58,6 @@ class ExplorationManager:
 
         self.callbacks = process_callback(callback)
         self.callback_skip = callback_skip
-        self.print_callback_result = print_callback_result
 
         self.convergence_criteria = process_callback(convergence_criteria)
         self.convergence_criteria.append(all_points_are_labeled)
@@ -118,7 +116,6 @@ class ExplorationManager:
     def __set_random_state(self, seed: Optional[int] = None) -> None:
         np.random.seed(seed)  # Seeds numpy's internal RNG
         random.seed(seed)  # Seeds python's internal RNG
-
 
     def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
         idx, converged = self.__advance(labeled_set)
@@ -194,9 +191,5 @@ class ExplorationManager:
 
             if callback_metrics:
                 metrics.update(callback_metrics)
-
-        if self.print_callback_result:
-            scores_str = ', '.join((k + ': ' + str(v) for k, v in metrics.items()))
-            print('iter: {0}, {1}'.format(self.exploration_iters, scores_str))
 
         return metrics

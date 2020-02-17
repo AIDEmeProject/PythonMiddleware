@@ -95,7 +95,7 @@ class HitAndRunSampler:
 
         return all_samples
 
-    @metric_logger.log_execution_time('hit_and_run_time', aggregate=True)
+    @metric_logger.log_execution_time('hit_and_run_time', on_duplicates='sum')
     def __run_sampling_procedure(self, n_samples: int, elp: Ellipsoid, version_space: LinearVersionSpace, rounding_matrix: Optional[np.ndarray]):
         cur_sample = self.__get_starting_point(version_space, elp)
         all_samples = np.empty((n_samples, version_space.dim))
