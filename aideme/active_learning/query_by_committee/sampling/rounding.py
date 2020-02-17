@@ -45,7 +45,7 @@ class RoundingAlgorithm:
             return OptimizedStrategy(z_cut=z_cut), False
         raise ValueError("Unknown strategy {}. Possible values are: 'default', 'opt'.")
 
-    @metric_logger.log_execution_time('rounding_fit_time', aggregate=True)
+    @metric_logger.log_execution_time('rounding_fit_time', on_duplicates='sum')
     def fit(self, body: LinearVersionSpace, elp: Optional[Ellipsoid] = None) -> Ellipsoid:
         if elp is None:
             elp = Ellipsoid(body.dim, compute_scale_matrix=self.compute_scale_matrix)
@@ -54,7 +54,7 @@ class RoundingAlgorithm:
         while count < self.max_iter and self.strategy(elp, body):
             count += 1
 
-        metric_logger.log_metric('rounding_iters', [count], aggregate=True)
+        metric_logger.log_metric('rounding_iters', count, on_duplicates='append')
 
         return elp
 
