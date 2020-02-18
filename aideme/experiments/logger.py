@@ -22,6 +22,10 @@ from aideme.experiments.folder import RootFolder
 
 
 class ExperimentLogger:
+    """
+    Helper class for logging experiments.
+    """
+
     def __init__(self, root_folder: RootFolder):
         self._setup_logging(root_folder)
         self.logger = logging.getLogger('experiment')
@@ -30,7 +34,7 @@ class ExperimentLogger:
         self.errors = 0
         self.run = 0
 
-    def _setup_logging(self, root_folder) -> None:
+    def _setup_logging(self, root_folder: RootFolder) -> None:
         with open('./resources/logging.yml') as f:
             config = yaml.safe_load(f)
 
@@ -38,19 +42,31 @@ class ExperimentLogger:
         logging.config.dictConfig(config)
 
     def run_begin(self) -> None:
+        """
+        Logs the beginning of a run
+        """
         self.run += 1
-        self.logger.info("Starting experiment #{0}, RUN = {1}".format(self.total, self.run))
+        self.logger.info("Starting experiment #{0}, run #{1}".format(self.total, self.run))
 
-    def error(self, task: str, learner: str, exception) -> None:
+    def error(self, task: str, learner: str, exception: Exception) -> None:
+        """
+        Logs an exception happened
+        """
         self.errors += 1
         self.logger.error("Error in experiment: TASK = '{}', LEARNER = '{}', RUN = '{}'".format(task, learner, self.run), exc_info=exception)
 
     def experiment_begin(self, task: str, learner: str):
+        """
+        Logs the beginning of a new experiment (i.e. collection of runs over the same task and learner)
+        """
         self.total += 1
         self.run = 0
         self.logger.info("Starting experiment #{0}: TASK = '{1}', LEARNER = '{2}'".format(self.total, task, learner))
 
     def end(self) -> None:
+        """
+        Logs the end of all experiments
+        """
         self.logger.info("Finished all experiments! Total: {0}, Success: {1}, Fail: {2}".format(
             self.total,
             self.total - self.errors,

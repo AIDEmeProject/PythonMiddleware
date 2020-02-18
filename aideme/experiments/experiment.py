@@ -19,14 +19,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .decoder import read_training_set, decode_active_learner, build_exploration_object
-from .folder import RootFolder
 from .logger import ExperimentLogger
 
 if TYPE_CHECKING:
+    from .folder import RootFolder, ExperimentFolder
     from ..utils import Config, RunsType
 
 
 def run_all_experiments(root_folder: RootFolder) -> None:
+    """
+    Runs all experiments in the given folder
+    """
     logger = ExperimentLogger(root_folder)
 
     for task in root_folder.get_all_tasks():
@@ -37,7 +40,7 @@ def run_all_experiments(root_folder: RootFolder) -> None:
 
             try:
                 logger.experiment_begin(task, learner)
-                runs = run_experiment(exp_folder.read_config(), training_set)
+                runs = run_experiment(exp_folder.read_config(), training_set, return_generator=True)
 
                 for i, run in enumerate(runs):
                     filename = 'run_{0:0=2d}'.format(i + 1)
@@ -50,17 +53,26 @@ def run_all_experiments(root_folder: RootFolder) -> None:
                     exp_folder.save(df, filename + '.tsv')
                     exp_folder.delete(filename + '.tmp')
 
+                compute_average(exp_folder)
+
             except Exception as e:
                 logger.error(task, learner, exception=e)
                 continue  # Move to next experiment
 
     logger.end()
 
-    if logger.errors == 0:
-        compute_average(root_folder)
 
+def run_experiment(config: Config, training_set=None, return_generator=False) -> RunsType:
+    """
+    Run the exploration process from a configuration object.
 
-def run_experiment(config: Config, training_set=None) -> RunsType:
+    :param config: the experiment configuration object
+    :param training_set: the training data. If None, it will be read from database, as specified by the 'task' key in config
+    :param return_generator: If True, returns a generator returning each run in the experiment. Each run is also a generator,
+    returning the metrics computed after each iteration. If False, a list of runs and metrics will be returned after all
+    runs have completed
+    :return: The metrics computed at each run
+    """
     if training_set is not None:
         X, labeled_set, factorization_info = training_set
     else:
@@ -71,16 +83,15 @@ def run_experiment(config: Config, training_set=None) -> RunsType:
     exploration = build_exploration_object(config, labeled_set)
 
     # run experiment
-    return exploration.run(X, labeled_set, active_learner, repeat=config['repeat'], seeds=config['seeds'], return_generator=True)
+    return exploration.run(X, labeled_set, active_learner, repeat=config['repeat'], seeds=config['seeds'], return_generator=return_generator)
 
 
-def compute_average(root_folder: RootFolder) -> None:
-    for task in root_folder.get_all_tasks():
-        for learner in root_folder.get_all_learners(task):
-            exp_folder = root_folder.get_experiment_folder(task, learner)
+def compute_average(exp_folder: ExperimentFolder) -> None:
+    """
+    Computes the average of metrics across all runs. Only numerical values (int, float) are considered.
+    """
+    runs = exp_folder.read_run_files()
+    to_keep = [col for col, tp in zip(runs[0].columns, runs[0].dtypes) if tp in ('int', 'float')]
+    avg = sum((df[to_keep] for df in runs)) / len(runs)
 
-            runs = exp_folder.read_run_files()
-            to_keep = [col for col, tp in zip(runs[0].columns, runs[0].dtypes) if tp in ('int', 'float')]
-            avg = sum((df[to_keep] for df in runs)) / len(runs)
-
-            exp_folder.save(avg, 'average.tsv')
+    exp_folder.save(avg, 'average.tsv')

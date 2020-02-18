@@ -72,7 +72,6 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
 
 def decode_initial_sampler(config: Config, y_true: LabeledSet) -> Optional[InitialSampler]:
     if not config:
-        # TODO: log warning, since this is *probably* a mistake on the user's part
         return None
 
     import aideme.initial_sampling

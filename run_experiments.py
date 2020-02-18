@@ -78,6 +78,23 @@ CONVERGENCE_CRITERIA = [
 ]
 
 #############################################
+# REMINDER
+#############################################
+print("""-----------INFO--------------
+TASKS: {}
+ACTIVE_LEARNERS: {}
+SUBSAMPLING: {}
+REPEAT: {}
+INITIAL_SAMPLER: {}
+CALLBACKS: {}
+CALLBACK_SKIP: {}
+CONVERGENCE: {}
+-----------------------------""".format(
+    task_list, active_learners_list, SUBSAMPLING, REPEAT, INITIAL_SAMPLER,
+    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA
+))
+
+#############################################
 # EXPERIMENTS
 #############################################
 root_folder = RootFolder()
@@ -101,21 +118,6 @@ for TASK in task_list:
 
         # save config to disk
         folder.write_config(config)
-
-# Print reminder
-print("""-----------INFO--------------
-TASKS: {}
-ACTIVE_LEARNERS: {}
-SUBSAMPLING: {}
-REPEAT: {}
-INITIAL_SAMPLER: {}
-CALLBACKS: {}
-CALLBACK_SKIP: {}
-CONVERGENCE: {}
------------------------------""".format(
-    task_list, active_learners_list, SUBSAMPLING, REPEAT, INITIAL_SAMPLER,
-    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA
-))
 
 # run all experiments
 run_all_experiments(root_folder)
