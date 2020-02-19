@@ -16,13 +16,15 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from .decoder import read_training_set, decode_active_learner, build_exploration_object
 from .logger import ExperimentLogger
 
 if TYPE_CHECKING:
+    import numpy as np
     from .folder import RootFolder, ExperimentFolder
+    from ..explore import LabeledSet
     from ..utils import Config, RunsType
 
 
@@ -62,7 +64,7 @@ def run_all_experiments(root_folder: RootFolder) -> None:
     logger.end()
 
 
-def run_experiment(config: Config, training_set=None, return_generator=False) -> RunsType:
+def run_experiment(config: Config, training_set: Optional[Tuple[np.ndarray, LabeledSet, Config]] = None, return_generator: bool = False) -> RunsType:
     """
     Run the exploration process from a configuration object.
 
@@ -73,17 +75,17 @@ def run_experiment(config: Config, training_set=None, return_generator=False) ->
     runs have completed
     :return: The metrics computed at each run
     """
-    if training_set is not None:
-        X, labeled_set, factorization_info = training_set
-    else:
-        X, labeled_set, factorization_info = read_training_set(config['task'])
+    if training_set is None:
+        training_set = read_training_set(config['task'])
+
+    data, true_labels, factorization_info = training_set
 
     # build exploration object and active learner
     active_learner = decode_active_learner(config['active_learner'], factorization_info)
-    exploration = build_exploration_object(config, labeled_set)
+    exploration = build_exploration_object(config, data, true_labels)
 
     # run experiment
-    return exploration.run(X, labeled_set, active_learner, repeat=config['repeat'], seeds=config['seeds'], return_generator=return_generator)
+    return exploration.run(data, true_labels, active_learner, repeat=config['repeat'], seeds=config['seeds'], return_generator=return_generator)
 
 
 def compute_average(exp_folder: ExperimentFolder) -> None:

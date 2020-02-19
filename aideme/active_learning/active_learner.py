@@ -20,6 +20,8 @@ from typing import Any, Optional, TYPE_CHECKING
 
 import numpy as np
 
+from aideme.utils import metric_logger
+
 if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
     from aideme.explore.partitioned import IndexedDataset
@@ -93,11 +95,15 @@ class ActiveLearner:
         :param subsample: size of unlabeled points sample. By default, no subsample is performed
         :return: row indexes of data points to be labeled
         """
-        return self._select_next(data.sample_unlabeled(subsample))
+        return self._select_next(data.unlabeled.sample(subsample))
 
     def _select_next(self, dataset: IndexedDataset) -> IndexedDataset:
         ranks = self.rank(dataset.data)
-        min_row = np.where(ranks == ranks.min())[0]
+        min_rank = ranks.min()
+
+        metric_logger.log_metric('min_rank', min_rank)
+
+        min_row = np.where(ranks == min_rank)[0]
         return dataset[np.random.choice(min_row)]
 
 

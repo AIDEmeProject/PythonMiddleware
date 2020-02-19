@@ -16,16 +16,17 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 
 from .. import PoolBasedExploration, LabeledSet, ActiveLearner, FactorizedActiveLearner
 from ..io import read_task
 
 if TYPE_CHECKING:
+    import numpy as np
     from ..utils import InitialSampler, Config, Callback, Convergence
 
 
-def read_training_set(task: str):
+def read_training_set(task: str) -> Tuple[np.ndarray, LabeledSet, Config]:
     config = read_task(task, read_factorization=True)
 
     df, final_labels, fact_info = config['data'], config['labels'], config.get('factorization_info', {})
@@ -36,11 +37,11 @@ def read_training_set(task: str):
     return df.values, labeled_set, fact_info
 
 
-def build_exploration_object(config: Config, labeled_set: LabeledSet) -> PoolBasedExploration:
-    initial_sampler = decode_initial_sampler(config.get('initial_sampling', None), labeled_set)
+def build_exploration_object(config: Config, data: np.ndarray, true_labels: LabeledSet) -> PoolBasedExploration:
+    initial_sampler = decode_initial_sampler(config.get('initial_sampling', None), true_labels)
 
     callbacks_config = config.get('callbacks', [])
-    callbacks = [decode_callback(conf, labeled_set) for conf in callbacks_config]
+    callbacks = [decode_callback(conf, data, true_labels) for conf in callbacks_config]
 
     convergence_config = config.get('convergence_criteria', [])
     convergence_criteria = [decode_convergence(conf) for conf in convergence_config]
@@ -70,7 +71,7 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
     return active_learner
 
 
-def decode_initial_sampler(config: Config, y_true: LabeledSet) -> Optional[InitialSampler]:
+def decode_initial_sampler(config: Config, true_labels: LabeledSet) -> Optional[InitialSampler]:
     if not config:
         return None
 
@@ -80,19 +81,20 @@ def decode_initial_sampler(config: Config, y_true: LabeledSet) -> Optional[Initi
     initial_sampler = getattr(aideme.initial_sampling, name)
 
     if name == 'stratified_sampler':
-        params['labeled_set'] = y_true
+        params['true_labels'] = true_labels
 
     return initial_sampler if not params else initial_sampler(**params)
 
 
-def decode_callback(config: Config, labeled_set: LabeledSet) -> Callback:
+def decode_callback(config: Config, data: np.ndarray, true_labels: LabeledSet) -> Callback:
     import aideme.utils.metrics
 
     name, params = config['name'], config.get('params', {})
 
     callback_function = getattr(aideme.utils.metrics, name)
     if name == 'classification_metrics':
-        params['y_test'] = labeled_set.labels
+        params['X_test'] = data
+        params['y_test'] = true_labels.labels
 
     return callback_function if not params else callback_function(**params)
 

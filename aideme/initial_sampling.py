@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 __all__ = ['stratified_sampler', 'fixed_sampler', 'random_sampler']
 
 
-def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_in_all_subspaces: bool = False) -> InitialSampler:
+def stratified_sampler(true_labels: LabeledSet, pos: int = 1, neg: int = 1, neg_in_all_subspaces: bool = False) -> InitialSampler:
     """
     Binary stratified sampling method. Randomly selects a given number of positive and negative points from an array
     of labels.
@@ -41,10 +41,10 @@ def stratified_sampler(labeled_set: LabeledSet, pos: int = 1, neg: int = 1, neg_
     assert_positive_integer(pos, 'pos')
     assert_positive_integer(neg, 'neg')
 
-    pos_mask = (labeled_set.labels == 1)
-    neg_mask = (labeled_set.partial.max(axis=1) == 0) if neg_in_all_subspaces else ~pos_mask
+    pos_mask = (true_labels.labels == 1)
+    neg_mask = (true_labels.partial.max(axis=1) == 0) if neg_in_all_subspaces else ~pos_mask
 
-    pos_idx, neg_idx = labeled_set.index[pos_mask], labeled_set.index[neg_mask]
+    pos_idx, neg_idx = true_labels.index[pos_mask], true_labels.index[neg_mask]
 
     def sampler(data) -> Sequence:
         pos_samples = np.random.choice(pos_idx, size=pos, replace=False)
@@ -67,4 +67,4 @@ def random_sampler(sample_size: int) -> InitialSampler:
     Samples a random batch of unlabeled points.
     """
     assert_positive_integer(sample_size, 'sample_size')
-    return lambda data: data.sample_unlabeled(sample_size).index
+    return lambda data: data.unlabeled.sample(sample_size).index
