@@ -22,6 +22,7 @@ from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
+    import numpy as np
     from ..active_learning import ActiveLearner
     from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed
     RunType = Generator[Metrics, None, None]
@@ -49,16 +50,17 @@ class PoolBasedExploration:
         self.callback_skip = callback_skip
         self.convergence_criteria = process_callback(convergence_criteria)
 
-    def run(self, X, labeled_set, active_learner: ActiveLearner, repeat: int = 1,
-            seeds: Union[Seed, Sequence[Seed]] = None, return_generator=True) -> RunsType:
+    def run(self, data: np.ndarray, labeled_set: LabeledSet, active_learner: ActiveLearner, repeat: int = 1,
+            seeds: Union[Seed, Sequence[Seed]] = None, copy: bool = True, return_generator: bool = True) -> RunsType:
         """
         Run the Active Learning model over data, for a given number of iterations.
 
-        :param X: data matrix as a numpy array
+        :param data: data matrix as a numpy array
         :param labeled_set: object containing the user labels, as a LabeledSet instance or array-like (no factorization in this case)
         :param active_learner: ActiveLearner instance to simulate
         :param repeat: number of times to repeat exploration
         :param seeds: list of random number generator seeds for each run. Set this if you wish for reproducible results.
+        :param copy: whether to use a copy of the data matrix, avoiding changes to it.
         :param return_generator: whether to return a run and metrics as a generator. This way, you can get access to metrics
         as they are computed, not only when all runs are finished computing.
         :return: a list (or generator) of metrics collected after every iteration run. For each iteration we have a dictionary containing:
@@ -71,7 +73,11 @@ class PoolBasedExploration:
         if not isinstance(labeled_set, LabeledSet):
             labeled_set = LabeledSet(labeled_set)
 
-        data = PartitionedDataset(X, labeled_set.index)
+        index = labeled_set.index
+        if not copy:  # always copy labeled_set index since it will be changed in-place
+            index = index.copy()
+
+        data = PartitionedDataset(data, index, copy=copy)
 
         manager = ExplorationManager(
             data, active_learner, initial_sampler=self.initial_sampler, subsampling=self.subsampling,

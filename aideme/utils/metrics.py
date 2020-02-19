@@ -19,12 +19,11 @@
 This module contains helper functions for computing a few of the most popular metrics. A valid "metric" is any function
 with the following signature:
 
-    def metric(data, active_learner):
+    def metric(dataset, active_learner):
         return a dict of key-value pair with the computed metrics
 
-Here, 'data' is an PartitionedDataset instance and 'active_learner' is a ActiveLearner instance.
+Here, 'dataset' is an PartitionedDataset instance and 'active_learner' is a ActiveLearner instance.
 """
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
@@ -32,19 +31,20 @@ from typing import TYPE_CHECKING, Sequence
 import sklearn
 
 if TYPE_CHECKING:
+    import numpy as np
     from .types import Metrics, Callback
     from aideme.active_learning import ActiveLearner
     from aideme.explore import PartitionedDataset
 
 
-def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
+def three_set_metric(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
     """
     :return: TSM score, which is a lower bound for F-score. Only available when running the DualSpaceModel.
     """
     if not hasattr(active_learner, 'polytope_model'):
         return {}
 
-    pred = active_learner.polytope_model.predict(data.raw_values)  # type: ignore
+    pred = active_learner.polytope_model.predict(dataset.data)  # type: ignore
 
     pos = (pred == 1).sum()
     unknown = (pred == 0.5).sum()
@@ -53,21 +53,22 @@ def three_set_metric(data: PartitionedDataset, active_learner: ActiveLearner) ->
     return {'tsm': tsm}
 
 
-def classification_metrics(y_test, score_functions: Sequence[str], X_test=None) -> Callback:
+def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functions: Sequence[str]) -> Callback:
     """
+    :param X_test: the test dataset
     :param y_test: true labels of test set
     :param score_functions: list of metrics to be computed. Available metrics are: 'true_positive', 'false_positive',
     'true_negative', 'false_negative', 'accuracy', 'precision', 'recall', 'fscore'
-    :param X_test: an optional test set. If None, the entire dataset will be used.
     :return: all classification scores
     """
+    X_test, y_test = sklearn.utils.check_X_y(X_test, y_test)
+
     diff = set(score_functions) - __classification_metrics.keys()
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(data: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
-        X = X_test if X_test is not None else data.raw_values
-        y_pred = active_learner.predict(X)
+    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
+        y_pred = active_learner.predict(X_test)
 
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])
         return {score: __classification_metrics[score](cm) for score in score_functions}

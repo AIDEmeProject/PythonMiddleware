@@ -90,7 +90,7 @@ class TwoStepsLearner(FactorizedActiveLearner):
 
         else:
             if self.__labels_cache is None:
-                self.__update_cache(data.raw_values)
+                self.__update_cache(data.data)
 
                 mask = ~self.__mask_cache.copy()
                 mask[data.labeled[0]] = False  # remove labeled points
@@ -132,6 +132,6 @@ class TwoStepsLearner(FactorizedActiveLearner):
             lb_slice = slice(0, -1)
             return self._al_struct.next_points_to_label(data.select_cols(col_slice, lb_slice), subsample)
 
-        sample = data.sample_unknown(subsample)
+        sample = data.unknown.sample(subsample)
         sample.data = self.get_text_data(sample.data)
         return self._al_text._select_next(sample)
