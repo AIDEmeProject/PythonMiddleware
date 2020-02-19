@@ -71,7 +71,8 @@ class LinearVersionSpace:
             c=np.array([1.0] + [0.0] * dim),
             A_ub=np.hstack([-np.ones(shape=(n, 1)), self.A]),
             b_ub=np.zeros(n),
-            bounds=[(None, None)] + [(-1, 1)] * dim  # type: ignore
+            bounds=[(None, None)] + [(-1, 1)] * dim,  # type: ignore
+            method='revised simplex'
         )
 
         # if optimization failed, raise error
