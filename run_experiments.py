@@ -15,6 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+from aideme.active_learning import *
 from aideme.experiments import run_all_experiments, Tag
 from aideme.experiments.folder import RootFolder
 from aideme.initial_sampling import stratified_sampler
