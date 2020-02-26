@@ -24,13 +24,13 @@ from aideme.utils import assert_positive_integer, metric_logger
 from .ellipsoid import Ellipsoid
 
 if TYPE_CHECKING:
-    from .version_space import LinearVersionSpace
+    from .polyhedral_cone import BoundedPolyhedralCone
     from aideme.utils import HyperPlane
-    Strategy = Callable[[Ellipsoid, LinearVersionSpace], bool]
+    Strategy = Callable[[Ellipsoid, BoundedPolyhedralCone], bool]
 
 
 class RoundingAlgorithm:
-    def __init__(self, max_iter: Optional[int] = None, strategy: str = 'default', z_cut: bool = False):
+    def __init__(self, max_iter: Optional[int] = None, strategy: str = 'opt', z_cut: bool = False):
         assert_positive_integer(max_iter, 'max_iter', allow_none=True)
 
         self.max_iter = max_iter if max_iter is not None else float('inf')
@@ -46,7 +46,7 @@ class RoundingAlgorithm:
         raise ValueError("Unknown strategy {}. Possible values are: 'default', 'opt'.")
 
     @metric_logger.log_execution_time('rounding_fit_time', on_duplicates='sum')
-    def fit(self, body: LinearVersionSpace, elp: Optional[Ellipsoid] = None) -> Ellipsoid:
+    def fit(self, body: BoundedPolyhedralCone, elp: Optional[Ellipsoid] = None) -> Ellipsoid:
         if elp is None:
             elp = Ellipsoid(body.dim, compute_scale_matrix=self.compute_scale_matrix)
 
@@ -59,7 +59,7 @@ class RoundingAlgorithm:
         return elp
 
 
-def diagonalization_strategy(elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+def diagonalization_strategy(elp: Ellipsoid, body: BoundedPolyhedralCone) -> bool:
     for vector in elp.extremes():
         hyperplane = body.get_separating_oracle(vector)
 
@@ -73,7 +73,7 @@ class OptimizedStrategy:
     def __init__(self, z_cut: bool = False):
         self.z_cut = z_cut
 
-    def __call__(self, elp: Ellipsoid, body: LinearVersionSpace) -> bool:
+    def __call__(self, elp: Ellipsoid, body: BoundedPolyhedralCone) -> bool:
         alpha, hyperplane = self._get_alpha_cut(elp, body)
 
         if self.z_cut and alpha != 0:
@@ -88,7 +88,7 @@ class OptimizedStrategy:
         elp.cut(*hyperplane)
         return True
 
-    def _get_alpha_cut(self, elp: Ellipsoid, body: LinearVersionSpace) -> Tuple[float, HyperPlane]:
+    def _get_alpha_cut(self, elp: Ellipsoid, body: BoundedPolyhedralCone) -> Tuple[float, HyperPlane]:
         alphas = elp.compute_alpha(body.A)
         idx_max = np.argmax(alphas)
         return alphas[idx_max], (0, body.A[idx_max])

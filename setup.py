@@ -17,7 +17,7 @@ def get_extension_modules(use_cython):
     extension_modules = [
         Extension(
             'version_space_helper',
-            sources=['aideme/active_learning/query_by_committee/sampling/version_space_helper' + ext]
+            sources=['aideme/active_learning/version_space/sampling/version_space_helper' + ext]
         )
     ]
 

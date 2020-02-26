@@ -37,19 +37,21 @@ class BayesianLogisticRegression:
         better performance under these assumptions.
     """
 
-    def __init__(self, sampling='deterministic', n_samples=8, warmup=100, thin=1, sigma=100, cache=True,
-                 rounding=True, max_rounding_iters=None, strategy='default', z_cut=False, rounding_cache=True,
-                 use_cython: bool = True, add_intercept=True):
+    def __init__(self, sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
+                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
+                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True):
         """
-        :param n_samples: number of samples to compute from posterior
-        :param add_intercept: whether to add an intercept or not
         :param sampling: sampling method. Options: 'bayesian' (allows labeling noise) and 'deterministic' (no noise)
+        :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
         :param thin: how many iterations to skip between samples
         :param sigma: gaussian prior standard deviation. Works as a L2 regularization (the lower sigma is, the more regularization)
+        :param cache: whether to cache previous samples in order to speed-up 'initial point' computation in hit-and-run.
         :param rounding: whether to apply a rounding procedure in the 'deterministic' sampling.
         :param max_rounding_iters: maximum number of iterations for rounding algorithm
         :param strategy: rounding strategy. Available values are: 'default' and 'opt'
+        :param rounding_cache: whether cache rounding ellipsoid between iterations. Significantly speeds-up computations, but performance may suffer a little.
+        :param add_intercept: whether to add an intercept or not
         """
         if sampling == 'bayesian':
             self.sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, sigma=sigma)

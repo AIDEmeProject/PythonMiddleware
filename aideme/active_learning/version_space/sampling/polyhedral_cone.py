@@ -26,19 +26,16 @@ if TYPE_CHECKING:
     from aideme.utils import HyperPlane
 
 
-class LinearVersionSpace:
+class BoundedPolyhedralCone:
     """
-    This class represents an instance of a centered linear classifiers Version Space. Basically, given a collection
-    of labeled data points (x_i, y_i), a vector "w" belongs to the Version Space if:
+    This class represents the convex set of vector "w" satisfying:
 
-        y_i x_i^T w > 0   AND   |w| < 1
+                    A w <= 0   AND   ||w|| < =1
 
-    By defining a_i = -y_i x_i, we see that it defines a polytope:
-
-        a_i^T w < 0   AND   |w| < 1
+    i.e., it is the intersection of a polyhedral cone and the unit ball B(0, 1)
     """
-    def __init__(self, X: np.ndarray, y: np.ndarray, use_cython: bool = True):
-        self.A = -X * np.where(y == 1, 1, -1).reshape(-1, 1)
+    def __init__(self, A: np.ndarray, use_cython: bool = True):
+        self.A = A
         self.intersection = self._get_extremes_cython if use_cython else self._get_extremes_python
 
     @property

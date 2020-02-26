@@ -18,26 +18,20 @@
 import numpy as np
 import pytest
 
-from aideme.active_learning.query_by_committee.sampling.version_space import LinearVersionSpace
+from aideme.active_learning.version_space.sampling.polyhedral_cone import BoundedPolyhedralCone
 
 
 class TestVersionSpace:
 
     def setup(self):
-        X, y = np.array([[1, 0], [-1, 2]], dtype='float'), np.array([1, 0], dtype='float')
-        self.vs = LinearVersionSpace(X, y)
-
-    def test_X_and_y_have_different_lengths_throws_exception(self):
-        X, y = np.eye(5), np.ones(2)
-
-        with pytest.raises(ValueError):
-            assert LinearVersionSpace(X, y)
+        A = np.array([[-1, 0], [-1, 2]], dtype='float')
+        self.vs = BoundedPolyhedralCone(A)
 
     def test_dim_returns_expected_value(self):
-        X, y = np.eye(5), np.ones(5)
-        vs = LinearVersionSpace(X, y)
+        A = -np.eye(4, 5)
+        vs = BoundedPolyhedralCone(A)
 
-        assert vs.dim == X.shape[1]
+        assert vs.dim == A.shape[1]
 
     def test_is_inside_checks_for_polytope_equations(self):
         pts = np.array([

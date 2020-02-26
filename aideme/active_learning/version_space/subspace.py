@@ -17,7 +17,7 @@
 
 import numpy as np
 
-from .base import KernelQueryByCommittee
+from .base import KernelVersionSpace
 from .categorical import CategoricalActiveLearner, MultiSetActiveLearner
 from ..active_learner import FactorizedActiveLearner
 from ..svm import SimpleMargin
@@ -168,9 +168,10 @@ class SubspaceLearner(FactorizedActiveLearner):
 
 class SubspatialVersionSpace(SubspaceLearner):
     def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
-                 sampling='deterministic', n_samples=8, warmup=100, thin=10, sigma=100,
-                 cache=True, rounding=True, max_rounding_iters=None, strategy='diag', z_cut=False, rounding_cache=True,
-                 add_intercept=True, kernel='rbf', gamma=None, degree=3, coef0=0., jitter=1e-12, use_cython=True):
+                 sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
+                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
+                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True,
+                 kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
 
@@ -196,12 +197,11 @@ class SubspatialVersionSpace(SubspaceLearner):
         """
 
         base_learner = Cloneable(
-            KernelQueryByCommittee,
+            KernelVersionSpace,
             sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
             cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
             strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython,
-            kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter,
-            add_intercept=add_intercept
+            add_intercept=add_intercept, kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
         )
 
         label_function, probability_function = self.__get_proba_functions(label_function)

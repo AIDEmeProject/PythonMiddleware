@@ -20,13 +20,13 @@ from .random import RandomSampler
 from .svm import *
 from .dsm import DualSpaceModel, FactorizedDualSpaceModel
 from .uncertainty import UncertaintySampler
-from .query_by_committee import *
+from .version_space import *
 from .entropy_reduction import EntropyReductionLearner
 from .nlp import TwoStepsLearner
 
 __all__ = [
     'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
     'DualSpaceModel', 'FactorizedDualSpaceModel',
-    'LinearQueryByCommittee', 'KernelQueryByCommittee', 'EntropyReductionLearner',
+    'LinearVersionSpace', 'KernelVersionSpace', 'EntropyReductionLearner',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner'
 ]

@@ -19,7 +19,7 @@ from typing import Optional
 import numpy as np
 
 from aideme.utils import assert_positive_integer
-from .version_space import LinearVersionSpace
+from .polyhedral_cone import BoundedPolyhedralCone
 from .ellipsoid import Ellipsoid
 from .rounding import RoundingAlgorithm
 
@@ -34,9 +34,9 @@ class HitAndRunSampler:
     Reference: https://link.springer.com/content/pdf/10.1007%2Fs101070050099.pdf
     """
 
-    def __init__(self, warmup: int = 100, thin: int = 1, cache: bool = True,
-                 rounding: bool = True, max_rounding_iters: Optional[int] = None, strategy: str = 'default',
-                 z_cut: bool = False, rounding_cache: bool = False, use_cython: bool = True):
+    def __init__(self, warmup: int = 100, thin: int = 10, cache: bool = True,
+                 rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
+                 rounding_cache: bool = True, use_cython: bool = True):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
@@ -74,7 +74,8 @@ class HitAndRunSampler:
         :param n_samples: number of samples
         :return: samples in a numpy array (one per line)
         """
-        version_space = LinearVersionSpace(X, y, use_cython=self.use_cython)
+        A = X * np.where(y == 1, -1, 1).reshape(-1, 1)
+        version_space = BoundedPolyhedralCone(A, use_cython=self.use_cython)
 
         # rounding
         elp, rounding_matrix = None, None
@@ -96,7 +97,7 @@ class HitAndRunSampler:
         return all_samples
 
     @metric_logger.log_execution_time('hit_and_run_time', on_duplicates='sum')
-    def __run_sampling_procedure(self, n_samples: int, elp: Ellipsoid, version_space: LinearVersionSpace, rounding_matrix: Optional[np.ndarray]):
+    def __run_sampling_procedure(self, n_samples: int, elp: Ellipsoid, version_space: BoundedPolyhedralCone, rounding_matrix: Optional[np.ndarray]):
         cur_sample = self.__get_starting_point(version_space, elp)
         all_samples = np.empty((n_samples, version_space.dim))
 
@@ -110,7 +111,7 @@ class HitAndRunSampler:
             all_samples[i] = cur_sample.copy()
         return all_samples
 
-    def __advance(self, n_iter: int, center: np.ndarray, rounding_matrix: Optional[np.ndarray], version_space: LinearVersionSpace) -> None:
+    def __advance(self, n_iter: int, center: np.ndarray, rounding_matrix: Optional[np.ndarray], version_space: BoundedPolyhedralCone) -> None:
         for _ in range(n_iter):
             # sample random direction
             direction = self.__sample_direction(version_space.dim, rounding_matrix)
@@ -126,7 +127,7 @@ class HitAndRunSampler:
         direction = np.random.normal(size=dim)
         return rounding_matrix.dot(direction) if rounding_matrix is not None else direction
 
-    def __get_starting_point(self, version_space: LinearVersionSpace, ellipsoid: Optional[Ellipsoid]) -> np.ndarray:
+    def __get_starting_point(self, version_space: BoundedPolyhedralCone, ellipsoid: Optional[Ellipsoid]) -> np.ndarray:
         if ellipsoid and version_space.is_inside_polytope(ellipsoid.center):
             norm = np.linalg.norm(ellipsoid.center)
             return ellipsoid.center if norm < 1 else (0.99 / norm) * ellipsoid.center
@@ -135,7 +136,7 @@ class HitAndRunSampler:
             samples = self.__truncate_samples(version_space.dim)
             for sample in samples:
                 if version_space.is_inside_polytope(sample):
-                    return sample
+                    return sample.copy()
 
         print('Falling back to linprog in Hit-and-Run sampler.')  # TODO: log this / raise warning
         return version_space.get_interior_point()
