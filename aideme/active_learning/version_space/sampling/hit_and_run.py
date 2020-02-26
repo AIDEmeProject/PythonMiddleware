@@ -129,8 +129,7 @@ class HitAndRunSampler:
 
     def __get_starting_point(self, version_space: BoundedPolyhedralCone, ellipsoid: Optional[Ellipsoid]) -> np.ndarray:
         if ellipsoid and version_space.is_inside_polytope(ellipsoid.center):
-            norm = np.linalg.norm(ellipsoid.center)
-            return ellipsoid.center if norm < 1 else (0.99 / norm) * ellipsoid.center
+            return ellipsoid.center / np.linalg.norm(ellipsoid.center)
 
         if self.cache and self.samples.shape[0] > 0:
             samples = self.__truncate_samples(version_space.dim)
