@@ -19,7 +19,7 @@ import numpy as np
 from scipy.special import xlogy, xlog1py
 
 from .active_learner import ActiveLearner
-from .query_by_committee.kernel import KernelLogisticRegression
+from .version_space.kernel import KernelLogisticRegression
 
 
 class EntropyReductionLearner(ActiveLearner):

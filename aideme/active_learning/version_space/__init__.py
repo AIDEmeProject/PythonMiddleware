@@ -15,7 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .base import LinearQueryByCommittee, KernelQueryByCommittee
+from .base import LinearVersionSpace, KernelVersionSpace
 from .subspace import SubspatialVersionSpace, SubspatialSimpleMargin
 
-__all__ = ['LinearQueryByCommittee', 'KernelQueryByCommittee', 'SubspatialVersionSpace', 'SubspatialSimpleMargin']
+__all__ = ['LinearVersionSpace', 'KernelVersionSpace', 'SubspatialVersionSpace', 'SubspatialSimpleMargin']
