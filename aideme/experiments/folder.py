@@ -47,7 +47,7 @@ class ExperimentFolder:
         path = os.path.join(self._folder, 'config.json')
 
         with open(path, 'w') as f:
-            return json.dump(config, f, indent=4)
+            json.dump(config, f, indent=4)
 
     def save(self, df: pd.DataFrame, filename: str) -> None:
         path = os.path.join(self._folder, filename)
