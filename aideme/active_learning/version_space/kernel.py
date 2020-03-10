@@ -14,36 +14,34 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
 
 from functools import partial
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import scipy.linalg
 from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
 
-from .linear import BayesianLogisticRegression
+if TYPE_CHECKING:
+    from .linear import BayesianLogisticRegressionBase
 
 
-class KernelLogisticRegression:
+class KernelBayesianLogisticRegression:
     """
     Add kernel support to LinearBayesianLogisticRegression classifier. Basically, the data matrix X is substituted by
     the Kernel matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined).
     """
 
-    def __init__(self, sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
-                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True,
+    def __init__(self, logreg: BayesianLogisticRegressionBase, decompose: bool = False,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
-        self.logreg = BayesianLogisticRegression(sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
-                                                 cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                                 strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython,
-                                                 add_intercept=add_intercept)
-        self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
-        self.decompose = rounding_cache
+        self.logreg = logreg
+        self.decompose = decompose
         self.jitter = jitter
+        self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
 
     @staticmethod
-    def __get_kernel(kernel: str, gamma: float, degree: int, coef0: float):
+    def __get_kernel(kernel: str, gamma: Optional[float], degree: int, coef0: float):
         if kernel == 'linear':
             return linear_kernel
         elif kernel == 'poly':
