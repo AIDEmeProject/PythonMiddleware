@@ -103,7 +103,7 @@ class BayesianLogisticRegression(BayesianLogisticRegressionBase):
     """
 
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
-                 sigma: float = 100):
+                 suppress_warnings: bool = True, sigma: float = 100):
         """
         :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
@@ -111,7 +111,7 @@ class BayesianLogisticRegression(BayesianLogisticRegressionBase):
         :param sigma: gaussian prior standard deviation. Works as a L2 regularization (the lower sigma is, the more regularization)
         :param add_intercept: whether to add an intercept or not
         """
-        sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, sigma=sigma)
+        sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, sigma=sigma, suppress_warnings=suppress_warnings)
 
         super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept)
 
