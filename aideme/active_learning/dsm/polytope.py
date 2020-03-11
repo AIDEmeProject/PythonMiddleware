@@ -208,6 +208,9 @@ class CategoricalPolytope(PolytopeBase):
         self._neg_classes: Set[Tuple] = set()
         self.__is_valid = True
 
+    def __repr__(self):
+        return "pos = {}, neg = {}".format(self._pos_classes, self._neg_classes)
+
     @property
     def is_valid(self) -> bool:
         return self.__is_valid
@@ -225,9 +228,9 @@ class CategoricalPolytope(PolytopeBase):
         if not self.__is_valid:
             return np.full(len(X), fill_value=0.5)
 
-        return np.fromiter((self.__predict_single(x) for x in X), np.float)
+        return np.fromiter((self._predict_single(x) for x in X), np.float)
 
-    def __predict_single(self, x: np.ndarray) -> float:
+    def _predict_single(self, x: np.ndarray) -> float:
         x = tuple(x)
 
         if x in self._pos_classes:
@@ -250,16 +253,18 @@ class CategoricalPolytope(PolytopeBase):
             raise RuntimeError("Attempting to update invalid polytope.")
 
         for pt, lb in zip(X, y):
-            pt = tuple(pt)  # convert to tuple because numpy arrays are not hashable
-
-            if lb == 1:
-                self._pos_classes.add(pt)
-            else:
-                self._neg_classes.add(pt)
+            self._update_single(pt, lb)
 
         self.__is_valid = len(self._pos_classes & self._neg_classes) == 0
 
         return self.__is_valid
+
+    def _update_single(self, pt: np.ndarray, lb: float) -> None:
+        pt = tuple(pt)  # convert to tuple because numpy arrays are not hashable
+        if lb == 1:
+            self._pos_classes.add(pt)
+        else:
+            self._neg_classes.add(pt)
 
 
 class MultiSetPolytope(PolytopeBase):
