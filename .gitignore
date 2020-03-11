@@ -18,6 +18,7 @@
 
 # ignore all jupyter notebooks except for the example.ipynb
 *.ipynb
+!border functions.ipynb
 !example.ipynb
 
 # pickle files
@@ -29,3 +30,6 @@
 
 # python cache
 __pycache__/
+
+# data
+*.zip

@@ -15,6 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 import numpy as np
+from sklearn import svm
 
 from aideme.explore.labeledset import LabeledSet
 from .types import NoiseInjector
@@ -29,8 +30,11 @@ Which receives the original noise-free LabeledSet object and returns its noisy v
 """
 
 
-def gaussian_noise() -> NoiseInjector:
+def gaussian_noise(positive, negative, sigma) -> NoiseInjector:
     # TODO: how to implement this?
+    border = svm.SVC(C=10**7, kernel='rbf')
+    border.fit(positive, negative)
+        
     pass
 
 
