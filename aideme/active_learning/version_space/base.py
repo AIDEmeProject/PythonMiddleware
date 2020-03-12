@@ -45,10 +45,10 @@ class LinearVersionSpace(VersionSpaceBase):
 
 class BayesianLinearVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
-                 suppress_warnings: bool = True, sigma=100):
+                 prior: str = 'improper', prior_std: float = 1.0, suppress_warnings: bool = True):
         logreg = BayesianLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
-            suppress_warnings=suppress_warnings, sigma=sigma,
+            prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
         )
 
         super().__init__(logreg)
@@ -75,11 +75,11 @@ class KernelVersionSpace(VersionSpaceBase):
 
 class BayesianKernelVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
-                 suppress_warnings: bool = True, sigma=100,
+                 prior: str = 'improper', prior_std: float = 1.0, suppress_warnings: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         logreg = BayesianLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
-            suppress_warnings=suppress_warnings, sigma=sigma,
+            prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
         )
 
         kernel_logreg = KernelBayesianLogisticRegression(
