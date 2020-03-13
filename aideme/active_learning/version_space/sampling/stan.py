@@ -73,7 +73,8 @@ class StanLogisticRegressionSampler:
 
         self.__suppress_pystan_logs(suppress_warnings)
 
-    def __suppress_pystan_logs(self, suppress_warnings: bool) -> None:
+    @staticmethod
+    def __suppress_pystan_logs(suppress_warnings: bool) -> None:
         level = logging.ERROR if suppress_warnings else logging.INFO
         logging.getLogger('pystan').setLevel(level)
 
