@@ -32,10 +32,10 @@
 from __future__ import annotations
 
 import numpy as np
-import scipy.stats
 from scipy.linalg import solve_triangular
 from scipy.optimize import minimize
 from scipy.special import expit
+from scipy.stats import norm
 
 from aideme.utils import assert_positive
 
@@ -61,12 +61,18 @@ class ApproximateBayesianLogisticRegression:
 
         self.add_intercept = add_intercept
         self.info = self.__get_info(prior, prior_std)
+        self.standard_normal_dist = norm(0, 1)
+
+        self.mean = None
+        self.L = None
+
         self.opt_options = {
             'gtol': tol,
             'maxiter': max_iter
         }
 
-    def __get_info(self, prior: str, prior_std: float) -> float:
+    @staticmethod
+    def __get_info(prior: str, prior_std: float) -> float:
         if prior == 'improper':
             return 0.
         if prior == 'gaussian':
@@ -74,7 +80,8 @@ class ApproximateBayesianLogisticRegression:
         raise ValueError("Unknown prior option: {}".format(prior))
 
     def clear(self) -> None:
-        pass
+        self.mean = None
+        self.L = None
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return (self.predict_proba(X) > 0.5).astype('float')
@@ -91,8 +98,7 @@ class ApproximateBayesianLogisticRegression:
         var = np.square(L_inv_X).sum(axis=0)
         var += self.GAUSSIAN_CDF_APPROX_FACTOR
 
-        values = mu / np.sqrt(var)
-        return scipy.stats.norm(0, 1).cdf(values)
+        return self.standard_normal_dist.cdf(mu / np.sqrt(var))
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         """
@@ -110,25 +116,28 @@ class ApproximateBayesianLogisticRegression:
         # compute gaussian approximation mean and (inverse) covariance matrix
         self.mean = self._compute_map_estimator(A)
 
-        # compute cholesky decomposition of H
+        # compute Cholesky decomposition of H
         H = self._compute_hessian(self.mean, X)
         self.L = np.linalg.cholesky(H)
-
-        # sample from multivariate gaussian N(w, H^-1)
-        # H = L L^T -> H^-1 = L^-T L^-1 -> SAMPLES = w + L^-T Z
-        # Z = np.random.normal(size=(X.shape[1], n_samples))
-        # samples = scipy.linalg.solve_triangular(L, Z, lower=True, trans=1).T  # compute Z^T L^-1
-        # samples += w
 
     def _compute_map_estimator(self, A):
         w0 = np.zeros(A.shape[1])
         res = minimize(
-            self._loss, w0, method="L-BFGS-B", jac=True,
+            self._loss, w0, method='L-BFGS-B', jac=True,
             args=(A,),
             options=self.opt_options
         )
-        w = res.x
-        return w
+
+        if not res.success:
+            raise RuntimeError('Optimization failed: MAP estimator could not be computed.')
+
+        return res.x
+
+    def _loss(self, w, A):
+        m = A.dot(w)
+        loss = np.logaddexp(0, m).sum() + 0.5 * self.info * w.dot(w)
+        grad = A.T.dot(expit(m)) + self.info * w
+        return loss, grad
 
     def _compute_hessian(self, w, X):
         P = expit(X.dot(w))
@@ -136,11 +145,3 @@ class ApproximateBayesianLogisticRegression:
         H = np.einsum('i,ir,is -> rs', P, X, X)
         H[np.diag_indices_from(H)] += max(1e-12, self.info)
         return H
-
-    def _loss(self, w, A):
-        m = A.dot(w)
-        # e = np.exp(m)
-        #loss = np.log1p(e).sum() + 0.5 * self.info * w.dot(w)
-        loss = np.logaddexp(0, m).sum() + 0.5 * self.info * w.dot(w)
-        grad = A.T.dot(expit(m)) + self.info * w
-        return loss, grad

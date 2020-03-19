@@ -18,7 +18,7 @@ from typing import Union
 
 from .bayesian import ApproximateBayesianLogisticRegression
 from .kernel import KernelBayesianLogisticRegression
-from .linear import BayesianLogisticRegression, DeterministicLogisticRegression, BayesianLogisticRegressionBase
+from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression, BayesianLogisticRegressionBase
 from ..uncertainty import UncertaintySampler
 
 
@@ -48,7 +48,7 @@ class BayesianLinearVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
                  sampler: str = 'approximate', prior: str = 'improper', prior_std: float = 1.0, suppress_warnings: bool = True):
         if sampler == 'stan':
-            logreg = BayesianLogisticRegression(
+            logreg = StanBayesianLogisticRegression(
                 n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
                 prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
             )
@@ -84,7 +84,7 @@ class BayesianKernelVersionSpace(VersionSpaceBase):
                  sampler: str = 'approximate', prior: str = 'improper', prior_std: float = 1.0, suppress_warnings: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         if sampler == 'stan':
-            logreg = BayesianLogisticRegression(
+            logreg = StanBayesianLogisticRegression(
                 n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
                 prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
             )

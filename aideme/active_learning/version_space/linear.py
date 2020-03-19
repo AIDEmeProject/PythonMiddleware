@@ -94,7 +94,7 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
         return (self._margin(X) > 0).astype('float')
 
 
-class BayesianLogisticRegression(BayesianLogisticRegressionBase):
+class StanBayesianLogisticRegression(BayesianLogisticRegressionBase):
     """
     LOGISTIC POSTERIOR
         p(w | X, y) ~= exp(-|w|^2 / sigma^2) * \prod_i 1 / (1 + exp(-y_i X_i^T w))
@@ -108,8 +108,10 @@ class BayesianLogisticRegression(BayesianLogisticRegressionBase):
         :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
         :param thin: how many iterations to skip between samples
-        :param sigma: gaussian prior standard deviation. Works as a L2 regularization (the lower sigma is, the more regularization)
         :param add_intercept: whether to add an intercept or not
+        :param prior: prior for logistic regression weights. Available options are: 'gaussian', 'cauchy', and 'improper'
+        :param prior_std: standard deviation of prior distribution. It has no effect for 'improper' prior.
+        :param suppress_warnings: whether to suppress all pystan warning log messages
         """
         sampler = StanLogisticRegressionSampler(warmup=warmup, thin=thin, prior=prior, prior_std=prior_std,
                                                 suppress_warnings=suppress_warnings,)
