@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from typing import Union
 
-from .bayesian import ApproximateBayesianLogisticRegression, ApproximateKernelBayesianLogisticRegression
+from .bayesian import LaplaceBayesianLogisticRegression, KernelLaplaceBayesianLogisticRegression
 from .kernel import KernelBayesianLogisticRegression
 from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression, BayesianLogisticRegressionBase
 from ..uncertainty import UncertaintySampler
@@ -46,14 +46,15 @@ class LinearVersionSpace(VersionSpaceBase):
 
 class BayesianLinearVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
-                 sampler: str = 'approximate', prior: str = 'improper', prior_std: float = 1.0, suppress_warnings: bool = True):
+                 sampler: str = 'laplace', prior: str = 'improper', prior_std: float = 1.0,
+                 tol: float = 1e-6, max_iter: int = 10000, suppress_warnings: bool = True):
         if sampler == 'stan':
             logreg = StanBayesianLogisticRegression(
                 n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
                 prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
             )
-        elif sampler == 'approximate':
-            logreg = ApproximateBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept)
+        elif sampler == 'laplace':
+            logreg = LaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
         else:
             raise ValueError("Unknown sampler option: {}".format(sampler))
 
@@ -81,19 +82,20 @@ class KernelVersionSpace(VersionSpaceBase):
 
 class BayesianKernelVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
-                 sampler: str = 'approximate', prior: str = 'improper', prior_std: float = 1.0, suppress_warnings: bool = True,
+                 sampler: str = 'laplace', prior: str = 'improper', prior_std: float = 1.0,
+                 tol: float = 1e-6, max_iter: int = 10000, suppress_warnings: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         if sampler == 'stan':
             logreg = StanBayesianLogisticRegression(
                 n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
                 prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
             )
-        elif sampler == 'approximate-linear':
-            logreg = ApproximateBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept)
-        elif sampler == 'approximate-kernel':
-            logreg = ApproximateKernelBayesianLogisticRegression(prior=prior, prior_std=prior_std)
+        elif sampler == 'laplace':
+            logreg = LaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
+        elif sampler == 'kernel-laplace':
+            logreg = KernelLaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
         else:
-            raise ValueError("Unknown sampler option: {}".format(sampler))
+            raise ValueError("Unknown sampler option: {}. Available options are: 'stan', 'laplace', and 'kernel-laplace'.".format(sampler))
 
         kernel_logreg = KernelBayesianLogisticRegression(
             logreg, decompose=False,

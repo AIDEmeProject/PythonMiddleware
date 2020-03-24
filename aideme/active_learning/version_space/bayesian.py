@@ -40,7 +40,7 @@ from scipy.stats import norm
 from aideme.utils import assert_positive
 
 
-class ApproximateBayesianLogisticRegression:
+class LaplaceBayesianLogisticRegression:
 
     GAUSSIAN_CDF_APPROX_FACTOR = 8 / np.pi
 
@@ -148,7 +148,7 @@ class ApproximateBayesianLogisticRegression:
         return H
 
 
-class ApproximateKernelBayesianLogisticRegression:
+class KernelLaplaceBayesianLogisticRegression:
     GAUSSIAN_CDF_APPROX_FACTOR = 8 / np.pi
 
     def __init__(self, prior: str = 'gaussian', prior_std: float = 1.0, add_intercept=False, tol: float = 1e-6, max_iter: int = 10000):
