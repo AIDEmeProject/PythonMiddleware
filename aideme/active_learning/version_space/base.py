@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from typing import Union
 
-from .bayesian import ApproximateBayesianLogisticRegression
+from .bayesian import ApproximateBayesianLogisticRegression, ApproximateKernelBayesianLogisticRegression
 from .kernel import KernelBayesianLogisticRegression
 from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression, BayesianLogisticRegressionBase
 from ..uncertainty import UncertaintySampler
@@ -88,8 +88,10 @@ class BayesianKernelVersionSpace(VersionSpaceBase):
                 n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
                 prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
             )
-        elif sampler == 'approximate':
+        elif sampler == 'approximate-linear':
             logreg = ApproximateBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept)
+        elif sampler == 'approximate-kernel':
+            logreg = ApproximateKernelBayesianLogisticRegression(prior=prior, prior_std=prior_std)
         else:
             raise ValueError("Unknown sampler option: {}".format(sampler))
 
