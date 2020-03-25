@@ -14,16 +14,15 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-from typing import Union
 
 from .bayesian import LaplaceBayesianLogisticRegression, KernelLaplaceBayesianLogisticRegression
 from .kernel import KernelBayesianLogisticRegression
-from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression, BayesianLogisticRegressionBase
+from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression
 from ..uncertainty import UncertaintySampler
 
 
 class VersionSpaceBase(UncertaintySampler):
-    def __init__(self, logreg: Union[KernelBayesianLogisticRegression, BayesianLogisticRegressionBase]):
+    def __init__(self, logreg):
         UncertaintySampler.__init__(self, logreg)
 
     def clear(self) -> None:
@@ -93,7 +92,7 @@ class BayesianKernelVersionSpace(VersionSpaceBase):
         elif sampler == 'laplace':
             logreg = LaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
         elif sampler == 'kernel-laplace':
-            logreg = KernelLaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
+            logreg = KernelLaplaceBayesianLogisticRegression(prior_std=prior_std, tol=tol, max_iter=max_iter)
         else:
             raise ValueError("Unknown sampler option: {}. Available options are: 'stan', 'laplace', and 'kernel-laplace'.".format(sampler))
 

@@ -17,14 +17,11 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 import numpy as np
 import scipy.linalg
 from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
-
-if TYPE_CHECKING:
-    from .linear import BayesianLogisticRegressionBase
 
 
 class KernelBayesianLogisticRegression:
@@ -33,7 +30,7 @@ class KernelBayesianLogisticRegression:
     the Kernel matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined).
     """
 
-    def __init__(self, logreg: BayesianLogisticRegressionBase, decompose: bool = False,
+    def __init__(self, logreg, decompose: bool = False,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         self.logreg = logreg
         self.decompose = decompose
