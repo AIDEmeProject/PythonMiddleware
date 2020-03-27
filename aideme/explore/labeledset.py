@@ -87,10 +87,16 @@ class LabeledSet:
         index = np.hstack([self.index, labeled_set.index])
         return LabeledSet(labels, partial, index)
 
-    def asdict(self) -> Metrics:
+    def asdict(self, noisy: bool = False) -> Metrics:
         """
         :return: a dict containing all index and labels information
         """
+        if noisy:
+            return {
+                'noisy_final_labels': self.labels.tolist(),
+                'noisy_partial_labels': self.partial.tolist(),
+            }
+
         return {
             'labeled_indexes': self.index.tolist(),
             'final_labels': self.labels.tolist(),

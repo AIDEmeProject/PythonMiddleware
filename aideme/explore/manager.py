@@ -16,10 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-import random
-from typing import Tuple, Optional, TYPE_CHECKING, List, Sequence
-
-import numpy as np
+from typing import Optional, TYPE_CHECKING, Sequence
 
 from ..utils import assert_positive_integer, process_callback, metric_logger
 from ..utils.convergence import all_points_are_labeled
@@ -62,29 +59,21 @@ class ExplorationManager:
         self.convergence_criteria = process_callback(convergence_criteria)
         self.convergence_criteria.append(all_points_are_labeled)
 
-        self.__initial_sampling_iters = 0
-        self.__exploration_iters = 0
+        self.__iters = 0
 
     @property
-    def initial_sampling_iters(self) -> int:
+    def iters(self) -> int:
         """
-        :return: How many initial sampling iterations have gone so far.
+        :return: How many iterations have gone so far. One iteration is considered to end when 'update()' is called
         """
-        return self.__initial_sampling_iters
-
-    @property
-    def exploration_iters(self) -> int:
-        """
-        :return: How many exploration iterations have gone so far.
-        """
-        return self.__exploration_iters
+        return self.__iters
 
     @property
     def phase(self) -> str:
         """
         :return: a string corresponding to the current iteration phase.
         """
-        return 'exploration' if self.is_exploration_phase else 'initial_sampling' if self.__initial_sampling_iters > 0 else 'begin'
+        return 'exploration' if self.is_exploration_phase else 'initial_sampling'
 
     @property
     def is_exploration_phase(self) -> bool:
@@ -101,86 +90,61 @@ class ExplorationManager:
         """
         return not self.is_exploration_phase
 
-    def clear(self, seed: Optional[int] = None) -> None:
+    def clear(self) -> None:
         """
         Resets the internal state of all data structures and objects.
-        :param seed: seed for numpy's internal RNG. Set this if you need reproducible results.
         """
-        self.__set_random_state(seed)
-
         self.data.clear()
         self.active_learner.clear()
         self.__initial_sampling_iters = 0
         self.__exploration_iters = 0
 
-    def __set_random_state(self, seed: Optional[int] = None) -> None:
-        np.random.seed(seed)  # Seeds numpy's internal RNG
-        random.seed(seed)  # Seeds python's internal RNG
+    @metric_logger.log_execution_time('fit_time')
+    def update(self, labeled_set: LabeledSet) -> None:
+        """
+        Updates the Active Learning model and internal data structures. Call to this method marks the end of an "iteration".
+        :param labeled_set: collection of new user labeled points
+        """
+        self.data.move_to_labeled(labeled_set)
 
-    def advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, Metrics, bool]:
-        idx, converged = self.__advance(labeled_set)
+        if self.is_exploration_phase:
+            self.active_learner.fit_data(self.data)
 
+        self.__iters += 1
+
+    @metric_logger.log_execution_time('get_next_time')
+    def get_next_to_label(self):
+        """
+        :return: the index of the next points to be labeled
+        """
+        return self.initial_sampler(self.data) if self.is_initial_sampling_phase else self.__exploration_advance()
+
+    def __exploration_advance(self) -> Sequence:
+        if self.data.unlabeled_size == 0:
+            return []
+
+        return self.active_learner.next_points_to_label(self.data, self.subsampling).index
+
+    def converged(self) -> bool:
+        """
+        :return: whether the exploration is to be stopped or not
+        """
+        return any((criterion(self, metric_logger.get_metrics()) for criterion in self.convergence_criteria))
+
+    def get_metrics(self) -> Metrics:
+        """
+        :return: a dictionary of all iteration metrics. Callbacks are also included every 'callback_skip' iterations.
+        """
         if self.__is_callback_computation_iter():
             metric_logger.log_metrics(self.__get_callback_metrics())
 
         metrics = metric_logger.get_metrics()
         metric_logger.flush()  # avoid overlapping metrics between iterations
 
-        return idx, metrics, converged
-
-    @metric_logger.log_execution_time('iter_time')
-    def __advance(self, labeled_set: Optional[LabeledSet] = None) -> Tuple[Sequence, bool]:
-        """
-        Updates current model with new labeled data and computes new point to be labeled.
-        :param labeled_set: a LabeledSet instance containing the new labeled points by the user
-        :return: index of next point to be labeled, metrics
-        """
-        metric_logger.log_metric('phase', self.phase)
-
-        self.__update_partitions(labeled_set)
-
-        idx = self.__initial_sampling_advance() if self.is_initial_sampling_phase else self.__exploration_advance()
-        return idx, self.__converged()
-
-    def __update_partitions(self, labeled_set: Optional[LabeledSet]) -> None:
-        if labeled_set is not None:
-            self.data.move_to_labeled(labeled_set)
-            metric_logger.log_metrics(labeled_set.asdict())
-
-    def __initial_sampling_advance(self) -> Sequence:
-        if self.initial_sampler is None:
-            raise RuntimeError("No initial sampler was provided.")
-
-        idx = self.initial_sampler(self.data)
-
-        self.__initial_sampling_iters += 1
-
-        return idx
-
-    def __exploration_advance(self) -> Sequence:
-        self.__fit_learner()
-
-        idx: List = []
-        if self.data.unlabeled_size > 0:
-            idx = self.__get_next_point_to_label()
-
-        self.__exploration_iters += 1
-
-        return idx
-
-    @metric_logger.log_execution_time('fit_time')
-    def __fit_learner(self):
-        self.active_learner.fit_data(self.data)
-
-    @metric_logger.log_execution_time('get_next_time')
-    def __get_next_point_to_label(self):
-        return self.active_learner.next_points_to_label(self.data, self.subsampling).index
+        return metrics
 
     def __is_callback_computation_iter(self) -> bool:
-        return self.exploration_iters > 0 and (self.exploration_iters - 1) % self.callback_skip == 0 or self.__converged()
-
-    def __converged(self) -> bool:
-        return any((criterion(self, metric_logger.get_metrics()) for criterion in self.convergence_criteria))
+        return (self.iters - 1) % self.callback_skip == 0 or self.converged()
 
     @metric_logger.log_execution_time('callback_time')
     def __get_callback_metrics(self) -> Metrics:

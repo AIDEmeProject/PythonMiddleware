@@ -18,6 +18,6 @@
 from .labeledset import LabeledSet
 from .partitioned import PartitionedDataset
 from .manager import ExplorationManager
-from .explore import PoolBasedExploration, CommandLineExploration
+from .explore import PoolBasedExploration
 
-__all__ = ['PoolBasedExploration', 'CommandLineExploration', 'ExplorationManager', 'LabeledSet', 'PartitionedDataset']
+__all__ = ['PoolBasedExploration', 'ExplorationManager', 'LabeledSet', 'PartitionedDataset']

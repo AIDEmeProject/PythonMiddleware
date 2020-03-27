@@ -16,13 +16,15 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
+import random
 from typing import Optional, List, TYPE_CHECKING, Sequence, Union, Generator
+
+import numpy as np
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback
 
 if TYPE_CHECKING:
-    import numpy as np
     from ..active_learning import ActiveLearner
     from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed, NoiseInjector
     RunType = Generator[Metrics, None, None]
@@ -91,20 +93,28 @@ class PoolBasedExploration:
         return runs if return_generator else [list(run) for run in runs]
 
     def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> RunType:
-        manager.clear(seed)
+        manager.clear()
+        self.__set_random_state(seed)
 
-        labeled_set = self.__inject_noise(labeled_set)
+        while not manager.converged():
+            metrics = {'phase': manager.phase}
 
-        converged, new_labeled_set = False, None
-        while not converged:
-            idx, metrics, converged = manager.advance(new_labeled_set)
+            idx = manager.get_next_to_label()
 
+            new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
+            metrics.update(new_labeled_set.asdict())
+
+            if self.noise_injector and manager.is_exploration_phase:
+                new_labeled_set = self.noise_injector(new_labeled_set)
+                metrics.update(new_labeled_set.asdict(noisy=True))
+
+            manager.update(new_labeled_set)
+
+            metrics.update(manager.get_metrics())
             yield metrics
 
-            # TODO: Problem: small chance of flipping initial sampling labels. Is this expected behavior? What about other forms of initial sampling?
-            new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
-
-    def __get_seed(self, seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
+    @staticmethod
+    def __get_seed(seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
         if seed is None:
             seed = [None] * repeat
         elif isinstance(seed, int):
@@ -115,79 +125,10 @@ class PoolBasedExploration:
 
         return seed
 
+    @staticmethod
+    def __set_random_state(seed: Optional[int] = None) -> None:
+        np.random.seed(seed)  # Seeds numpy's internal RNG
+        random.seed(seed)  # Seeds python's internal RNG
+
     def __inject_noise(self, labeled_set: LabeledSet) -> LabeledSet:
         return labeled_set if self.noise_injector is None else self.noise_injector(labeled_set)
-
-
-class CommandLineExploration:
-    """
-    A class for running the exploration process on the command line.
-    """
-
-    def __init__(self, initial_sampler: Optional[InitialSampler] = None, subsampling: Optional[int] = None,
-                 callback: FunctionList[Callback] = None, callback_skip: int = 1,
-                 convergence_criteria: FunctionList[Convergence] = None):
-        """
-        :param initial_sampler: InitialSampler object. If None, no initial sampling will be done
-        :param subsampling: sample size of unlabeled points when looking for the next point to label
-        :param callback: a list of callback functions. For more info, check utils/metrics.py
-        :param callback_skip: compute callback every callback_skip iterations
-        :param convergence_criteria: a list of convergence criterias. For more info, check utils/convergence.py
-        """
-        assert_positive_integer(subsampling, 'subsampling', allow_none=True)
-        assert_positive_integer(callback_skip, 'callback_skip')
-
-        self.initial_sampler = initial_sampler
-        self.subsampling = subsampling
-
-        self.callbacks = process_callback(callback)
-        self.callback_skip = callback_skip
-        self.convergence_criteria = process_callback(convergence_criteria)
-
-    def run(self, X, active_learner: ActiveLearner) -> None:
-        data = PartitionedDataset(X, copy=False)
-
-        manager = ExplorationManager(
-            data, active_learner, self.subsampling, self.initial_sampler,
-            self.callbacks, self.callback_skip,
-            self.convergence_criteria
-        )
-
-        print('Welcome to the manual exploration process. \n')
-
-        idx, metrics, converged = manager.advance()
-
-        while not converged and self._is_willing:
-            labels = self._label(idx, X[idx])
-            idx, metrics, converged = manager.advance(labels)
-
-    @property
-    def _is_willing(self) -> bool:
-        val = input("Continue (y/n): ")
-        while val not in ['y', 'n']:
-            val = input("Continue (y/n): ")
-
-        return True if val == 'y' else False
-
-    def _label(self, idx, pts) -> LabeledSet:
-        is_valid, labels = self.__is_valid_input(pts)
-        while not is_valid:
-            is_valid, labels = self.__is_valid_input(pts)
-        return LabeledSet(labels, index=idx)
-
-    @staticmethod
-    def __is_valid_input(pts):
-        s = input("Give the labels for the following points: {}\n".format(pts.tolist()))
-        expected_size = len(pts)
-
-        if not set(s).issubset({' ', '0', '1'}):
-            print("Invalid character in labels. Only 0, 1 and ' ' are permitted.\n")
-            return False, None
-
-        vals = s.split()
-        if len(vals) != expected_size:
-            print('Incorrect number of labels: got {} but expected {}\n'.format(len(vals), expected_size))
-            return False, None
-
-        print()
-        return True, [int(x) for x in vals]
