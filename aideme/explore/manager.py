@@ -16,6 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
+import enum
 from typing import Optional, TYPE_CHECKING, Sequence
 
 from ..utils import assert_positive_integer, process_callback, metric_logger
@@ -25,6 +26,11 @@ if TYPE_CHECKING:
     from . import LabeledSet, PartitionedDataset
     from ..active_learning import ActiveLearner
     from ..utils import InitialSampler, FunctionList, Callback, Convergence, Metrics
+
+
+class Phase(enum.Enum):
+    INITIAL = 'initial_sampling'
+    EXPLORE = 'exploration'
 
 
 class ExplorationManager:
@@ -69,11 +75,11 @@ class ExplorationManager:
         return self.__iters
 
     @property
-    def phase(self) -> str:
+    def phase(self) -> Phase:
         """
         :return: a string corresponding to the current iteration phase.
         """
-        return 'exploration' if self.is_exploration_phase else 'initial_sampling'
+        return Phase.EXPLORE if self.is_exploration_phase else Phase.INITIAL
 
     @property
     def is_exploration_phase(self) -> bool:

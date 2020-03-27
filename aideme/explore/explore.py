@@ -97,7 +97,7 @@ class PoolBasedExploration:
         self.__set_random_state(seed)
 
         while not manager.converged():
-            metrics = {'phase': manager.phase}
+            metrics = {'phase': manager.phase.value}
 
             idx = manager.get_next_to_label()
 
