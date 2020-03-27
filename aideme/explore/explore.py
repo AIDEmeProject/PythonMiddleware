@@ -22,7 +22,7 @@ from typing import Optional, List, TYPE_CHECKING, Sequence, Union, Generator
 import numpy as np
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
-from ..utils import assert_positive_integer, process_callback
+from ..utils import assert_positive_integer, process_callback, metric_logger
 
 if TYPE_CHECKING:
     from ..active_learning import ActiveLearner
@@ -97,21 +97,26 @@ class PoolBasedExploration:
         self.__set_random_state(seed)
 
         while not manager.converged():
-            metrics = {'phase': manager.phase.value}
-
-            idx = manager.get_next_to_label()
-
-            new_labeled_set = labeled_set.get_index(idx)  # "User labeling"
-            metrics.update(new_labeled_set.asdict())
-
-            if self.noise_injector and manager.is_exploration_phase:
-                new_labeled_set = self.noise_injector(new_labeled_set)
-                metrics.update(new_labeled_set.asdict(noisy=True))
-
-            manager.update(new_labeled_set)
-
+            metrics = self.__run_single_iter(labeled_set, manager)
             metrics.update(manager.get_metrics())
             yield metrics
+
+    @metric_logger.log_execution_time('iter_time')
+    def __run_single_iter(self, labeled_set, manager):
+        metrics = {'phase': manager.phase.value}
+
+        idx = manager.get_next_to_label()
+
+        new_labeled_set = labeled_set.get_index(idx)  # 'User labeling'
+        metrics.update(new_labeled_set.asdict())
+
+        if self.noise_injector and manager.is_exploration_phase:
+            new_labeled_set = self.noise_injector(new_labeled_set)
+            metrics.update(new_labeled_set.asdict(noisy=True))
+
+        manager.update(new_labeled_set)
+
+        return metrics
 
     @staticmethod
     def __get_seed(seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:

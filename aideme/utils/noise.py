@@ -47,8 +47,18 @@ def random_noise_injector(noise: float, skip_initial: int = 0) -> NoiseInjector:
 
     def injector(labeled_set: LabeledSet) -> LabeledSet:
         noisy_labels = __flip(labeled_set.labels, noise)
-        # TODO: check the way noise is added to partial labels
-        noisy_partial_labels = __flip(labeled_set.partial, noise) if labeled_set.partial.shape[1] > 1 else None
+
+        noisy_partial_labels = None
+        if labeled_set.num_partitions > 1:
+            noisy_partial_labels = labeled_set.partial.copy()
+
+            # if label changed from 0 to 1, set all partial labels to 1
+            noisy_partial_labels[np.logical_and(labeled_set.labels == 0, noisy_labels == 1)] = 1
+
+            # if label changed from 1 to 0, select a random subspace to flip label
+            mask = np.logical_and(labeled_set.labels == 1, noisy_labels == 0)
+            noisy_partial_labels[mask, np.random.randint(0, labeled_set.num_partitions, size=mask.sum())] = 0
+
         return LabeledSet(noisy_labels, noisy_partial_labels, labeled_set.index.copy())
 
     return __skip_initial_points(injector, skip_initial)

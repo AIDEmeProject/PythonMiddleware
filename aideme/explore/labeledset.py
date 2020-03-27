@@ -71,6 +71,10 @@ class LabeledSet:
     def __len__(self):
         return len(self.labels)
 
+    @property
+    def num_partitions(self):
+        return self.partial.shape[1]
+
     def get_index(self, idx):
         rows = self.__index_to_row.get_rows(idx)
         return LabeledSet(self.labels[rows], self.partial[rows], self.index[rows])
