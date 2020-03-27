@@ -102,8 +102,7 @@ class ExplorationManager:
         """
         self.data.clear()
         self.active_learner.clear()
-        self.__initial_sampling_iters = 0
-        self.__exploration_iters = 0
+        self.__iters = 0
 
     @metric_logger.log_execution_time('fit_time')
     def update(self, labeled_set: LabeledSet) -> None:
@@ -119,15 +118,15 @@ class ExplorationManager:
         self.__iters += 1
 
     @metric_logger.log_execution_time('get_next_time')
-    def get_next_to_label(self):
+    def get_next_to_label(self) -> Sequence:
         """
         :return: the index of the next points to be labeled
         """
-        return self.initial_sampler(self.data) if self.is_initial_sampling_phase else self.__exploration_advance()
-
-    def __exploration_advance(self) -> Sequence:
         if self.data.unlabeled_size == 0:
             return []
+
+        if self.is_initial_sampling_phase:
+            return self.initial_sampler(self.data)
 
         return self.active_learner.next_points_to_label(self.data, self.subsampling).index
 
@@ -137,23 +136,17 @@ class ExplorationManager:
         """
         return any((criterion(self, metric_logger.get_metrics()) for criterion in self.convergence_criteria))
 
-    def get_metrics(self) -> Metrics:
+    def get_callback_metrics(self) -> Metrics:
         """
         :return: a dictionary of all iteration metrics. Callbacks are also included every 'callback_skip' iterations.
         """
-        if self.__is_callback_computation_iter():
-            metric_logger.log_metrics(self.__get_callback_metrics())
-
-        metrics = metric_logger.get_metrics()
-        metric_logger.flush()  # avoid overlapping metrics between iterations
-
-        return metrics
+        return self.__compute_callback_metrics() if self.__is_callback_computation_iter() else {}
 
     def __is_callback_computation_iter(self) -> bool:
         return (self.iters - 1) % self.callback_skip == 0 or self.converged()
 
     @metric_logger.log_execution_time('callback_time')
-    def __get_callback_metrics(self) -> Metrics:
+    def __compute_callback_metrics(self) -> Metrics:
         metrics: Metrics = {}
 
         for callback in self.callbacks:

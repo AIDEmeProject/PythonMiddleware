@@ -93,19 +93,20 @@ class LabeledSet:
 
     def asdict(self, noisy: bool = False) -> Metrics:
         """
+        :param noisy: whether to add 'noisy' prefix to labels
         :return: a dict containing all index and labels information
         """
-        if noisy:
-            return {
-                'noisy_final_labels': self.labels.tolist(),
-                'noisy_partial_labels': self.partial.tolist(),
-            }
+        prefix = 'noisy_' if noisy else ''
 
-        return {
-            'labeled_indexes': self.index.tolist(),
-            'final_labels': self.labels.tolist(),
-            'partial_labels': self.partial.tolist(),
+        metrics = {
+            prefix + 'labels': self.labels.tolist(),
+            prefix + 'partial_labels': self.partial.tolist(),
         }
+
+        if not noisy:
+            metrics['labeled_indexes'] = self.index.tolist()
+
+        return metrics
 
     def has_positive_and_negative_labels(self):
         return len(self.labels) > 0 and 0 < self.labels.sum() < len(self.labels)

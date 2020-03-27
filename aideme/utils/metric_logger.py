@@ -68,7 +68,7 @@ def log_metrics(metrics: Metrics, on_duplicates: str = 'overwrite') -> None:
     :param on_duplicates: de-duplication strategy. See 'log_metric' for available options.
     """
     for key, value in metrics.items():
-       log_metric(key, value, on_duplicates=on_duplicates)
+        log_metric(key, value, on_duplicates=on_duplicates)
 
 
 def log_metric(key: str, value: Any, on_duplicates: str = 'overwrite') -> None:

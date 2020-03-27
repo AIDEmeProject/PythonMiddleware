@@ -16,15 +16,14 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-import random
 from typing import Optional, List, TYPE_CHECKING, Sequence, Union, Generator
-
-import numpy as np
 
 from . import LabeledSet, ExplorationManager, PartitionedDataset
 from ..utils import assert_positive_integer, process_callback, metric_logger
+from ..utils.random import set_random_state
 
 if TYPE_CHECKING:
+    import numpy as np
     from ..active_learning import ActiveLearner
     from ..utils import Callback, Convergence, InitialSampler, FunctionList, Metrics, Seed, NoiseInjector
     RunType = Generator[Metrics, None, None]
@@ -93,30 +92,33 @@ class PoolBasedExploration:
         return runs if return_generator else [list(run) for run in runs]
 
     def _run(self, manager: ExplorationManager, labeled_set: LabeledSet, seed: Optional[int]) -> RunType:
+        set_random_state(seed)
+
         manager.clear()
-        self.__set_random_state(seed)
 
         while not manager.converged():
-            metrics = self.__run_single_iter(labeled_set, manager)
-            metrics.update(manager.get_metrics())
-            yield metrics
+            metric_logger.flush()  # avoid overlapping metrics between iterations
+            metric_logger.log_metric('phase', manager.phase.value)
+
+            self.__run_single_iter(labeled_set, manager)
+
+            metric_logger.log_metrics(manager.get_callback_metrics())
+            yield metric_logger.get_metrics()
+
+        metric_logger.flush()
 
     @metric_logger.log_execution_time('iter_time')
-    def __run_single_iter(self, labeled_set, manager):
-        metrics = {'phase': manager.phase.value}
-
+    def __run_single_iter(self, labeled_set: LabeledSet, manager: ExplorationManager) -> None:
         idx = manager.get_next_to_label()
 
-        new_labeled_set = labeled_set.get_index(idx)  # 'User labeling'
-        metrics.update(new_labeled_set.asdict())
+        user_labels = labeled_set.get_index(idx)  # 'User labeling'
+        metric_logger.log_metrics(user_labels.asdict())
 
         if self.noise_injector and manager.is_exploration_phase:
-            new_labeled_set = self.noise_injector(new_labeled_set)
-            metrics.update(new_labeled_set.asdict(noisy=True))
+            user_labels = self.noise_injector(user_labels)
+            metric_logger.log_metrics(user_labels.asdict(noisy=True))
 
-        manager.update(new_labeled_set)
-
-        return metrics
+        manager.update(user_labels)
 
     @staticmethod
     def __get_seed(seed: Union[Seed, Sequence[Seed]], repeat: int) -> Sequence[Seed]:
@@ -129,11 +131,6 @@ class PoolBasedExploration:
             raise ValueError("Expected {} seed values, but got {} instead.".format(repeat, len(seed)))
 
         return seed
-
-    @staticmethod
-    def __set_random_state(seed: Optional[int] = None) -> None:
-        np.random.seed(seed)  # Seeds numpy's internal RNG
-        random.seed(seed)  # Seeds python's internal RNG
 
     def __inject_noise(self, labeled_set: LabeledSet) -> LabeledSet:
         return labeled_set if self.noise_injector is None else self.noise_injector(labeled_set)
