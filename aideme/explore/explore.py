@@ -115,7 +115,7 @@ class PoolBasedExploration:
         metric_logger.log_metrics(user_labels.asdict())
 
         if self.noise_injector and manager.is_exploration_phase:
-            user_labels = self.noise_injector(user_labels)
+            user_labels = self.noise_injector(manager.iters, user_labels)
             metric_logger.log_metrics(user_labels.asdict(noisy=True))
 
         manager.update(user_labels)
@@ -131,6 +131,3 @@ class PoolBasedExploration:
             raise ValueError("Expected {} seed values, but got {} instead.".format(repeat, len(seed)))
 
         return seed
-
-    def __inject_noise(self, labeled_set: LabeledSet) -> LabeledSet:
-        return labeled_set if self.noise_injector is None else self.noise_injector(labeled_set)

@@ -45,7 +45,7 @@ def random_noise_injector(noise: float, skip_initial: int = 0) -> NoiseInjector:
     if noise < 0 or noise > 1:
         raise ValueError("Noise must be between 0 and 1, but got {}".format(noise))
 
-    def injector(labeled_set: LabeledSet) -> LabeledSet:
+    def injector(iteration: int, labeled_set: LabeledSet) -> LabeledSet:
         noisy_labels = __flip(labeled_set.labels, noise)
 
         noisy_partial_labels = None
@@ -72,12 +72,8 @@ def __skip_initial_points(noise_injector: NoiseInjector, skip_initial: int) -> N
     """
     assert_non_negative_integer(skip_initial, 'skip_initial')
 
-    skipped = 0
-
-    def injector(labeled_set: LabeledSet) -> LabeledSet:
-        nonlocal skipped
-        skipped += 1
-        return noise_injector(labeled_set) if skipped > skip_initial else labeled_set
+    def injector(iteration: int, labeled_set: LabeledSet) -> LabeledSet:
+        return noise_injector(iteration, labeled_set) if iteration > skip_initial else labeled_set
 
     return injector
 

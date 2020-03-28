@@ -38,4 +38,4 @@ Seed = Optional[int]
 Partition = Sequence[Union[slice, Sequence[int]]]
 HyperPlane = Tuple[float, np.ndarray]
 
-NoiseInjector = Callable[[LabeledSet], LabeledSet]
+NoiseInjector = Callable[[int, LabeledSet], LabeledSet]
