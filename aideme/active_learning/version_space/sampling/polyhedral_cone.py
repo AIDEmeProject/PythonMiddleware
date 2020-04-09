@@ -83,7 +83,7 @@ class BoundedPolyhedralCone:
 
     def get_separating_oracle(self, point: np.ndarray) -> Optional[HyperPlane]:
         """
-        For any given point, find a half-space H(b, g) = {x: b + g^T x < 0} separating the point from the version_space, i.e.:
+        For any given point, find a half-space H(b, g) = {x: g^T x < b} separating the point from the version_space, i.e.:
 
                 version_space contained in H(b, g)   AND   point not in H(b, g)
 
