@@ -17,21 +17,22 @@
 from libc.math cimport sqrt
 from cython import boundscheck, wraparound, cdivision
 
+
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
 cpdef void partial_cholesky(double[:, ::1] L, double[:, ::1] K):
-    cdef int n = K.shape[0], dim = K.shape[1]
+    cdef int n = K.shape[0], dim = K.shape[1] - 1
     cdef double sum
 
     for i in range(n):
         sum = 0
 
-        for j in range(dim - 1):
+        for j in range(dim):
             for k in range(j):
                 K[i, j] -= K[i, k] * L[j, k]
 
             K[i, j] /= L[j, j]
             sum += K[i, j] * K[i, j]
 
-        K[i, dim - 1] = sqrt(1 - sum)
+        K[i, dim] = sqrt(1 - sum)  # TODO: replace 1 with kernel(x[j], x[j])

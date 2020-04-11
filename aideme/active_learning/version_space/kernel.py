@@ -24,7 +24,6 @@ import scipy
 from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
 
 from aideme.utils import metric_logger
-from kernel_helper import partial_cholesky
 
 
 class KernelBayesianLogisticRegression:
@@ -63,12 +62,12 @@ class KernelBayesianLogisticRegression:
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         K = self.__preprocess_fit(X)
 
-        self.logreg.fit(K, y)
-
-        # cache training data
         self.X_train = X
         if self.decompose:
             self.L_train = K
+            K = np.hstack([K, np.zeros(shape=(len(K), 1))])
+
+        self.logreg.fit(K, y)
 
     @metric_logger.log_execution_time('preprocess_fit')
     def __preprocess_fit(self, X_train):
@@ -78,11 +77,10 @@ class KernelBayesianLogisticRegression:
             return K
 
         # inplace Cholesky decomposition
-        # see https://stackoverflow.com/questions/14408873/how-to-do-in-place-cholesky-factorization-in-python
         K[np.diag_indices_from(K)] += self.jitter
-        K = scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True).T
+        K = scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True).T  # inplace Cholesky decomposition
 
-        return np.hstack([K, np.zeros(shape=(len(K), 1))])
+        return K
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return (self.predict_proba(X) > 0.5).astype('float')
@@ -97,7 +95,10 @@ class KernelBayesianLogisticRegression:
         if not self.decompose:
             return K
 
-        K = np.hstack([K, np.zeros(shape=(K.shape[0], 1))])
-        partial_cholesky(self.L_train, K)
+        # solve the system L^-1 K inplace
+        K = scipy.linalg.solve_triangular(self.L_train, K.T, lower=True, trans=0, overwrite_b=True).T
+
+        sqnorm = np.einsum('ir, ir -> i', K, K).reshape(-1, 1)
+        K = np.hstack([K, np.sqrt(1 - sqnorm)])
 
         return K
