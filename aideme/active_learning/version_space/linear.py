@@ -97,7 +97,7 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
 class StanBayesianLogisticRegression(BayesianLogisticRegressionBase):
     """
     LOGISTIC POSTERIOR
-        p(w | X, y) ~= exp(-|w|^2 / sigma^2) * \prod_i 1 / (1 + exp(-y_i X_i^T w))
+        p(w | X, y) ~= exp(-|w|^2 / sigma^2) / \prod_i (1 + exp(-y_i X_i^T w))
 
     Basically, we have chosen a centered gaussian prior and a logistic likelihood function.
     """

@@ -18,12 +18,18 @@ def get_extension_modules(use_cython):
         Extension(
             'version_space_helper',
             sources=['aideme/active_learning/version_space/sampling/version_space_helper' + ext]
-        )
+        ),
+        Extension(
+            'kernel_helper',
+            sources=['aideme/active_learning/version_space/kernel_helper' + ext]
+        ),
     ]
 
     if use_cython:
         from Cython.Build import cythonize
-        extension_modules = cythonize(extension_modules, language_level='3')
+        #import Cython.Compiler.Options
+        #Cython.Compiler.Options.annotate = True
+        extension_modules = cythonize(extension_modules, language_level='3', annotate=True)
 
     return extension_modules
 

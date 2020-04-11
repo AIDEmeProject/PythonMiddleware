@@ -20,8 +20,11 @@ from functools import partial
 from typing import Optional
 
 import numpy as np
-import scipy.linalg
+import scipy
 from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
+
+from aideme.utils import metric_logger
+from kernel_helper import partial_cholesky
 
 
 class KernelBayesianLogisticRegression:
@@ -36,6 +39,8 @@ class KernelBayesianLogisticRegression:
         self.decompose = decompose
         self.jitter = jitter
         self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
+        self.X_train = None
+        self.L_train = None
 
     @staticmethod
     def __get_kernel(kernel: str, gamma: Optional[float], degree: int, coef0: float):
@@ -50,28 +55,49 @@ class KernelBayesianLogisticRegression:
 
         raise ValueError("Unsupported kernel. Available options are 'linear', 'rbf', 'poly', or any custom K(X,Y) function.")
 
-    def __preprocess(self, X: np.ndarray) -> np.ndarray:
-        return self.kernel(X, self.X_train)
-
     def clear(self):
+        self.X_train = None
+        self.L_train = None
         self.logreg.clear()
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
-        self.X_train = X
-
-        K = self.__preprocess(X)
-
-        if self.decompose:
-            K[np.diag_indices_from(K)] += self.jitter
-            K = np.linalg.cholesky(K)
+        K = self.__preprocess_fit(X)
 
         self.logreg.fit(K, y)
 
+        # cache training data
+        self.X_train = X
         if self.decompose:
-            self.logreg.weight = scipy.linalg.solve_triangular(K, self.logreg.weight.T, lower=True, trans=1).T
+            self.L_train = K
+
+    @metric_logger.log_execution_time('preprocess_fit')
+    def __preprocess_fit(self, X_train):
+        K = self.kernel(X_train)
+
+        if not self.decompose:
+            return K
+
+        # inplace Cholesky decomposition
+        # see https://stackoverflow.com/questions/14408873/how-to-do-in-place-cholesky-factorization-in-python
+        K[np.diag_indices_from(K)] += self.jitter
+        K = scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True).T
+
+        return np.hstack([K, np.zeros(shape=(len(K), 1))])
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return self.logreg.predict(self.__preprocess(X))
+        return (self.predict_proba(X) > 0.5).astype('float')
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        return self.logreg.predict_proba(self.__preprocess(X))
+        return self.logreg.predict_proba(self.__preprocess_predict(X))
+
+    @metric_logger.log_execution_time('preprocess_predict', 'append')
+    def __preprocess_predict(self, X: np.ndarray) -> np.ndarray:
+        K = self.kernel(X, self.X_train)
+
+        if not self.decompose:
+            return K
+
+        K = np.hstack([K, np.zeros(shape=(K.shape[0], 1))])
+        partial_cholesky(self.L_train, K)
+
+        return K
