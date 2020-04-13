@@ -158,3 +158,50 @@ class PolynomialKernel(Kernel):
         """
         sqsum = np.einsum('ir, ir -> i', X, X)
         return (self.gamma * sqsum + self.coef0) ** (1 / self.degree)
+
+
+class IncrementedDiagonalKernel(Kernel):
+    """
+    Given a kernel k(x, y), it computes 'incremented kernel':
+
+            k_inc(x, y) = k(x, y) + lambda * 1(x == y)
+
+    i.e., it adds a factor of lambda whenever x and y are identical.
+
+    This transformation is useful when we need a positive-definite kernel matrix K.
+    """
+    def __init__(self, kernel: Kernel, jitter: float):
+        """
+        :param kernel: kernel object
+        :param jitter: positive value to add to diagonal
+        """
+        assert_positive(jitter, 'jitter')
+
+        self._kernel = kernel
+        self._jitter = jitter
+
+    def compute(self, X: np.ndarray, Y: Optional[np.ndarray] = None) -> np.ndarray:
+        """
+        Computes the kernel matrix of all pairs of rows (X_i, Y_j). When Y is None, we add the jitter to the diagonal
+
+        :param X: a M x D matrix of data points
+        :param Y: a N x D matrix of data points. If None, we set Y = X
+        :return: the M x N kernel matrix K_ij = k(X_i, Y_j)
+        """
+        K = self._kernel(X, Y)
+
+        if Y is None:
+            K[np.diag_indices_from(K)] += self._jitter
+
+        return K
+
+    def diagonal(self, X: np.ndarray) -> np.ndarray:
+        """
+        Returns the diagonal of the kernel matrix computed over the data X
+
+        :param X: a M x D matrix of data points
+        :return: a M-dimensional array K_i = k(X_i, X_i) + jitter
+        """
+        diag = self._kernel.diagonal(X)
+        diag += self._jitter
+        return diag

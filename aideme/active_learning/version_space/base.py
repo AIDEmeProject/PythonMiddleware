@@ -65,13 +65,16 @@ class KernelVersionSpace(VersionSpaceBase):
                  cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
                  rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
-        if rounding and rounding_cache:
-            add_intercept = False  # TODO: how to add bias term with rounding_cache?
+        if not rounding:
+            rounding_cache = False
+
+        intercept_value = 0 if rounding_cache else 1
+        add_intercept = add_intercept or rounding_cache
 
         logreg = DeterministicLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin,
             cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
-            use_cython=use_cython, add_intercept=add_intercept
+            use_cython=use_cython, add_intercept=add_intercept, intercept_value=intercept_value
         )
 
         kernel_logreg = KernelBayesianLogisticRegression(

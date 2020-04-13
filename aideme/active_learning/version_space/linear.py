@@ -22,41 +22,43 @@ from .sampling import StanLogisticRegressionSampler, HitAndRunSampler
 
 
 class BayesianLogisticRegressionBase:
-    def __init__(self, sampler,  n_samples: int = 8, add_intercept: bool = True):
+    def __init__(self, sampler,  n_samples: int = 8, add_intercept: bool = True, intercept_value: float = 1.):
         """
         :param sampler: sampling method
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not
+        :param intercept_value: value in column appended to data matrix during fit
         """
         self.sampler = sampler
         self.n_samples = n_samples
         self.add_intercept = add_intercept
+        self.intercept_value = intercept_value
 
-    def clear(self):
+    def clear(self) -> None:
         self.sampler.clear()
 
-    def fit(self, X, y):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         if self.add_intercept:
-            ones = np.ones(shape=(len(X), 1))
-            X = np.hstack([ones, X])
+            intercept = np.full(shape=(len(X), 1), fill_value=self.intercept_value)
+            X = np.hstack([X, intercept])
 
         samples = self.sampler.sample(X, y, self.n_samples)
 
         if self.add_intercept:
-            self.bias, self.weight = samples[:, 0].reshape(-1, 1), samples[:, 1:]
+            self.bias, self.weight = samples[:, -1].reshape(-1, 1), samples[:, :-1]
         else:
             self.bias, self.weight = 0, samples
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         return (self.predict_proba(X) > 0.5).astype('float')
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return np.mean(self._likelihood(X), axis=0)
 
-    def _likelihood(self, X):
+    def _likelihood(self, X: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
-    def _margin(self, X):
+    def _margin(self, X: np.ndarray) -> np.ndarray:
         return self.bias + self.weight.dot(X.T)
 
 
@@ -71,7 +73,8 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
 
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
                  cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt',
-                 z_cut: bool = False, rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True):
+                 z_cut: bool = False, rounding_cache: bool = True, use_cython: bool = True,
+                 add_intercept: bool = True, intercept_value: float = 1.):
         """
         :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
@@ -88,7 +91,7 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
                                    rounding=rounding, max_rounding_iters=max_rounding_iters,
                                    strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython)
 
-        super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept)
+        super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept, intercept_value=intercept_value)
 
     def _likelihood(self, X: np.ndarray) -> np.ndarray:
         return (self._margin(X) > 0).astype('float')
