@@ -16,14 +16,11 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from functools import partial
-from typing import Optional
-
 import numpy as np
 import scipy
-from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
 
 from aideme.utils import metric_logger
+from ..kernel import Kernel
 
 
 class KernelBayesianLogisticRegression:
@@ -37,24 +34,11 @@ class KernelBayesianLogisticRegression:
         self.logreg = logreg
         self.decompose = decompose
         self.jitter = jitter
-        self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
+        self.kernel = Kernel.get(kernel, gamma=gamma, degree=degree, coef0=coef0)
         self.X_train = None
         self.L_train = None
 
-    @staticmethod
-    def __get_kernel(kernel: str, gamma: Optional[float], degree: int, coef0: float):
-        if kernel == 'linear':
-            return linear_kernel
-        elif kernel == 'poly':
-            return partial(polynomial_kernel, gamma=gamma, degree=degree, coef0=coef0)
-        elif kernel == 'rbf':
-            return partial(rbf_kernel, gamma=gamma)
-        elif callable(kernel):
-            return kernel
-
-        raise ValueError("Unsupported kernel. Available options are 'linear', 'rbf', 'poly', or any custom K(X,Y) function.")
-
-    def clear(self):
+    def clear(self) -> None:
         self.X_train = None
         self.L_train = None
         self.logreg.clear()
@@ -78,7 +62,7 @@ class KernelBayesianLogisticRegression:
 
         # inplace Cholesky decomposition
         K[np.diag_indices_from(K)] += self.jitter
-        K = scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True).T  # inplace Cholesky decomposition
+        scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True)  # inplace Cholesky decomposition
 
         return K
 
@@ -96,9 +80,9 @@ class KernelBayesianLogisticRegression:
             return K
 
         # solve the system L^-1 K inplace
-        K = scipy.linalg.solve_triangular(self.L_train, K.T, lower=True, trans=0, overwrite_b=True).T
+        scipy.linalg.solve_triangular(self.L_train, K.T, lower=True, trans=0, overwrite_b=True)
 
         sqnorm = np.einsum('ir, ir -> i', K, K).reshape(-1, 1)
-        K = np.hstack([K, np.sqrt(1 - sqnorm)])
+        K = np.hstack([K, np.sqrt(self.kernel.diagonal(X) - sqnorm)])
 
         return K
