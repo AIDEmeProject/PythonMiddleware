@@ -168,9 +168,9 @@ class SubspaceLearner(FactorizedActiveLearner):
 
 class SubspatialVersionSpace(SubspaceLearner):
     def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
-                 sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
-                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, add_intercept: bool = True,
+                 n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
+                 rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
+                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
@@ -198,10 +198,10 @@ class SubspatialVersionSpace(SubspaceLearner):
 
         base_learner = Cloneable(
             KernelVersionSpace,
-            sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
-            cache_samples=cache_samples, rounding=rounding, max_rounding_iters=max_rounding_iters,
-            strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
-            add_intercept=add_intercept, kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
+            n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
+            rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
+            strategy=strategy, z_cut=z_cut, add_intercept=add_intercept,
+            kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
         )
 
         label_function, probability_function = self.__get_proba_functions(label_function)
