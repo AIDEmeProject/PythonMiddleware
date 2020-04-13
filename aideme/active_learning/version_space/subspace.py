@@ -20,7 +20,7 @@ import numpy as np
 from .base import KernelVersionSpace
 from .categorical import CategoricalActiveLearner, MultiSetActiveLearner
 from ..active_learner import FactorizedActiveLearner
-from ..svm import SimpleMargin
+from ..margin import SimpleMargin
 
 
 class SubspaceLearner(FactorizedActiveLearner):
@@ -252,15 +252,15 @@ class SubspatialVersionSpace(SubspaceLearner):
             label_function = label_function.upper()
 
         if label_function == 'AND':
-            return ('AND', 'MIN')
+            return 'AND', 'MIN'
 
         if label_function == 'OR':
-            return ('OR', 'MAX')
+            return 'OR', 'MAX'
 
         if label_function == 'PROD':
-            return (None, 'PROD')
+            return None, 'PROD'
 
-        return (label_function, None)
+        return label_function, None
 
     @classmethod
     def __get_loss_function(cls, loss):

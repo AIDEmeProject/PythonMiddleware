@@ -17,7 +17,7 @@
 
 from .active_learner import ActiveLearner, FactorizedActiveLearner
 from .random import RandomSampler
-from .svm import *
+from .margin import *
 from .dsm import DualSpaceModel, FactorizedDualSpaceModel
 from .uncertainty import UncertaintySampler
 from .version_space import *
