@@ -22,7 +22,7 @@ setup(
     # CONTACT and URLS
     maintainer='Luciano Di Palma',
     maintainer_email='luciano.di-palma@polytechnique.edu',
-    url='http://aideme.netflify.com/',  # project home page
+    url='https://aideme.netlify.app',  # project home page
     project_urls={
         'Source Code': 'https://gitlab.inria.fr/ldipalma/aideme/'
     },
