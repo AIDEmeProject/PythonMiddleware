@@ -72,14 +72,14 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
     """
 
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
-                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt',
-                 z_cut: bool = False, rounding_cache: bool = True, use_cython: bool = True,
+                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt',
+                 z_cut: bool = False, rounding_cache: bool = True,
                  add_intercept: bool = True, intercept_value: float = 1.):
         """
         :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
         :param thin: how many iterations to skip between samples
-        :param cache: whether to cache previous samples in order to speed-up 'initial point' computation in hit-and-run.
+        :param cache_samples: whether to cache previous samples in order to speed-up 'initial point' computation in hit-and-run.
         :param rounding: whether to apply a rounding procedure in the 'deterministic' sampling.
         :param max_rounding_iters: maximum number of iterations for rounding algorithm
         :param strategy: rounding strategy. Available values are: 'default' and 'opt'
@@ -87,9 +87,9 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
         :param add_intercept: whether to add an intercept or not
         """
 
-        sampler = HitAndRunSampler(warmup=warmup, thin=thin, cache=cache,
+        sampler = HitAndRunSampler(warmup=warmup, thin=thin, cache_samples=cache_samples,
                                    rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                   strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython)
+                                   strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache)
 
         super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept, intercept_value=intercept_value)
 

@@ -31,13 +31,12 @@ class VersionSpaceBase(UncertaintySampler):
 
 class LinearVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
-                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True):
+                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
+                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True):
         logreg = DeterministicLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin,
-            cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut,
-            rounding_cache=rounding_cache,
-            use_cython=use_cython, add_intercept=add_intercept
+            cache_samples=cache_samples, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut,
+            rounding_cache=rounding_cache, add_intercept=add_intercept
         )
 
         super().__init__(logreg)
@@ -63,7 +62,7 @@ class BayesianLinearVersionSpace(VersionSpaceBase):
 class KernelVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
                  cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True,
+                 rounding_cache: bool = True, add_intercept: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         if not rounding:
             rounding_cache = False
@@ -73,8 +72,8 @@ class KernelVersionSpace(VersionSpaceBase):
 
         logreg = DeterministicLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin,
-            cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
-            use_cython=use_cython, add_intercept=add_intercept, intercept_value=intercept_value
+            cache_samples=cache, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
+            add_intercept=add_intercept, intercept_value=intercept_value
         )
 
         kernel_logreg = KernelBayesianLogisticRegression(

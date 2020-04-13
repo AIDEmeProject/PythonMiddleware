@@ -18,12 +18,10 @@ from typing import Optional
 
 import numpy as np
 
-from aideme.utils import assert_positive_integer
-from .polyhedral_cone import BoundedPolyhedralCone
+from aideme.utils import assert_positive_integer, metric_logger
 from .ellipsoid import Ellipsoid
+from .polyhedral_cone import BoundedPolyhedralCone
 from .rounding import RoundingAlgorithm
-
-from aideme.utils import metric_logger
 
 
 class HitAndRunSampler:
@@ -34,15 +32,15 @@ class HitAndRunSampler:
     Reference: https://link.springer.com/content/pdf/10.1007%2Fs101070050099.pdf
     """
 
-    def __init__(self, warmup: int = 100, thin: int = 10, cache: bool = True,
+    def __init__(self, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True):
+                 rounding_cache: bool = True):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
         :param rounding: whether to apply the rounding preprocessing step. Mixing time considerably improves, but so does
         :param max_rounding_iters: maximum number of iterations of rounding algorithm
-        :param cache: whether to cache samples between iterations
+        :param cache_samples: whether to cache samples between iterations
         the running time.
         """
         assert_positive_integer(warmup, 'warmup')
@@ -51,15 +49,14 @@ class HitAndRunSampler:
         self.warmup = warmup
         self.thin = thin
 
+        self.rounding_algorithm = None
         self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters, strategy=strategy, z_cut=z_cut) if rounding else None
 
-        self.rounding_cache = rounding_cache
+        self.rounding_cache = rounding_cache if rounding else False
         self.ellipsoid_cache = None  # type: Optional[Ellipsoid]
 
-        self.cache = cache
+        self.cache = cache_samples
         self.samples = np.array([])
-
-        self.use_cython = use_cython
 
     def clear(self):
         self.ellipsoid_cache = None
@@ -75,7 +72,7 @@ class HitAndRunSampler:
         :return: samples in a numpy array (one per line)
         """
         A = X * np.where(y == 1, -1, 1).reshape(-1, 1)
-        version_space = BoundedPolyhedralCone(A, use_cython=self.use_cython)
+        version_space = BoundedPolyhedralCone(A)
 
         # rounding
         elp, rounding_matrix = None, None
@@ -123,7 +120,8 @@ class HitAndRunSampler:
             t_rand = np.random.uniform(t1, t2)
             center += t_rand * direction
 
-    def __sample_direction(self, dim: int, rounding_matrix: Optional[np.ndarray]) -> np.ndarray:
+    @staticmethod
+    def __sample_direction(dim: int, rounding_matrix: Optional[np.ndarray]) -> np.ndarray:
         direction = np.random.normal(size=dim)
         return rounding_matrix.dot(direction) if rounding_matrix is not None else direction
 
