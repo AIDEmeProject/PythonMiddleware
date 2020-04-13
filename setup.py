@@ -18,18 +18,12 @@ def get_extension_modules(use_cython):
         Extension(
             'version_space_helper',
             sources=['aideme/active_learning/version_space/sampling/version_space_helper' + ext]
-        ),
-        Extension(
-            'kernel_helper',
-            sources=['aideme/active_learning/version_space/kernel_helper' + ext]
-        ),
+        )
     ]
 
     if use_cython:
         from Cython.Build import cythonize
-        #import Cython.Compiler.Options
-        #Cython.Compiler.Options.annotate = True
-        extension_modules = cythonize(extension_modules, language_level='3', annotate=True)
+        extension_modules = cythonize(extension_modules, language_level='3')
 
     return extension_modules
 
@@ -48,19 +42,6 @@ def get_install_requirements(use_cython):
 
 
 USE_CYTHON = sys.argv[1] == 'build_ext'  # Cython is only needed when building, not installing
-
-
-# from setuptools.command.build_ext import build_ext as _build_ext
-#
-# class build_ext(_build_ext):
-#     def finalize_options(self):
-#         _build_ext.finalize_options(self)
-#         # Prevent numpy from thinking it is still in its setup process:
-#         __builtins__.__NUMPY_SETUP__ = False
-#         import numpy
-#         self.include_dirs.append(numpy.get_include())
-
-
 
 
 setup(
