@@ -15,7 +15,6 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from aideme.active_learning import *
 from aideme.experiments import run_all_experiments, Tag
 from aideme.experiments.folder import RootFolder
 from aideme.initial_sampling import stratified_sampler
@@ -46,10 +45,10 @@ active_learners_list = [
     #Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024)),
     #Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024, kernel='rbf')),
 
-    #Tag(KernelQueryByCommittee, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
-    #Tag(KernelQueryByCommittee, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
-    #Tag(KernelQueryByCommittee, n_samples=16, warmup=100, thin=100, strategy='default', rounding_cache=True),
-    #Tag(KernelQueryByCommittee, n_samples=16, warmup=100, thin=100, strategy='opt', rounding_cache=True),
+    #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
+    #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
+    #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='default', rounding_cache=True),
+    #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='opt', rounding_cache=True),
 
     #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
     #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
@@ -73,9 +72,13 @@ CALLBACKS = [
 INITIAL_SAMPLER = Tag(stratified_sampler, pos=1, neg=1, neg_in_all_subspaces=False)
 
 CONVERGENCE_CRITERIA = [
-    Tag(max_iter_reached, max_exploration_iter=NUMBER_OF_ITERATIONS),
+    Tag(max_iter_reached, max_iters=NUMBER_OF_ITERATIONS),
     #Tag(metric_reached_threshold, metric='tsm', threshold=1.0),
 ]
+
+NOISE_INJECTOR = None
+#NOISE_INJECTOR = Tag(random_noise_injector, noise=0, skip_initial=0)
+
 
 #############################################
 # REMINDER
@@ -89,9 +92,10 @@ INITIAL_SAMPLER: {}
 CALLBACKS: {}
 CALLBACK_SKIP: {}
 CONVERGENCE: {}
+NOISE_INJECTOR: {}
 -----------------------------""".format(
     task_list, active_learners_list, SUBSAMPLING, REPEAT, INITIAL_SAMPLER,
-    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA
+    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA, NOISE_INJECTOR
 ))
 
 #############################################
@@ -114,6 +118,7 @@ for TASK in task_list:
             'callbacks': [c.to_json() for c in CALLBACKS],
             'callback_skip': CALLBACK_SKIP,
             'convergence_criteria': [c.to_json() for c in CONVERGENCE_CRITERIA],
+            'noise_injector': None if not NOISE_INJECTOR else NOISE_INJECTOR.to_json(),
         }
 
         # save config to disk

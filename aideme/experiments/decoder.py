@@ -23,7 +23,7 @@ from ..io import read_task
 
 if TYPE_CHECKING:
     import numpy as np
-    from ..utils import InitialSampler, Config, Callback, Convergence
+    from ..utils import InitialSampler, Config, Callback, Convergence, NoiseInjector
 
 
 def read_training_set(task: str) -> Tuple[np.ndarray, LabeledSet, Config]:
@@ -45,11 +45,13 @@ def build_exploration_object(config: Config, data: np.ndarray, true_labels: Labe
 
     convergence_config = config.get('convergence_criteria', [])
     convergence_criteria = [decode_convergence(conf) for conf in convergence_config]
+    noise_injector = decode_noise_injector(config.get('noise_injector', None))
 
     return PoolBasedExploration(
         initial_sampler=initial_sampler, subsampling=config['subsampling'],
         callback=callbacks, callback_skip=config['callback_skip'],
-        convergence_criteria=convergence_criteria
+        convergence_criteria=convergence_criteria,
+        noise_injector=noise_injector
     )
 
 
@@ -106,3 +108,15 @@ def decode_convergence(config: Config) -> Convergence:
     convergence_function = getattr(aideme.utils.convergence, name)
 
     return convergence_function if not params else convergence_function(**params)
+
+
+def decode_noise_injector(config: Optional[Config]) -> Optional[NoiseInjector]:
+    if not config:
+        return None
+
+    import aideme.utils.noise
+
+    name, params = config['name'], config.get('params', {})
+    noise_injector = getattr(aideme.utils.noise, name)
+
+    return noise_injector if not params else noise_injector(**params)
