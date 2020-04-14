@@ -1,12 +1,12 @@
 #  Copyright (c) 2019 École Polytechnique
-# 
+#
 #  This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 #  If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0
-# 
+#
 #  Authors:
 #        Luciano Di Palma <luciano.di-palma@polytechnique.edu>
 #        Enhui Huang <enhui.huang@polytechnique.edu>
-# 
+#
 #  Description:
 #  AIDEme is a large-scale interactive data exploration system that is cast in a principled active learning (AL) framework: in this context,
 #  we consider the data content as a large set of records in a data source, and the user is interested in some of them but not all.
@@ -15,21 +15,12 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+import random
+from typing import Optional
+
 import numpy as np
-from sklearn.metrics.pairwise import rbf_kernel
 
-class DiagonalGaussianKernel:
-    def __init__(self, D):
-        self.D = np.array(D).reshape(1, -1)
-        assert np.all(self.D > 0)
-        self.D = np.sqrt(self.D)
 
-    def __call__(self, X, Y=None):
-        X = X * self.D
-
-        if Y is None:
-            Y = X
-        else:
-            Y = Y * self.D
-
-        return rbf_kernel(X, Y, gamma=1.0)
+def set_random_state(seed: Optional[int] = None) -> None:
+    np.random.seed(seed)  # Seeds numpy's internal RNG
+    random.seed(seed)  # Seeds python's internal RNG

@@ -30,7 +30,7 @@ from sklearn import clone
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
-from ..uncertainty import UncertaintySampler
+from .uncertainty import UncertaintySampler
 
 
 class SimpleMargin(UncertaintySampler):

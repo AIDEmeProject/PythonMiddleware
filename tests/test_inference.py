@@ -14,7 +14,28 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+import numpy as np
 
-from .margin import SimpleMargin, RatioMargin
+from aideme.active_learning.inference.inference import Inference
 
-__all__ = ['SimpleMargin', 'RatioMargin']
+# TODO: implement real unit tests
+class TestInference:
+    def test(self):
+        X = np.array([
+            ['m', 'b', '4'],
+            ['l', 'r', '4'],
+            ['s', 'y', '2'],
+            ['s', 'r', '4'],
+            ['m', 'y', '2'],
+            ['m', 'y', '4'],
+        ])
+        y = np.array([1, 1, 0, 0, 0, 1])
+
+        inference = Inference([[0], [1], [2]])
+        print()
+        for pt, lb in zip(X, y):
+            inference._update_single(pt, lb)
+            print('------------------')
+            print('pt =', pt, ', lb =', lb)
+            print(inference)
+            print('------------------')

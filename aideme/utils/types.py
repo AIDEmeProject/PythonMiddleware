@@ -15,19 +15,20 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from typing import Union, Sequence, TypeVar, Callable, Dict, Any, Optional, Tuple, Generator, List
+from typing import Union, Sequence, TypeVar, Callable, Dict, Any, Optional, Tuple
 
 import numpy as np
 
 from aideme.active_learning.active_learner import ActiveLearner  # Use full import path to avoid circular dependency
 from aideme.explore.manager import ExplorationManager
 from aideme.explore.partitioned import PartitionedDataset
+from aideme.explore.labeledset import LabeledSet
+
 
 T = TypeVar('T')
 FunctionList = Union[None, T, Sequence[T]]
 
 Metrics = Dict[str, Any]
-Config = Metrics
 Callback = Callable[[PartitionedDataset, ActiveLearner], Metrics]
 Convergence = Callable[[ExplorationManager, Metrics], bool]
 
@@ -37,5 +38,4 @@ Seed = Optional[int]
 Partition = Sequence[Union[slice, Sequence[int]]]
 HyperPlane = Tuple[float, np.ndarray]
 
-RunType = Generator[Metrics, None, None]
-RunsType = Union[List[List[Metrics]], Generator[RunType, None, None]]
+NoiseInjector = Callable[[int, LabeledSet], LabeledSet]

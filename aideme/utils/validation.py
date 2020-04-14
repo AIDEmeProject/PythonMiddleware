@@ -18,17 +18,24 @@
 import math
 
 
-def assert_positive(value, name):
-    if not isinstance(value, (int, float)) or value <= 0:
-        raise ValueError("{0} must be a positive number, got {1}".format(name, value))
+def assert_positive(value, name, allow_inf=False, allow_none=False):
+    __assert_positive((int, float), value, name, allow_inf, allow_none)
 
+def assert_non_negative(value, name, allow_inf=False, allow_none=False):
+    __assert_non_negative((int, float), value, name, allow_inf, allow_none)
 
 def assert_positive_integer(value, name, allow_inf=False, allow_none=False):
-    assert_non_negative_integer(value, name, allow_inf, allow_none)
+    __assert_positive(int, value, name, allow_inf, allow_none)
+
+def assert_non_negative_integer(value, name, allow_inf=False, allow_none=False):
+    __assert_non_negative(int, value, name, allow_inf, allow_none)
+
+def __assert_positive(type, value, name, allow_inf=False, allow_none=False):
+    __assert_non_negative(type, value, name, allow_inf, allow_none)
     if value == 0:
         raise ValueError("Expected positive integer for {}, got 0".format(name))
 
-def assert_non_negative_integer(value, name, allow_inf=False, allow_none=False):
+def __assert_non_negative(type, value, name, allow_inf=False, allow_none=False):
     if value is None:
         if not allow_none:
             raise ValueError("{} cannot be none.".format(name))
@@ -39,7 +46,7 @@ def assert_non_negative_integer(value, name, allow_inf=False, allow_none=False):
             raise ValueError("{0} cannot be infinity.".format(name))
         return
 
-    if not isinstance(value, int) or value < 0:
+    if not isinstance(value, type) or value < 0:
         raise ValueError("{0} must be a positive integer, got {1}".format(name, value))
 
 def process_callback(callback):

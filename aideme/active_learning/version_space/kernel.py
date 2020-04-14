@@ -14,69 +14,62 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-
-from functools import partial
+from __future__ import annotations
 
 import numpy as np
-import scipy.linalg
-from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
+import scipy
 
-from .linear import BayesianLogisticRegression
+from ..kernel import Kernel, IncrementedDiagonalKernel
 
 
-class KernelLogisticRegression:
+class KernelBayesianLogisticRegression:
     """
     Add kernel support to LinearBayesianLogisticRegression classifier. Basically, the data matrix X is substituted by
     the Kernel matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined).
     """
 
-    def __init__(self, sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
-                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True,
-                 kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
-        self.logreg = BayesianLogisticRegression(sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
-                                                 cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                                 strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython,
-                                                 add_intercept=add_intercept)
-        self.kernel = self.__get_kernel(kernel, gamma, degree, coef0)
-        self.decompose = rounding_cache
-        self.jitter = jitter
+    def __init__(self, logreg, decompose: bool = False, jitter: float = 1e-12,
+                 kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0.):
+        self.logreg = logreg
+        self.decompose = decompose
 
-    @staticmethod
-    def __get_kernel(kernel: str, gamma: float, degree: int, coef0: float):
-        if kernel == 'linear':
-            return linear_kernel
-        elif kernel == 'poly':
-            return partial(polynomial_kernel, gamma=gamma, degree=degree, coef0=coef0)
-        elif kernel == 'rbf':
-            return partial(rbf_kernel, gamma=gamma)
-        elif callable(kernel):
-            return kernel
+        self.kernel = Kernel.get(kernel, gamma=gamma, degree=degree, coef0=coef0)
+        if self.decompose:
+            self.kernel = IncrementedDiagonalKernel(self.kernel, jitter=jitter)
 
-        raise ValueError("Unsupported kernel. Available options are 'linear', 'rbf', 'poly', or any custom K(X,Y) function.")
+        self.X_train = None
+        self.L_train = None
 
-    def __preprocess(self, X: np.ndarray) -> np.ndarray:
-        return self.kernel(X, self.X_train)
-
-    def clear(self):
+    def clear(self) -> None:
+        self.X_train = None
+        self.L_train = None
         self.logreg.clear()
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
-        self.X_train = X
-
-        K = self.__preprocess(X)
+        K = self.kernel(X)
 
         if self.decompose:
-            K[np.diag_indices_from(K)] += self.jitter
-            K = np.linalg.cholesky(K)
+            scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True)  # inplace Cholesky decomposition
 
         self.logreg.fit(K, y)
 
+        self.X_train = X
         if self.decompose:
-            self.logreg.weight = scipy.linalg.solve_triangular(K, self.logreg.weight.T, lower=True, trans=1).T
+            self.L_train = K
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return self.logreg.predict(self.__preprocess(X))
+        return (self.predict_proba(X) > 0.5).astype('float')
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        return self.logreg.predict_proba(self.__preprocess(X))
+        K = self.kernel(X, self.X_train)
+
+        if self.decompose:
+            # solve the system L^-1 K inplace
+            scipy.linalg.solve_triangular(self.L_train, K.T, lower=True, trans=0, overwrite_b=True)
+
+            # normalize vectors
+            delta = self.kernel.diagonal(X) - np.einsum('ir, ir -> i', K, K)
+            np.sqrt(delta, out=delta)
+            K /= delta.reshape(-1, 1)
+
+        return self.logreg.predict_proba(K)

@@ -15,36 +15,96 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .kernel import KernelLogisticRegression
-from .linear import BayesianLogisticRegression
+from .bayesian import LaplaceBayesianLogisticRegression, KernelLaplaceBayesianLogisticRegression
+from .kernel import KernelBayesianLogisticRegression
+from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression
 from ..uncertainty import UncertaintySampler
 
 
-class LinearVersionSpace(UncertaintySampler):
-    def __init__(self, sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
-                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True):
-        clf = BayesianLogisticRegression(sampling=sampling, n_samples=n_samples, warmup=warmup, thin=thin, sigma=sigma,
-                                         cache=cache, rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                         strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache,
-                                         use_cython=use_cython, add_intercept=add_intercept)
-        UncertaintySampler.__init__(self, clf)
+class VersionSpaceBase(UncertaintySampler):
+    def __init__(self, logreg):
+        UncertaintySampler.__init__(self, logreg)
 
-    def clear(self):
+    def clear(self) -> None:
         self.clf.clear()
 
 
-class KernelVersionSpace(UncertaintySampler):
-    def __init__(self, sampling: str = 'deterministic', n_samples: int = 8, warmup: int = 100, thin: int = 10, sigma: float = 100,
-                 cache: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True, use_cython: bool = True, add_intercept: bool = True,
+class LinearVersionSpace(VersionSpaceBase):
+    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
+                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
+                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True):
+        logreg = DeterministicLogisticRegression(
+            n_samples=n_samples, warmup=warmup, thin=thin,
+            cache_samples=cache_samples, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut,
+            rounding_cache=rounding_cache, add_intercept=add_intercept
+        )
+
+        super().__init__(logreg)
+
+
+class BayesianLinearVersionSpace(VersionSpaceBase):
+    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
+                 sampler: str = 'laplace', prior: str = 'improper', prior_std: float = 1.0,
+                 tol: float = 1e-6, max_iter: int = 10000, suppress_warnings: bool = True):
+        if sampler == 'stan':
+            logreg = StanBayesianLogisticRegression(
+                n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
+                prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
+            )
+        elif sampler == 'laplace':
+            logreg = LaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
+        else:
+            raise ValueError("Unknown sampler option: {}".format(sampler))
+
+        super().__init__(logreg)
+
+
+class KernelVersionSpace(VersionSpaceBase):
+    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
+                 rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
+                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
-        clf = KernelLogisticRegression(n_samples=n_samples, add_intercept=add_intercept, sampling=sampling,
-                                       warmup=warmup, thin=thin, sigma=sigma, cache=cache,
-                                       rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                       strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache, use_cython=use_cython,
-                                       kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter)
-        UncertaintySampler.__init__(self, clf)
+        if not rounding:
+            rounding_cache = False
 
-    def clear(self):
-        self.clf.clear()
+        intercept_value = 0 if rounding_cache else 1
+        add_intercept = add_intercept or rounding_cache
+
+        logreg = DeterministicLogisticRegression(
+            n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
+            rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
+            strategy=strategy, z_cut=z_cut,
+            add_intercept=add_intercept, intercept_value=intercept_value
+        )
+
+        kernel_logreg = KernelBayesianLogisticRegression(
+            logreg, decompose=rounding_cache,
+            kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
+        )
+
+        super().__init__(kernel_logreg)
+
+
+class BayesianKernelVersionSpace(VersionSpaceBase):
+    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, add_intercept: bool = True,
+                 sampler: str = 'laplace', prior: str = 'improper', prior_std: float = 1.0,
+                 tol: float = 1e-6, max_iter: int = 10000, suppress_warnings: bool = True,
+                 kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
+        if sampler == 'stan':
+            logreg = StanBayesianLogisticRegression(
+                n_samples=n_samples, warmup=warmup, thin=thin, add_intercept=add_intercept,
+                prior=prior, prior_std=prior_std, suppress_warnings=suppress_warnings
+            )
+        elif sampler == 'laplace':
+            logreg = LaplaceBayesianLogisticRegression(prior=prior, prior_std=prior_std, add_intercept=add_intercept, tol=tol, max_iter=max_iter)
+        elif sampler == 'kernel-laplace':
+            logreg = KernelLaplaceBayesianLogisticRegression(prior_std=prior_std, tol=tol, max_iter=max_iter)
+        else:
+            raise ValueError("Unknown sampler option: {}. Available options are: 'stan', 'laplace', and 'kernel-laplace'.".format(sampler))
+
+        kernel_logreg = KernelBayesianLogisticRegression(
+            logreg, decompose=False,
+            kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
+        )
+
+        super().__init__(kernel_logreg)

@@ -16,11 +16,10 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 
 import numpy as np
 import scipy.optimize
-import version_space_helper
 
 if TYPE_CHECKING:
     from aideme.utils import HyperPlane
@@ -34,9 +33,8 @@ class BoundedPolyhedralCone:
 
     i.e., it is the intersection of a polyhedral cone and the unit ball B(0, 1)
     """
-    def __init__(self, A: np.ndarray, use_cython: bool = True):
+    def __init__(self, A: np.ndarray):
         self.A = A
-        self.intersection = self._get_extremes_cython if use_cython else self._get_extremes_python
 
     @property
     def dim(self) -> int:
@@ -83,7 +81,7 @@ class BoundedPolyhedralCone:
 
     def get_separating_oracle(self, point: np.ndarray) -> Optional[HyperPlane]:
         """
-        For any given point, find a half-space H(b, g) = {x: b + g^T x < 0} separating the point from the version_space, i.e.:
+        For any given point, find a half-space H(b, g) = {x: g^T x < b} separating the point from the version_space, i.e.:
 
                 version_space contained in H(b, g)   AND   point not in H(b, g)
 
@@ -99,17 +97,7 @@ class BoundedPolyhedralCone:
 
         return None
 
-    def _get_extremes_cython(self, center, direction):
-        """
-        Finds the intersection between the version space and a straight line. Cython implementation.
-
-        :param center: point on the line
-        :param direction: director vector of line. Does not need to be normalized.
-        :return: t1 and t2 such that 'center + t * direction' are extremes of the line segment determined by the intersection
-        """
-        return version_space_helper.compute_version_space_intersection(self.A, center, direction)
-
-    def _get_extremes_python(self, center, direction):
+    def intersection(self, center: np.ndarray, direction: np.ndarray) -> Tuple[float, float]:
         """
         Finds the intersection between the version space and a straight line. Python + numpy implementation.
 
@@ -126,7 +114,7 @@ class BoundedPolyhedralCone:
 
         return lower_extreme, upper_extreme
 
-    def __get_polytope_extremes(self, center, direction):
+    def __get_polytope_extremes(self, center: np.ndarray, direction: np.ndarray) -> Tuple[float, float]:
         num = self.A.dot(center)
         den = self.A.dot(direction)
         extremes = -num / den
@@ -140,7 +128,7 @@ class BoundedPolyhedralCone:
         return lower_extreme, upper_extreme
 
     @staticmethod
-    def __get_ball_extremes(center, direction):
+    def __get_ball_extremes(center: np.ndarray, direction: np.ndarray) -> Tuple[float, float]:
         a, b, c = direction.dot(direction), center.dot(direction), center.dot(center) - 1
 
         delta = b * b - a * c

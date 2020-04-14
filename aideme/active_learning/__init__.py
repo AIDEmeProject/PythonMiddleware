@@ -17,16 +17,15 @@
 
 from .active_learner import ActiveLearner, FactorizedActiveLearner
 from .random import RandomSampler
-from .svm import *
+from .margin import *
 from .dsm import DualSpaceModel, FactorizedDualSpaceModel
 from .uncertainty import UncertaintySampler
 from .version_space import *
-from .entropy_reduction import EntropyReductionLearner
 from .nlp import TwoStepsLearner
 
 __all__ = [
     'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
     'DualSpaceModel', 'FactorizedDualSpaceModel',
-    'LinearVersionSpace', 'KernelVersionSpace', 'EntropyReductionLearner',
+    'LinearVersionSpace', 'KernelVersionSpace', 'BayesianLinearVersionSpace', 'BayesianKernelVersionSpace',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner'
 ]

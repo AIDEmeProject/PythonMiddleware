@@ -71,6 +71,10 @@ class LabeledSet:
     def __len__(self):
         return len(self.labels)
 
+    @property
+    def num_partitions(self):
+        return self.partial.shape[1]
+
     def get_index(self, idx):
         rows = self.__index_to_row.get_rows(idx)
         return LabeledSet(self.labels[rows], self.partial[rows], self.index[rows])
@@ -87,15 +91,22 @@ class LabeledSet:
         index = np.hstack([self.index, labeled_set.index])
         return LabeledSet(labels, partial, index)
 
-    def asdict(self) -> Metrics:
+    def asdict(self, noisy: bool = False) -> Metrics:
         """
+        :param noisy: whether to add 'noisy' prefix to labels
         :return: a dict containing all index and labels information
         """
-        return {
-            'labeled_indexes': self.index.tolist(),
-            'final_labels': self.labels.tolist(),
-            'partial_labels': self.partial.tolist(),
+        prefix = 'noisy_' if noisy else ''
+
+        metrics = {
+            prefix + 'labels': self.labels.tolist(),
+            prefix + 'partial_labels': self.partial.tolist(),
         }
+
+        if not noisy:
+            metrics['labeled_indexes'] = self.index.tolist()
+
+        return metrics
 
     def has_positive_and_negative_labels(self):
         return len(self.labels) > 0 and 0 < self.labels.sum() < len(self.labels)
