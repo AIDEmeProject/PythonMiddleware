@@ -14,7 +14,7 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-
+from aideme.active_learning import *
 from aideme.experiments import run_all_experiments, Tag
 from aideme.experiments.folder import RootFolder
 from aideme.initial_sampling import stratified_sampler
@@ -48,7 +48,7 @@ active_learners_list = [
     #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
     #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
     #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='default', rounding_cache=True),
-    #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='opt', rounding_cache=True),
+    Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='opt', rounding_cache=True),
 
     #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
     #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
