@@ -30,46 +30,46 @@ class KernelBayesianLogisticRegression:
 
     def __init__(self, logreg, decompose: bool = False, jitter: float = 1e-12,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0.):
-        self.logreg = logreg
-        self.decompose = decompose
+        self.__logreg = logreg
+        self.__decompose = decompose
 
         self.kernel = Kernel.get(kernel, gamma=gamma, degree=degree, coef0=coef0)
-        if self.decompose:
+        if self.__decompose:
             self.kernel = IncrementedDiagonalKernel(self.kernel, jitter=jitter)
 
-        self.X_train = None
-        self.L_train = None
+        self.__X_train = None
+        self.__L_train = None
 
     def clear(self) -> None:
-        self.X_train = None
-        self.L_train = None
-        self.logreg.clear()
+        self.__X_train = None
+        self.__L_train = None
+        self.__logreg.clear()
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         K = self.kernel(X)
 
-        if self.decompose:
+        if self.__decompose:
             scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True)  # inplace Cholesky decomposition
 
-        self.logreg.fit(K, y)
+        self.__logreg.fit(K, y)
 
-        self.X_train = X
-        if self.decompose:
-            self.L_train = K
+        self.__X_train = X
+        if self.__decompose:
+            self.__L_train = K
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return (self.predict_proba(X) > 0.5).astype('float')
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        K = self.kernel(X, self.X_train)
+        K = self.kernel(X, self.__X_train)
 
-        if self.decompose:
+        if self.__decompose:
             # solve the system L^-1 K inplace
-            scipy.linalg.solve_triangular(self.L_train, K.T, lower=True, trans=0, overwrite_b=True)
+            scipy.linalg.solve_triangular(self.__L_train, K.T, lower=True, trans=0, overwrite_b=True)
 
             # normalize vectors
             delta = self.kernel.diagonal(X) - np.einsum('ir, ir -> i', K, K)
             np.sqrt(delta, out=delta)
             K /= delta.reshape(-1, 1)
 
-        return self.logreg.predict_proba(K)
+        return self.__logreg.predict_proba(K)

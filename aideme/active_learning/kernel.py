@@ -190,7 +190,7 @@ class IncrementedDiagonalKernel(Kernel):
         """
         K = self._kernel(X, Y)
 
-        if Y is None:
+        if Y is None or Y is X:
             K[np.diag_indices_from(K)] += self._jitter
 
         return K
