@@ -27,7 +27,6 @@ class KernelBayesianLogisticRegression:
     Add kernel support to LinearBayesianLogisticRegression classifier. Basically, the data matrix X is substituted by
     the Kernel matrix K, depending on the chosen kernel ('linear', 'rbf', 'poly', or user-defined).
     """
-
     def __init__(self, logreg, decompose: bool = False, jitter: float = 1e-12,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0.):
         self.__logreg = logreg
@@ -51,11 +50,13 @@ class KernelBayesianLogisticRegression:
         if self.__decompose:
             scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True)  # inplace Cholesky decomposition
 
+            self.__L_train = K
+
+            K = np.c_[K, np.zeros(K.shape[0])]
+
         self.__logreg.fit(K, y)
 
         self.__X_train = X
-        if self.__decompose:
-            self.__L_train = K
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return (self.predict_proba(X) > 0.5).astype('float')
@@ -64,12 +65,11 @@ class KernelBayesianLogisticRegression:
         K = self.kernel(X, self.__X_train)
 
         if self.__decompose:
-            # solve the system L^-1 K inplace
-            scipy.linalg.solve_triangular(self.__L_train, K.T, lower=True, trans=0, overwrite_b=True)
+            scipy.linalg.solve_triangular(self.__L_train, K.T, lower=True, trans=0, overwrite_b=True)  # inplace L^-1 K
 
-            # normalize vectors
             delta = self.kernel.diagonal(X) - np.einsum('ir, ir -> i', K, K)
             np.sqrt(delta, out=delta)
-            K /= delta.reshape(-1, 1)
+
+            K = np.c_[K, delta]  # TODO: how to avoid copying data?
 
         return self.__logreg.predict_proba(K)

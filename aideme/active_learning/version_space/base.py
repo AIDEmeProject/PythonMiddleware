@@ -14,7 +14,6 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-
 from .bayesian import LaplaceBayesianLogisticRegression, KernelLaplaceBayesianLogisticRegression
 from .kernel import KernelBayesianLogisticRegression
 from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression
@@ -67,14 +66,11 @@ class KernelVersionSpace(VersionSpaceBase):
         if not rounding:
             rounding_cache = False
 
-        intercept_value = 0 if rounding_cache else 1
-        add_intercept = add_intercept or rounding_cache
-
         logreg = DeterministicLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
             rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
             strategy=strategy, z_cut=z_cut,
-            add_intercept=add_intercept, intercept_value=intercept_value
+            add_intercept=add_intercept
         )
 
         kernel_logreg = KernelBayesianLogisticRegression(
