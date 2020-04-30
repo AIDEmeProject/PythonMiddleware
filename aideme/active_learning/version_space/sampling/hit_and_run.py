@@ -33,8 +33,8 @@ class HitAndRunSampler:
     """
 
     def __init__(self, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
-                 rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt', z_cut: bool = False,
-                 rounding_cache: bool = True):
+                 rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
+                 strategy: str = 'opt', z_cut: bool = False):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip

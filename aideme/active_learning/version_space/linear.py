@@ -14,7 +14,6 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-
 import numpy as np
 from scipy.special import expit
 
@@ -22,30 +21,27 @@ from .sampling import StanLogisticRegressionSampler, HitAndRunSampler
 
 
 class BayesianLogisticRegressionBase:
-    def __init__(self, sampler,  n_samples: int = 8, add_intercept: bool = True, intercept_value: float = 1.):
+    def __init__(self, sampler,  n_samples: int = 8, add_intercept: bool = True):
         """
         :param sampler: sampling method
         :param n_samples: number of samples to compute from posterior
         :param add_intercept: whether to add an intercept or not
-        :param intercept_value: value in column appended to data matrix during fit
         """
         self.sampler = sampler
         self.n_samples = n_samples
         self.add_intercept = add_intercept
-        self.intercept_value = intercept_value
 
     def clear(self) -> None:
         self.sampler.clear()
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         if self.add_intercept:
-            intercept = np.full(shape=(len(X), 1), fill_value=self.intercept_value)
-            X = np.hstack([X, intercept])
+            X = np.c_[np.ones(X.shape[0]), X]
 
         samples = self.sampler.sample(X, y, self.n_samples)
 
         if self.add_intercept:
-            self.bias, self.weight = samples[:, -1].reshape(-1, 1), samples[:, :-1]
+            self.bias, self.weight = samples[:, 0].reshape(-1, 1), samples[:, 1:]
         else:
             self.bias, self.weight = 0, samples
 
@@ -59,7 +55,7 @@ class BayesianLogisticRegressionBase:
         raise NotImplementedError
 
     def _margin(self, X: np.ndarray) -> np.ndarray:
-        return self.bias + self.weight.dot(X.T)
+        return self.bias + self.weight @ X.T
 
 
 class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
@@ -72,9 +68,8 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
     """
 
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
-                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None, strategy: str = 'opt',
-                 z_cut: bool = False, rounding_cache: bool = True,
-                 add_intercept: bool = True, intercept_value: float = 1.):
+                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None,  rounding_cache: bool = True,
+                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True):
         """
         :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
@@ -82,16 +77,18 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
         :param cache_samples: whether to cache previous samples in order to speed-up 'initial point' computation in hit-and-run.
         :param rounding: whether to apply a rounding procedure in the 'deterministic' sampling.
         :param max_rounding_iters: maximum number of iterations for rounding algorithm
-        :param strategy: rounding strategy. Available values are: 'default' and 'opt'
         :param rounding_cache: whether cache rounding ellipsoid between iterations. Significantly speeds-up computations, but performance may suffer a little.
+        :param strategy: rounding strategy. Available values are: 'default' and 'opt'
         :param add_intercept: whether to add an intercept or not
         """
 
-        sampler = HitAndRunSampler(warmup=warmup, thin=thin, cache_samples=cache_samples,
-                                   rounding=rounding, max_rounding_iters=max_rounding_iters,
-                                   strategy=strategy, z_cut=z_cut, rounding_cache=rounding_cache)
+        sampler = HitAndRunSampler(
+            warmup=warmup, thin=thin, cache_samples=cache_samples,
+            rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
+            strategy=strategy, z_cut=z_cut
+        )
 
-        super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept, intercept_value=intercept_value)
+        super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept)
 
     def _likelihood(self, X: np.ndarray) -> np.ndarray:
         return (self._margin(X) > 0).astype('float')
