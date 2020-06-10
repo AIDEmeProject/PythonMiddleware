@@ -120,10 +120,12 @@ class OptimizedStrategy:
         hyperplane = np.linalg.norm(elp.center), elp.center
         return elp.compute_alpha_single(*hyperplane), hyperplane
 
+    @metric_logger.log_execution_time('rounding_sphere_opt_time', on_duplicates='sum')
     def _get_best_cut_on_sphere(self, elp: Ellipsoid, threshold: float) -> Tuple[float, HyperPlane]:
+        metric_logger.log_metric('rounding_sphere_opt_calls', 1, on_duplicates='sum')
+
         func, grad = alpha_on_sphere(elp)
-        self.optimizer.fun_threshold = threshold
-        result = self.optimizer.optimize(elp.center, func, grad)
+        result = self.optimizer.optimize(elp.center, func, grad, func_threshold=threshold)
         return result.fun, (1, result.x)
 
 
@@ -139,7 +141,7 @@ class ResultObject:
 
 class SphericalGradientDescent:
     def __init__(self, retraction: str = 'sphere', grad_norm_threshold: float = 1e-7, rel_tol: float = 1e-7,
-                 max_iter: Optional[int] = None, fun_threshold: Optional[float] = None, step_size: Optional[float] = None):
+                 max_iter: Optional[int] = None, step_size: Optional[float] = None):
         assert_positive(grad_norm_threshold, 'grad_norm_threshold')
         assert_positive(rel_tol, 'rel_tol')
         assert_positive_integer(max_iter, 'max_iter', allow_none=True)
@@ -149,7 +151,6 @@ class SphericalGradientDescent:
         self.grad_norm_threshold = grad_norm_threshold
         self.rel_tol = rel_tol
         self.max_iter = max_iter if max_iter else np.inf
-        self.fun_threshold = fun_threshold if fun_threshold is not None else -np.inf
 
     def __get_retraction_and_step_optimizer(self, retraction: str, step_size: Optional[float]):
         retraction = retraction.upper()
@@ -179,8 +180,7 @@ class SphericalGradientDescent:
         """ Project a point on the sphere """
         return x / np.linalg.norm(x)
 
-    @metric_logger.log_execution_time('sphere_opt_time', 'append')
-    def optimize(self, x0: np.ndarray, func: Callable, grad: Callable) -> ResultObject:
+    def optimize(self, x0: np.ndarray, func: Callable, grad: Callable, func_threshold: float = -np.inf) -> ResultObject:
         x = self.proj(x0)
 
         prev_result = ResultObject(x, func(x), grad(x))
@@ -189,7 +189,7 @@ class SphericalGradientDescent:
         while not self.converged(result, prev_result):
             prev_result, result = result, self.advance(result, func, grad)
 
-            if result.iters >= self.max_iter or result.fun < self.fun_threshold:
+            if result.iters >= self.max_iter or result.fun < func_threshold:
                 return result
 
         result.converged = True
