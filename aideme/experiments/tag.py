@@ -26,8 +26,15 @@ class Tag:
         self.params = self.check_parameters(obj, params)
 
     def __repr__(self):
-        terms = [self.name]
+        pairs = {}
         for k, v in self.params.items():
+            if isinstance(v, dict):
+                pairs.update(v)
+            else:
+                pairs[k] = v
+
+        terms = [self.name]
+        for k, v in pairs.items():
             terms.append("{}={}".format(k, v))
         return ' '.join(terms)
 

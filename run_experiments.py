@@ -45,10 +45,11 @@ active_learners_list = [
     #Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024)),
     #Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024, kernel='rbf')),
 
-    #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
-    #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
-    #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='default', rounding_cache=True),
-    Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, strategy='opt', rounding_cache=True),
+    #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, rounding_cache=False, rounding_options={'strategy': 'default'}),
+    #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, rounding_cache=False, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': False}),
+    #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'default'}),
+    Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': False}),
+    Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}),
 
     #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
     #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
@@ -57,13 +58,13 @@ active_learners_list = [
 ]
 
 # RUN PARAMS
-REPEAT = 10
-NUMBER_OF_ITERATIONS = 100  # number of points to be labeled by the user
+REPEAT = 1
+NUMBER_OF_ITERATIONS = 60  # number of points to be labeled by the user
 SEEDS = [i for i in range(REPEAT)]
 
 SUBSAMPLING = 50000  # None
 
-CALLBACK_SKIP = 2
+CALLBACK_SKIP = 4
 CALLBACKS = [
     Tag(classification_metrics, score_functions=['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']),
     #Tag(three_set_metric),
