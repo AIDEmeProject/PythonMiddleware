@@ -14,6 +14,7 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Optional, Dict
 
 import numpy as np
 
@@ -169,8 +170,8 @@ class SubspaceLearner(FactorizedActiveLearner):
 class SubspatialVersionSpace(SubspaceLearner):
     def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
                  n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
-                 rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
-                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True,
+                 rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
+                 add_intercept: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
@@ -199,8 +200,8 @@ class SubspatialVersionSpace(SubspaceLearner):
         base_learner = Cloneable(
             KernelVersionSpace,
             n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
-            rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
-            strategy=strategy, z_cut=z_cut, add_intercept=add_intercept,
+            rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options,
+            add_intercept=add_intercept,
             kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
         )
 
