@@ -14,7 +14,7 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-from typing import Optional
+from typing import Optional, Dict
 
 import numpy as np
 
@@ -33,24 +33,27 @@ class HitAndRunSampler:
     """
 
     def __init__(self, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
-                 rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
-                 strategy: str = 'opt', z_cut: bool = False):
+                 rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None):
         """
         :param warmup: number of initial samples to ignore
         :param thin: number of samples to skip
-        :param rounding: whether to apply the rounding preprocessing step. Mixing time considerably improves, but so does
-        :param max_rounding_iters: maximum number of iterations of rounding algorithm
         :param cache_samples: whether to cache samples between iterations
+        :param rounding: whether to apply the rounding preprocessing step. Mixing time considerably improves, but so does
         the running time.
+        :param rounding_cache: whether to cache the rounding ellipsoid between iterations. Considerably improves running time.
+        :param rounding_options: dictionary containing the rounding algorithm configuration. See RoundingAlgorithm class
+        for possible values are defaults.
         """
         assert_positive_integer(warmup, 'warmup')
         assert_positive_integer(thin, 'thin')
 
+        if rounding_options is None:
+            rounding_options = {}
+
         self.warmup = warmup
         self.thin = thin
 
-        self.rounding_algorithm = None
-        self.rounding_algorithm = RoundingAlgorithm(max_rounding_iters, strategy=strategy, z_cut=z_cut) if rounding else None
+        self.rounding_algorithm = RoundingAlgorithm(**rounding_options) if rounding else None
 
         self.rounding_cache = rounding_cache if rounding else False
         self.ellipsoid_cache = None  # type: Optional[Ellipsoid]
