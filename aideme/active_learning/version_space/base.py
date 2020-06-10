@@ -14,6 +14,8 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Optional, Dict
+
 from .bayesian import LaplaceBayesianLogisticRegression, KernelLaplaceBayesianLogisticRegression
 from .kernel import KernelBayesianLogisticRegression
 from .linear import DeterministicLogisticRegression, StanBayesianLogisticRegression
@@ -30,12 +32,12 @@ class VersionSpaceBase(UncertaintySampler):
 
 class LinearVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
-                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
-                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True):
+                 cache_samples: bool = True, rounding: bool = True, rounding_cache: bool = True,
+                 rounding_options: Optional[Dict] = None, add_intercept: bool = True):
         logreg = DeterministicLogisticRegression(
-            n_samples=n_samples, warmup=warmup, thin=thin,
-            cache_samples=cache_samples, rounding=rounding, max_rounding_iters=max_rounding_iters, strategy=strategy, z_cut=z_cut,
-            rounding_cache=rounding_cache, add_intercept=add_intercept
+            n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
+            rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options,
+            add_intercept=add_intercept
         )
 
         super().__init__(logreg)
@@ -60,16 +62,15 @@ class BayesianLinearVersionSpace(VersionSpaceBase):
 
 class KernelVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
-                 rounding: bool = True, max_rounding_iters: bool = None, rounding_cache: bool = True,
-                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True,
+                 rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
+                 add_intercept: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         if not rounding:
             rounding_cache = False
 
         logreg = DeterministicLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
-            rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
-            strategy=strategy, z_cut=z_cut,
+            rounding=rounding,  rounding_cache=rounding_cache, rounding_options=rounding_options,
             add_intercept=add_intercept
         )
 

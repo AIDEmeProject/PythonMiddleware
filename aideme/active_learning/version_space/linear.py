@@ -14,6 +14,8 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from typing import Optional, Dict
+
 import numpy as np
 from scipy.special import expit
 
@@ -68,8 +70,8 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
     """
 
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
-                 cache_samples: bool = True, rounding: bool = True, max_rounding_iters: bool = None,  rounding_cache: bool = True,
-                 strategy: str = 'opt', z_cut: bool = False, add_intercept: bool = True):
+                 cache_samples: bool = True, rounding: bool = True,  rounding_cache: bool = True,
+                 rounding_options: Optional[Dict] = None, add_intercept: bool = True):
         """
         :param n_samples: number of samples to compute from posterior
         :param warmup: number of samples to ignore (MCMC throwaway initial samples)
@@ -78,14 +80,13 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
         :param rounding: whether to apply a rounding procedure in the 'deterministic' sampling.
         :param max_rounding_iters: maximum number of iterations for rounding algorithm
         :param rounding_cache: whether cache rounding ellipsoid between iterations. Significantly speeds-up computations, but performance may suffer a little.
-        :param strategy: rounding strategy. Available values are: 'default' and 'opt'
+        :param rounding_options: dictionary containing the rounding algorithm configuration. See RoundingAlgorithm class
+        for possible values are defaults.
         :param add_intercept: whether to add an intercept or not
         """
-
         sampler = HitAndRunSampler(
             warmup=warmup, thin=thin, cache_samples=cache_samples,
-            rounding=rounding, max_rounding_iters=max_rounding_iters, rounding_cache=rounding_cache,
-            strategy=strategy, z_cut=z_cut
+            rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options
         )
 
         super().__init__(sampler=sampler, n_samples=n_samples, add_intercept=add_intercept)
