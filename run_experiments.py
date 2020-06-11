@@ -33,7 +33,7 @@ def get_sdss(queries):
 
 
 # TASKS
-task_list = get_sdss([1])
+task_list = get_sdss([1, 2, 3])
 #task_list = get_user_study([7])  # range(1,13)
 
 
@@ -49,16 +49,17 @@ active_learners_list = [
     #Tag(KernelVersionSpace, n_samples=8, warmup=100, thin=10, rounding_cache=False, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': False}),
     #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'default'}),
     Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': False}),
-    Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}),
+    #Tag(KernelVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}),
 
-    #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='default', rounding_cache=False),
-    #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, strategy='opt', rounding_cache=False),
-    #Tag(SubspatialVersionSpace, n_samples=16, warmup=100, thin=100, strategy='default', rounding_cache=True),
-    #Tag(SubspatialVersionSpace, n_samples=16, warmup=100, thin=100, strategy='opt', rounding_cache=True),
+    #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, rounding_cache=False, rounding_options={'strategy': 'default'}),
+    #Tag(SubspatialVersionSpace, n_samples=8, warmup=100, thin=10, rounding_cache=False, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': False}),
+    #Tag(SubspatialVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'default'}),
+    #Tag(SubspatialVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': False}),
+    #Tag(SubspatialVersionSpace, n_samples=16, warmup=100, thin=100, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}),
 ]
 
 # RUN PARAMS
-REPEAT = 1
+REPEAT = 10
 NUMBER_OF_ITERATIONS = 60  # number of points to be labeled by the user
 SEEDS = [i for i in range(REPEAT)]
 
