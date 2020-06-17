@@ -16,16 +16,18 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .active_learner import ActiveLearner, FactorizedActiveLearner
-from .random import RandomSampler
-from .margin import *
 from .dsm import DualSpaceModel, FactorizedDualSpaceModel
+from .margin import *
+from .nlp import TwoStepsLearner
+from .query_by_disagreement import QueryByDisagreement
+from .random import RandomSampler
 from .uncertainty import UncertaintySampler
 from .version_space import *
-from .nlp import TwoStepsLearner
 
 __all__ = [
     'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
     'DualSpaceModel', 'FactorizedDualSpaceModel',
     'LinearVersionSpace', 'KernelVersionSpace', 'BayesianLinearVersionSpace', 'BayesianKernelVersionSpace',
-    'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner'
+    'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner',
+    'QueryByDisagreement',
 ]
