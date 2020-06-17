@@ -171,7 +171,7 @@ class SubspatialVersionSpace(SubspaceLearner):
     def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
                  n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
-                 add_intercept: bool = True,
+                 add_intercept: bool = True, decompose: bool = False,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         """
         :param partition: default attribute partitioning into subspaces. If None, a single partition is assumed.
@@ -201,7 +201,7 @@ class SubspatialVersionSpace(SubspaceLearner):
             KernelVersionSpace,
             n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
             rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options,
-            add_intercept=add_intercept,
+            add_intercept=add_intercept, decompose=decompose,
             kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
         )
 
