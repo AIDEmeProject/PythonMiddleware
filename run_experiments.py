@@ -39,12 +39,13 @@ task_list = get_sdss([1, 2, 3])
 
 # LEARNERS
 # State-of-the-art VS algorithms
-SM = Tag(SimpleMargin, C=1e7)
+SM = Tag(SimpleMargin, C=1024)
+QBD = Tag(QueryByDisagreement, learner=Tag(SimpleMargin, C=1e5), background_sample_size=200, background_sample_weight=1e-5)
 ALUMA = Tag(KernelVersionSpace, n_samples=100, warmup=1000, thin=1000, rounding=False, decompose=False)
 
 # DSM
-DSM = Tag(DualSpaceModel, active_learner=SM)
-FactDSM = Tag(FactorizedDualSpaceModel, active_learner=SM)
+DSM = Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024))
+FactDSM = Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024))
 
 # ICDM 2019: VS + rounding (no decomposition, no optimizations)
 KVS     = Tag(KernelVersionSpace    , decompose=False, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
@@ -62,6 +63,7 @@ active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
     #SM,
     #ALUMA,
+    #QBD,
 
     # DUAL SPACE MODEL
     #DSM,
