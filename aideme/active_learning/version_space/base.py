@@ -63,10 +63,13 @@ class BayesianLinearVersionSpace(VersionSpaceBase):
 class KernelVersionSpace(VersionSpaceBase):
     def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
-                 add_intercept: bool = True,
+                 add_intercept: bool = True, decompose: bool = False,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         if not rounding:
             rounding_cache = False
+
+        if rounding_cache:
+            decompose = True
 
         logreg = DeterministicLogisticRegression(
             n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
@@ -75,7 +78,7 @@ class KernelVersionSpace(VersionSpaceBase):
         )
 
         kernel_logreg = KernelBayesianLogisticRegression(
-            logreg, decompose=rounding_cache,
+            logreg, decompose=decompose,
             kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
         )
 
