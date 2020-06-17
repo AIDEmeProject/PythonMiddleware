@@ -46,15 +46,15 @@ ALUMA = Tag(KernelVersionSpace, n_samples=100, warmup=1000, thin=1000, rounding=
 DSM = Tag(DualSpaceModel, active_learner=SM)
 FactDSM = Tag(FactorizedDualSpaceModel, active_learner=SM)
 
-# Algorithm used in ICDM 2019: VS + rounding (no decomposition, default rounding, no caching)
+# ICDM 2019: VS + rounding (no decomposition, no optimizations)
 KVS     = Tag(KernelVersionSpace    , decompose=False, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
 FactKVS = Tag(SubspatialVersionSpace, decompose=False, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
 
-# New VS algorithm: VS + rounding + decomposition (similar as above, but uses the Cholesky decomposition of K)
+# New VS algorithm: VS + rounding + decomposition (no optimizations)
 LVS =     Tag(KernelVersionSpace    , decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
 FactLVS = Tag(SubspatialVersionSpace, decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
 
-# LVS + Optimizations: VS + opt rounding + decomposition (includes rounding optimizations: 'opt' strategy + caching)
+# LVS + Optimizations: VS + rounding + decomposition + optimizations (caching + 'opt' strategy)
 OptVS =     Tag(KernelVersionSpace    , decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True})
 FactOptVS = Tag(SubspatialVersionSpace, decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True})
 
@@ -62,21 +62,20 @@ active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
     #SM,
     #ALUMA,
-    #DSM
 
     # DUAL SPACE MODEL
     #DSM,
     #FactDSM,
 
     # OUR VS ALGORITHMS
-    #KVS,
-    #LVS,
-    #OptVS,
+    #KVS,    # VS + rounding
+    #LVS,    # VS + rounding + decomposition
+    #OptVS,  # VS + rounding + decomposition + optimizations
 
     # FACTORIZED VS ALGORITHMS
-    #FactKVS,
-    #FactLVS,
-    #FactOptVS,
+    #FactKVS,    # FactVS + rounding
+    #FactLVS,    # FactVS + rounding + decomposition
+    #FactOptVS,  # FactVS + rounding + decomposition + optimizations
 ]
 
 # RUN PARAMS
