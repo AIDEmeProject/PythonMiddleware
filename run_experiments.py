@@ -14,6 +14,8 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from sklearn.svm import SVC
+
 from aideme.active_learning import *
 from aideme.experiments import run_all_experiments, Tag
 from aideme.experiments.folder import RootFolder
@@ -40,7 +42,7 @@ task_list = get_sdss([1, 2, 3])
 # LEARNERS
 # State-of-the-art VS algorithms
 SM = Tag(SimpleMargin, C=1024)
-QBD = Tag(QueryByDisagreement, learner=Tag(SimpleMargin, C=1e5), background_sample_size=200, background_sample_weight=1e-5)
+QBD = Tag(QueryByDisagreement, learner=Tag(SVC, C=1e5), background_sample_size=200, background_sample_weight=1e-5)
 ALUMA = Tag(KernelVersionSpace, n_samples=100, warmup=1000, thin=1000, rounding=False, decompose=False)
 
 # DSM
