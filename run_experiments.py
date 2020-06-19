@@ -35,19 +35,23 @@ def get_sdss(queries):
 
 
 # TASKS
-task_list = get_sdss([1, 2, 3])
+task_list = get_sdss([
+    1, 2, 3,
+    5, 6, 7,
+    8, 9, 10, 11,
+])
 #task_list = get_user_study([7])  # range(1,13)
-
+#task_list = ['sdss_q8_dsm']   # DSM queries
 
 # LEARNERS
 # State-of-the-art VS algorithms
-SM = Tag(SimpleMargin, C=1024)
+SM = Tag(SimpleMargin, C=1e5)
 QBD = Tag(QueryByDisagreement, learner=Tag(SVC, C=1e5), background_sample_size=200, background_sample_weight=1e-5)
 ALUMA = Tag(KernelVersionSpace, n_samples=100, warmup=1000, thin=1000, rounding=False, decompose=False)
 
 # DSM
-DSM = Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1024))
-FactDSM = Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1024))
+DSM = Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1e5), mode='positive')
+FactDSM = Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1e5))
 
 # ICDM 2019: VS + rounding (no decomposition, no optimizations)
 KVS     = Tag(KernelVersionSpace    , decompose=False, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
@@ -84,12 +88,12 @@ active_learners_list = [
 
 # RUN PARAMS
 REPEAT = 10
-NUMBER_OF_ITERATIONS = 100  # number of points to be labeled by the user
+NUMBER_OF_ITERATIONS = 200  # number of points to be labeled by the user
 SEEDS = [i for i in range(REPEAT)]
 
 SUBSAMPLING = 50000  # None
 
-CALLBACK_SKIP = 2
+CALLBACK_SKIP = 5
 CALLBACKS = [
     Tag(classification_metrics, score_functions=['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']),
     #Tag(three_set_metric),
