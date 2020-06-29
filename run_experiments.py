@@ -62,8 +62,11 @@ LVS =     Tag(KernelVersionSpace    , decompose=True, n_samples=16, warmup=100, 
 FactLVS = Tag(SubspatialVersionSpace, decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
 
 # LVS + Optimizations: VS + rounding + decomposition + optimizations (caching + 'opt' strategy)
-OptVS =     Tag(KernelVersionSpace    , decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True})
-FactOptVS = Tag(SubspatialVersionSpace, decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=True, rounding_options={'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True})
+vs_global_params = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
+OptVS =        Tag(KernelVersionSpace, **vs_global_params)
+GreedyFactVS = Tag(SubspatialVersionSpace, loss='GREEDY' , label_function='PROD', **vs_global_params)
+SquareFactVS = Tag(SubspatialVersionSpace, loss='SQUARE' , label_function='PROD', **vs_global_params)
+ProdFactVS =   Tag(SubspatialVersionSpace, loss='PRODUCT', label_function='PROD', **vs_global_params)
 
 active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
@@ -83,7 +86,9 @@ active_learners_list = [
     # FACTORIZED VS ALGORITHMS
     #FactKVS,    # FactVS + rounding
     #FactLVS,    # FactVS + rounding + decomposition
-    #FactOptVS,  # FactVS + rounding + decomposition + optimizations
+    #GreedyFactVS, # FactVS + GREEDY loss
+    #SquareFactVS, # FactVS + SQUARE loss
+    #ProdFactVS,   # FactVS + PRODUCT loss
 ]
 
 # RUN PARAMS
@@ -111,8 +116,19 @@ NOISE_INJECTOR = None
 
 
 #############################################
-# REMINDER
+# CHECKS AND REMINDER
 #############################################
+if not task_list:
+    raise ValueError("Tasks list cannot be empty.")
+
+if not active_learners_list:
+    raise ValueError("Active learners list cannot be empty")
+
+assert_positive_integer(SUBSAMPLING, 'SUBSAMPLING')
+assert_positive_integer(REPEAT, 'REPEAT')
+assert_positive_integer(CALLBACK_SKIP, 'CALLBACK_SKIP')
+
+
 print("""-----------INFO--------------
 TASKS: {}
 ACTIVE_LEARNERS: {}
