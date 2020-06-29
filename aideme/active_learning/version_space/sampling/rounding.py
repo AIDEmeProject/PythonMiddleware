@@ -182,9 +182,7 @@ class SphericalGradientDescent:
 
     def optimize(self, x0: np.ndarray, func: Callable, grad: Callable, func_threshold: float = -np.inf) -> ResultObject:
         x = self.proj(x0)
-
-        prev_result = ResultObject(x, func(x), grad(x))
-        result = self.advance(prev_result, func, grad)
+        prev_result, result = None, ResultObject(x, func(x), grad(x))
 
         while not self.converged(result, prev_result):
             prev_result, result = result, self.advance(result, func, grad)
@@ -195,8 +193,14 @@ class SphericalGradientDescent:
         result.converged = True
         return result
 
-    def converged(self, result: ResultObject, prev_result: ResultObject) -> bool:
-        return result.grad_norm <= self.grad_norm_threshold or (prev_result.fun - result.fun) < self.rel_tol * prev_result.fun
+    def converged(self, result: ResultObject, prev_result: Optional[ResultObject] = None) -> bool:
+        if result.grad_norm <= self.grad_norm_threshold:
+            return True
+
+        if prev_result is None:  # first iteration
+            return False
+
+        return (prev_result.fun - result.fun) < self.rel_tol * prev_result.fun
 
     def advance(self, result: ResultObject, func: Callable, grad: Callable) -> ResultObject:
         step = self.step_optimizer(func, result)
