@@ -17,6 +17,9 @@
 
 import math
 
+def assert_in_range(value, name, low, high):
+    if value < low or value > high:
+        raise ValueError("Expected {} < {} < {}, but got {}".format(low, name, high, value))
 
 def assert_positive(value, name, allow_inf=False, allow_none=False):
     __assert_positive((int, float), value, name, allow_inf, allow_none)
@@ -43,11 +46,11 @@ def __assert_non_negative(type, value, name, allow_inf=False, allow_none=False):
 
     if value == math.inf:
         if not allow_inf:
-            raise ValueError("{0} cannot be infinity.".format(name))
+            raise ValueError("{} cannot be infinity.".format(name))
         return
 
     if not isinstance(value, type) or value < 0:
-        raise ValueError("{0} must be a positive integer, got {1}".format(name, value))
+        raise ValueError("{} must be a positive integer, got {}".format(name, value))
 
 def process_callback(callback):
     if not callback:
