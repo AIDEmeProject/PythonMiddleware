@@ -69,7 +69,7 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
     better performance under these assumptions.
     """
 
-    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
+    def __init__(self, single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10,
                  cache_samples: bool = True, rounding: bool = True,  rounding_cache: bool = True,
                  rounding_options: Optional[Dict] = None, add_intercept: bool = True):
         """
@@ -85,7 +85,7 @@ class DeterministicLogisticRegression(BayesianLogisticRegressionBase):
         :param add_intercept: whether to add an intercept or not
         """
         sampler = HitAndRunSampler(
-            warmup=warmup, thin=thin, cache_samples=cache_samples,
+            single_chain=single_chain, warmup=warmup, thin=thin, cache_samples=cache_samples,
             rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options
         )
 

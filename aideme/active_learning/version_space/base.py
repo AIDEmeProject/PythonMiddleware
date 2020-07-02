@@ -31,11 +31,11 @@ class VersionSpaceBase(UncertaintySampler):
 
 
 class LinearVersionSpace(VersionSpaceBase):
-    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10,
+    def __init__(self, single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10,
                  cache_samples: bool = True, rounding: bool = True, rounding_cache: bool = True,
                  rounding_options: Optional[Dict] = None, add_intercept: bool = True):
         logreg = DeterministicLogisticRegression(
-            n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
+            single_chain=single_chain, n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
             rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options,
             add_intercept=add_intercept
         )
@@ -61,7 +61,7 @@ class BayesianLinearVersionSpace(VersionSpaceBase):
 
 
 class KernelVersionSpace(VersionSpaceBase):
-    def __init__(self, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
+    def __init__(self, single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
                  add_intercept: bool = True, decompose: bool = False,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
@@ -72,7 +72,7 @@ class KernelVersionSpace(VersionSpaceBase):
             decompose = True
 
         logreg = DeterministicLogisticRegression(
-            n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
+            single_chain=single_chain, n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
             rounding=rounding,  rounding_cache=rounding_cache, rounding_options=rounding_options,
             add_intercept=add_intercept
         )

@@ -17,6 +17,7 @@
 from typing import Generator
 
 import numpy as np
+import scipy.linalg
 
 from aideme.utils import assert_positive_integer
 
@@ -37,7 +38,7 @@ class Ellipsoid:
         yield self.center
 
         scale = self.scale if self.scale is not None else self.L @ np.diag(self.D) @ self.L.T
-        eig, P = np.linalg.eigh(scale + 1e-12 * np.eye(self.dim))  # add small perturbation to diagonal to counter numerical errors
+        eig, P = scipy.linalg.eigh(scale + 1e-12 * np.eye(self.dim))  # add small perturbation to diagonal to counter numerical errors
 
         for i in range(len(eig)):
             if eig[i] <= 0:

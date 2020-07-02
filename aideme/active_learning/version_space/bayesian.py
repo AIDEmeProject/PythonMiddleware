@@ -32,7 +32,7 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.linalg import solve_triangular
+from scipy.linalg import solve_triangular, cholesky
 from scipy.optimize import minimize
 from scipy.special import expit
 from scipy.stats import norm
@@ -111,7 +111,7 @@ class LaplaceBayesianLogisticRegressionBase:
         self._mean = self._compute_map_estimator(X, y)
 
         H = self._compute_hessian(X, self._mean)
-        self._L = np.linalg.cholesky(H)
+        self._L = cholesky(H)
 
     def _compute_map_estimator(self, X, y):
         raise NotImplementedError
