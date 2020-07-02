@@ -47,26 +47,30 @@ task_list = get_sdss([
 # State-of-the-art VS algorithms
 SM = Tag(SimpleMargin, C=1e5)
 QBD = Tag(QueryByDisagreement, learner=Tag(SVC, C=1e5), background_sample_size=200, background_sample_weight=1e-5)
-ALUMA = Tag(LinearVersionSpace, single_chain=False, n_samples=1000, warmup=1000, rounding=False, decompose=False)
+ALUMA = Tag(LinearVersionSpace, single_chain=False, n_samples=1000, warmup=1000, rounding=False)
 
 # DSM
 DSM = Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1e5), mode='positive')
 FactDSM = Tag(FactorizedDualSpaceModel, active_learner=Tag(SimpleMargin, C=1e5))
 
 # ICDM 2019: VS + rounding (no decomposition, no optimizations)
-KVS     = Tag(KernelVersionSpace    , decompose=False, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
-FactKVS = Tag(SubspatialVersionSpace, decompose=False, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
+kvs_global_params = {'decompose': False, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False, 'rounding_options': {'strategy': 'default'}}
+KVS       = Tag(KernelVersionSpace, **kvs_global_params)
+GreedyKVS = Tag(SubspatialVersionSpace, loss='GREEDY' , **kvs_global_params)
+ProdKVS   = Tag(SubspatialVersionSpace, loss='PRODUCT', **kvs_global_params)
 
 # New VS algorithm: VS + rounding + decomposition (no optimizations)
-LVS =     Tag(KernelVersionSpace    , decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
-FactLVS = Tag(SubspatialVersionSpace, decompose=True, n_samples=16, warmup=100, thin=100, rounding=True, rounding_cache=False, rounding_options={'strategy': 'default'})
+lvs_global_params = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False, 'rounding_options': {'strategy': 'default'}}
+LVS       = Tag(KernelVersionSpace, **kvs_global_params)
+GreedyLVS = Tag(SubspatialVersionSpace, loss='GREEDY' , **kvs_global_params)
+ProdLVS   = Tag(SubspatialVersionSpace, loss='PRODUCT', **kvs_global_params)
 
 # LVS + Optimizations: VS + rounding + decomposition + optimizations (caching + 'opt' strategy)
 vs_global_params = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
 OptVS =        Tag(KernelVersionSpace, **vs_global_params)
-GreedyFactVS = Tag(SubspatialVersionSpace, loss='GREEDY' , label_function='PROD', **vs_global_params)
-SquareFactVS = Tag(SubspatialVersionSpace, loss='SQUARE' , label_function='PROD', **vs_global_params)
-ProdFactVS =   Tag(SubspatialVersionSpace, loss='PRODUCT', label_function='PROD', **vs_global_params)
+GreedyFactVS = Tag(SubspatialVersionSpace, loss='GREEDY' , **vs_global_params)
+SquareFactVS = Tag(SubspatialVersionSpace, loss='SQUARE' , **vs_global_params)
+ProdFactVS =   Tag(SubspatialVersionSpace, loss='PRODUCT', **vs_global_params)
 
 active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
@@ -85,7 +89,9 @@ active_learners_list = [
 
     # FACTORIZED VS ALGORITHMS
     #FactKVS,    # FactVS + rounding
+    #ProdKVS,    # FactVS + rounding
     #FactLVS,    # FactVS + rounding + decomposition
+    #ProdLVS,    # FactVS + rounding + decomposition
     #GreedyFactVS, # FactVS + GREEDY loss
     #SquareFactVS, # FactVS + SQUARE loss
     #ProdFactVS,   # FactVS + PRODUCT loss

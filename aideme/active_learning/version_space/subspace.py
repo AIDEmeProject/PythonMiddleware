@@ -168,7 +168,7 @@ class SubspaceLearner(FactorizedActiveLearner):
 
 
 class SubspatialVersionSpace(SubspaceLearner):
-    def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
+    def __init__(self, partition=None, mode='numerical', label_function='PROD', loss='GREEDY',
                  single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
                  add_intercept: bool = True, decompose: bool = False,
