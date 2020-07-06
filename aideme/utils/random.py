@@ -16,9 +16,13 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 import random
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
+
+
+def get_random_state(seed: Optional[Union[int, np.random.RandomState]]) -> np.random.RandomState:
+    return seed if isinstance(seed, np.random.RandomState) else np.Random.RandomState(seed)
 
 
 def set_random_state(seed: Optional[int] = None) -> None:

@@ -15,16 +15,19 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from math import ceil
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import scipy
+import scipy.special
 
 from aideme.active_learning.kernel import Kernel
-from aideme.utils.validation import assert_non_negative, assert_in_range
+from aideme.utils import assert_non_negative, assert_in_range, assert_positive
+from aideme.utils.random import get_random_state
 
 
-def aluma_preprocessing(X: np.ndarray, kernel: Optional[Kernel], margin: float, H: float, delta: float) -> np.ndarray:
+def aluma_preprocessing(X: np.ndarray, kernel: Optional[Kernel], margin: float, H: float, delta: float,
+                        seed: Optional[Union[int, np.random.RandomState]] = None) -> np.ndarray:
     """
     :param X: data matrix
     :param kernel: kernel function. If None, no kernel will be applied
@@ -34,8 +37,10 @@ def aluma_preprocessing(X: np.ndarray, kernel: Optional[Kernel], margin: float, 
     :return: the pre-processes matrix
     """
     assert_non_negative(H, 'H')
-    assert_in_range(margin, 'margin', 0, 1)
+    assert_positive(margin, 'margin')
     assert_in_range(delta, 'delta', 0, 1)
+
+    rng = get_random_state(seed)
 
     eps = 0.5 * margin / (1 + np.sqrt(H))
     k = ceil(4 * np.log(4 * X.shape[0] / delta) / (eps * eps * (1 - eps)))
@@ -49,7 +54,7 @@ def aluma_preprocessing(X: np.ndarray, kernel: Optional[Kernel], margin: float, 
     a = 1 / np.sqrt(1 + np.sqrt(H))
     sq_a = np.sqrt(1 - a * a)
 
-    K = K @ np.where(np.random.rand(K.shape[1], k) > 0.5, a, -a)
-    K += np.where(np.random.rand(K.shape[0], k) > 0.5, sq_a, -sq_a)
+    K = K @ np.where(rng.rand(K.shape[1], k) > 0.5, a, -a)
+    K += np.where(rng.rand(K.shape[0], k) > 0.5, sq_a, -sq_a)
 
     return K
