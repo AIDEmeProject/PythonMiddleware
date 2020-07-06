@@ -27,16 +27,54 @@ if TYPE_CHECKING:
     from aideme.utils.types import Config
 
 
-def get_config_from_resources(config: str, section: Optional[str] = None) -> Config:
+def get_config_from_resources(resource: str, section: Optional[str] = None) -> Config:
     """
-    Read an specific section of a YAML configuration file
+    Read an specific section from a YAML configuration file. Will throw exception is resource file does not exist.
 
-    :param config: config file to read
-    :param section: section to read
+    :param resource: resource file to read
+    :param section: section of resource to read. If None, the entire resource will be returned
     :return: configuration as dict
     """
-    path = os.path.join(RESOURCES_DIR, config + '.yaml')
+    path = get_path_to_resource(resource)
 
     with open(path, 'r') as file:
         conf = yaml.safe_load(file)
         return conf[section] if section else conf
+
+
+def write_config_to_resources(resource: str,  section: str, config: Config) -> None:
+    """
+    Updates resources with a new config. Will throw exception is resource file does not exist.
+    :param resource: name of resource to update
+    :param section: name of section for new config
+    :param config: configuration to write
+    """
+    resource_config = get_config_from_resources(resource)
+    resource_config[section] = config
+
+    path = get_path_to_resource(resource)
+
+    with open(path, 'w') as file:
+        yaml.dump(resource_config, file, Dumper=MyDumper, sort_keys=False, width=2000)
+
+
+def get_path_to_resource(resource: str) -> str:
+    path = os.path.join(RESOURCES_DIR, resource + '.yaml')
+
+    if not os.path.exists(path):
+        raise FileNotFoundError("Resource file {}.yaml does not exist.".format(resource))
+
+    return path
+
+
+class MyDumper(yaml.SafeDumper):
+    # HACK: insert blank lines between top-level objects
+    # inspired by https://stackoverflow.com/a/44284819/3786245
+    def write_line_break(self, data=None):
+        super().write_line_break(data)
+
+        if len(self.indents) == 1:
+            super().write_line_break()
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)

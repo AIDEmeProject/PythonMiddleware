@@ -22,7 +22,7 @@ import numpy as np
 
 
 def get_random_state(seed: Optional[Union[int, np.random.RandomState]]) -> np.random.RandomState:
-    return seed if isinstance(seed, np.random.RandomState) else np.Random.RandomState(seed)
+    return seed if isinstance(seed, np.random.RandomState) else np.random.RandomState(seed)
 
 
 def set_random_state(seed: Optional[int] = None) -> None:
