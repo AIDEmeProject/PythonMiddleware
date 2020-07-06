@@ -72,7 +72,10 @@ def read_from_file(config: Config, columns: Optional[Sequence[str]] = None) -> p
     if path.endswith('.csv'):
         return pd.read_csv(path, usecols=columns, index_col=key)
 
-    elif path.endswith('.p'):
+    if path.endswith('.tsv'):
+        return pd.read_csv(path, sep='\t', usecols=columns, index_col=key)
+
+    if path.endswith('.p'):
         data = pd.read_pickle(path)
 
         if key:

@@ -37,8 +37,12 @@ def read_task(tag: str, distinct: bool = True, sort_index: bool = True, preproce
     data = read_dataset(**dataset_config)
 
     # read labels
-    positive_indexes = read_positive_indexes(task_config['labels'], dataset_config['tag'])
-    labels = indexes_to_labels(positive_indexes, data.index)
+    if 'labels' in data.columns:
+        labels = data['labels']
+        data.drop('labels', axis=1, inplace=True)
+    else:
+        positive_indexes = read_positive_indexes(task_config['labels'], dataset_config['tag'])
+        labels = indexes_to_labels(positive_indexes, data.index)
 
     # preprocessing
     if preprocess:
