@@ -22,6 +22,14 @@ from aideme.experiments.folder import RootFolder
 from aideme.initial_sampling import stratified_sampler
 from aideme.utils import *
 
+def get_aluma(sizes, dims, original=True):
+    suffix = 'original' if original else 'preprocessed'
+
+    tasks = []
+    for size in sizes:
+        for dim in dims:
+            tasks.append('aluma_size={}_dim={}_{}'.format(size, dim, suffix))
+    return tasks
 
 def get_user_study(ls):
     assert set(ls).issubset(range(1, 19))
@@ -42,6 +50,8 @@ task_list = get_sdss([
 ])
 #task_list = get_user_study([7])  # range(1,13)
 #task_list = ['sdss_q8_dsm']   # DSM queries
+#task_list = get_aluma([10000,], [2,], original=False)  # run kernel classifier
+#task_list = get_aluma([10000,], [2,], original=True)   # run linear classifier
 
 # LEARNERS
 # State-of-the-art VS algorithms
