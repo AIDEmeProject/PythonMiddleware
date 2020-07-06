@@ -47,7 +47,7 @@ task_list = get_sdss([
 # State-of-the-art VS algorithms
 SM = Tag(SimpleMargin, C=1e5)
 QBD = Tag(QueryByDisagreement, learner=Tag(SVC, C=1e5), background_sample_size=200, background_sample_weight=1e-5)
-ALUMA = Tag(LinearVersionSpace, single_chain=False, n_samples=1000, warmup=1000, rounding=False)
+ALUMA = Tag(LinearVersionSpace, single_chain=False, n_samples=100, warmup=2000, rounding=False)
 
 # DSM
 DSM = Tag(DualSpaceModel, active_learner=Tag(SimpleMargin, C=1e5), mode='positive')
