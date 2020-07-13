@@ -146,7 +146,7 @@ class FlippedPolytope(PolytopeBase):
 
 class PersistentPolytope(PolytopeBase):
     """
-    Polytope model built assuming the negative region is convex.
+    Build polytope models over positive and negative data. By default, assume use positive polytope for predictions.
     """
     def __init__(self, tol: float = 1e-12):
         """
@@ -170,13 +170,13 @@ class PersistentPolytope(PolytopeBase):
         """
         X = np.atleast_2d(X)
 
-        if self._pol.is_valid == self._flipped.is_valid:
-            return np.full(len(X), fill_value=0.5)
-
         if self._pol.is_valid:
             return self._pol.predict(X)
 
-        return self._flipped.predict(X)
+        if self._flipped.is_valid:
+            return self._flipped.predict(X)
+
+        return np.full(len(X), fill_value=0.5)
 
     def update(self, X: np.ndarray, y: np.ndarray) -> bool:
         """

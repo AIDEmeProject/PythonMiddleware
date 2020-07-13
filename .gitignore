@@ -9,6 +9,7 @@
 /resources/sources.yaml
 /resources/datasets.yaml
 /resources/tasks.yaml
+/resources/*.bak
 
 # experiments result folder
 /experiments/
