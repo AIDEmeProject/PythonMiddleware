@@ -132,6 +132,7 @@ CONVERGENCE_CRITERIA = [
 NOISE_INJECTOR = None
 #NOISE_INJECTOR = Tag(random_noise_injector, noise=0, skip_initial=0)
 
+DISABLE_CATEGORICAL_OPT = False
 
 #############################################
 # CHECKS AND REMINDER
@@ -142,7 +143,7 @@ if not task_list:
 if not active_learners_list:
     raise ValueError("Active learners list cannot be empty")
 
-assert_positive_integer(SUBSAMPLING, 'SUBSAMPLING')
+assert_positive_integer(SUBSAMPLING, 'SUBSAMPLING', allow_none=True)
 assert_positive_integer(REPEAT, 'REPEAT')
 assert_positive_integer(CALLBACK_SKIP, 'CALLBACK_SKIP')
 
@@ -157,9 +158,10 @@ CALLBACKS: {}
 CALLBACK_SKIP: {}
 CONVERGENCE: {}
 NOISE_INJECTOR: {}
+DISABLE_CATEGORICAL_OPT: {}
 -----------------------------""".format(
     task_list, active_learners_list, SUBSAMPLING, REPEAT, INITIAL_SAMPLER,
-    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA, NOISE_INJECTOR
+    CALLBACKS, CALLBACK_SKIP, CONVERGENCE_CRITERIA, NOISE_INJECTOR, DISABLE_CATEGORICAL_OPT
 ))
 
 #############################################
@@ -183,6 +185,7 @@ for TASK in task_list:
             'callback_skip': CALLBACK_SKIP,
             'convergence_criteria': [c.to_json() for c in CONVERGENCE_CRITERIA],
             'noise_injector': None if not NOISE_INJECTOR else NOISE_INJECTOR.to_json(),
+            'disable_categorical_opt': DISABLE_CATEGORICAL_OPT,
         }
 
         # save config to disk
