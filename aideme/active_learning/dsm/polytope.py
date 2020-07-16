@@ -201,7 +201,8 @@ class PersistentPolytope(PolytopeBase):
 class CategoricalPolytope(PolytopeBase):
     """
     Special polytope for the case where all attributes are assumed to be categorical. It simply memorizes the positive and
-    negative values seen so far.
+    negative values seen so far. It assumes the one-hot-encoding of the categorical columns as input.
+    TODO: allow for multiple categorical columns and non-encoded ones
     """
     def __init__(self):
         self._pos_classes: Set[Tuple] = set()
@@ -228,11 +229,10 @@ class CategoricalPolytope(PolytopeBase):
         if not self.__is_valid:
             return np.full(len(X), fill_value=0.5)
 
+        X = np.argmax(X, axis=1)
         return np.fromiter((self._predict_single(x) for x in X), np.float)
 
     def _predict_single(self, x: np.ndarray) -> float:
-        x = tuple(x)
-
         if x in self._pos_classes:
             return 1.0
 
@@ -252,6 +252,7 @@ class CategoricalPolytope(PolytopeBase):
         if not self.is_valid:
             raise RuntimeError("Attempting to update invalid polytope.")
 
+        X = np.argmax(X, axis=1)
         for pt, lb in zip(X, y):
             self._update_single(pt, lb)
 
@@ -259,8 +260,7 @@ class CategoricalPolytope(PolytopeBase):
 
         return self.__is_valid
 
-    def _update_single(self, pt: np.ndarray, lb: float) -> None:
-        pt = tuple(pt)  # convert to tuple because numpy arrays are not hashable
+    def _update_single(self, pt: int, lb: float) -> None:
         if lb == 1:
             self._pos_classes.add(pt)
         else:
