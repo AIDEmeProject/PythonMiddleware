@@ -80,12 +80,6 @@ def run_experiment(config: Config, training_set: Optional[Tuple[np.ndarray, Labe
 
     data, true_labels, factorization_info = training_set
 
-    if config.get('disable_categorical_opt', False):
-        modes = factorization_info.get('mode', [])
-        for i, mode in enumerate(modes):
-            if mode == 'categorical':
-                modes[i] = 'persist'
-
     # build exploration object and active learner
     active_learner = decode_active_learner(config['active_learner'], factorization_info)
     exploration = build_exploration_object(config, data, true_labels)
