@@ -81,6 +81,9 @@ OptVS =        Tag(KernelVersionSpace, **vs_global_params)
 GreedyFactVS = Tag(SubspatialVersionSpace, loss='GREEDY' , **vs_global_params)
 SquareFactVS = Tag(SubspatialVersionSpace, loss='SQUARE' , **vs_global_params)
 ProdFactVS =   Tag(SubspatialVersionSpace, loss='PRODUCT', **vs_global_params)
+
+# No Cat
+GreedyFactVSNoCat =      Tag(SubspatialVersionSpace, loss='GREEDY' , numerical_only=True, **vs_global_params)
 ProdFactVSNoCat =   Tag(SubspatialVersionSpace, loss='PRODUCT', numerical_only=True, **vs_global_params)
 
 active_learners_list = [
@@ -108,7 +111,10 @@ active_learners_list = [
     #GreedyFactVS, # FactVS + GREEDY loss
     #SquareFactVS, # FactVS + SQUARE loss
     #ProdFactVS,   # FactVS + PRODUCT loss
-    #ProdFactVSNoCat,  # FactVS + PRODUCT loss + No categorical optimization
+
+    # No Cat
+    #GreedyFactVSNoCat,  # FactVS + PRODUCT loss + No categorical optimization
+    #ProdFactVSNoCat,    # FactVS + PRODUCT loss + No categorical optimization
 ]
 
 # RUN PARAMS
