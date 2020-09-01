@@ -3,6 +3,9 @@
 This version of our project was used in when running all experiments detailed in our JMLR 2020 submission. 
 Below, you can find a short description of the project, installation instructions, and some useful links.   
 
+This branch contains the most current version of our system, which is continuously evolving.
+If you are interested in reproducing our result for JMLR 2020, please refer to the corresponding branch. 
+
 # Introduction
 AIDEme is a scalable interactive data exploration system for efficiently learning a user interest pattern over a large dataset. 
 The system is cast in a principled active learning (AL) framework, which iteratively presents strategically selected records for user labeling, 
@@ -34,21 +37,9 @@ After downloading this project, simply open a terminal and run:
 
 This should take care of installing all the above dependencies. 
 
-# Reproducing our results
-If you wish to reproduce our results for JMLR 2020, two things are needed: obtaining the data, and learn how to use our system. 
-
-In our evaluation, two datasets were used:
-
-- [Sloan Digital Sky Survey](http://www.sdss3.org/dr8/) (SDSS, 190 million points): The dataset contains the "PhotoObjAl" table with 510 attributes and 190 million sky observations. 
-We used a 1% sample (1.9 million points, 4.9GB) to create a dataset for running active learning algorithms. 
-
-- Car dataset (5622 points): This small dataset was used in [1] to conduct a user study, which generated 18 queries representing the true user interests.
-Being a proprietary dataset, we cannot make it public. 
-
-
+# Using our system
 In order learn how to use our system, you can refer to an example jupyter notebook called [example.ipynb](./example.ipynb). There
 you can find detailed examples of how to run our active learning algorithms over any dataset (including factorization).
-
 
 # Websites
 We also invite you to check our [website](https://www.lix.polytechnique.fr/aideme), for a more complete description of this project.
