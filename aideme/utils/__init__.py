@@ -17,11 +17,10 @@
 
 from typing import TYPE_CHECKING
 
+from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, assert_non_negative, assert_in_range, process_callback
 from .convergence import max_iter_reached, metric_reached_threshold
 from .metrics import classification_metrics, three_set_metric
 from .noise import random_noise_injector, gaussian_noise
-from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, assert_non_negative, \
-    assert_in_range, process_callback
 
 if TYPE_CHECKING:
     from .types import FunctionList, Metrics, Callback, Convergence, InitialSampler, Seed, HyperPlane, NoiseInjector
