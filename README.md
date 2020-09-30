@@ -1,6 +1,12 @@
-# AIDEme
+# AIDEme - JMLR 2020
 
-## Introduction
+This version of our project was used in when running all experiments detailed in our JMLR 2020 submission. 
+Below, you can find a short description of the project, installation instructions, and some useful links.   
+
+This branch contains the most current version of our system, which is continuously evolving.
+If you are interested in reproducing our result for JMLR 2020, please refer to the corresponding branch. 
+
+# Introduction
 AIDEme is a scalable interactive data exploration system for efficiently learning a user interest pattern over a large dataset. 
 The system is cast in a principled active learning (AL) framework, which iteratively presents strategically selected records for user labeling, 
 thereby building an increasingly-more-accurate model of the user interest. However, a challenge in building such a system 
@@ -16,7 +22,7 @@ With AIDEme, you can:
   * Easily run your custom Active Learning algorithms or implement new data exploration routines
 
 
-# Installation
+# Instructions
 
 ## Dependencies
 AIDEme has the following dependencies:
@@ -25,30 +31,15 @@ AIDEme has the following dependencies:
   * SciPy
   * Scikit-learn
 
-
-## Instructions
 After downloading this project, simply open a terminal and run:
 
 `python setup.py install`
 
-This should take care of installing all the above dependencies and linking our Cython code.  
+This should take care of installing all the above dependencies. 
 
-## Testing
-Running our test suite can be easily done via:
-
-`python setup.py test` 
-
-Note you will need `pytest` installed.
-
-
-# Using AIDEme
-## For data exploration
-Coming soon...
-
-## For Active Learning research
-With AIDEme, you can easily compare the performance of several Active Learning algorithms over a specified labeled set. 
-If this interests you, please check the included jupyter notebook [example.ipynb](./example.ipynb). 
-
+# Using our system
+In order learn how to use our system, you can refer to an example jupyter notebook called [example.ipynb](./example.ipynb). There
+you can find detailed examples of how to run our active learning algorithms over any dataset (including factorization).
 
 # Websites
 We also invite you to check our [website](https://www.lix.polytechnique.fr/aideme), for a more complete description of this project.

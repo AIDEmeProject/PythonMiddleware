@@ -28,6 +28,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
 
+from scipy.special import xlogy
 import sklearn
 
 if TYPE_CHECKING:
@@ -51,6 +52,18 @@ def three_set_metric(dataset: PartitionedDataset, active_learner: ActiveLearner)
     tsm = pos / (pos + unknown)
 
     return {'tsm': tsm}
+
+
+def prediction_entropy(dataset: PartitionedDataset, active_learner: ActiveLearner):
+    """
+    :return: the average of the classification probability entropy over the entire data
+    """
+    p = active_learner.predict_proba(dataset.data)
+    mp = 1 - p
+
+    entropy = -xlogy(p, p)
+    entropy -= xlogy(mp, mp)
+    return {'prediction_entropy': entropy.mean()}
 
 
 def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functions: Sequence[str]) -> Callback:

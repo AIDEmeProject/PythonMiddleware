@@ -59,9 +59,15 @@ class KernelBayesianLogisticRegression:
         self.__X_train = X
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return (self.predict_proba(X) > 0.5).astype('float')
+        return self.__logreg.predict(self.__get_kernel_matrix(X))
+
+    def predict_all(self, X: np.ndarray) -> np.ndarray:
+        return self.__logreg._likelihood(self.__get_kernel_matrix(X))
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        return self.__logreg.predict_proba(self.__get_kernel_matrix(X))
+
+    def __get_kernel_matrix(self, X: np.ndarray) -> np.ndarray:
         K = self.kernel(X, self.__X_train)
 
         if self.__decompose:
@@ -72,4 +78,4 @@ class KernelBayesianLogisticRegression:
 
             K = np.c_[K, delta]  # TODO: how to avoid copying data?
 
-        return self.__logreg.predict_proba(K)
+        return K

@@ -224,6 +224,12 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         """
         return self.__dataset[self.__inferred_start:]
 
+    def sample(self, size: Optional[int] = None) -> np.ndarray:
+        """
+        :return: a sample without replacement of given size from the entire data
+        """
+        return self.__dataset.sample(size).data
+
     ##################
     # LABELED DATA
     ##################
