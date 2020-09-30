@@ -83,8 +83,12 @@ SquareFactVS = Tag(SubspatialVersionSpace, loss='SQUARE' , **vs_global_params)
 ProdFactVS =   Tag(SubspatialVersionSpace, loss='PRODUCT', **vs_global_params)
 
 # No Cat
-GreedyFactVSNoCat =      Tag(SubspatialVersionSpace, loss='GREEDY' , numerical_only=True, **vs_global_params)
+GreedyFactVSNoCat = Tag(SubspatialVersionSpace, loss='GREEDY' , numerical_only=True, **vs_global_params)
 ProdFactVSNoCat =   Tag(SubspatialVersionSpace, loss='PRODUCT', numerical_only=True, **vs_global_params)
+
+# Entropy reduction VS
+entropy_global_params = {'decompose': True, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
+Entropy = Tag(EntropyReductionLearner, data_sample_size=256, n_samples=32, **entropy_global_params)
 
 active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
@@ -115,6 +119,9 @@ active_learners_list = [
     # No Cat
     #GreedyFactVSNoCat,  # FactVS + PRODUCT loss + No categorical optimization
     #ProdFactVSNoCat,    # FactVS + PRODUCT loss + No categorical optimization
+
+    # Entropy
+    Entropy,
 ]
 
 # RUN PARAMS
