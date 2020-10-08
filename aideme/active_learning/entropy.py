@@ -19,30 +19,24 @@ from typing import Optional, Dict
 import numpy as np
 from scipy.special import xlogy
 
-from .active_learner import ActiveLearner
-from .version_space.kernel import KernelBayesianLogisticRegression
-from .version_space.linear import DeterministicLogisticRegression
+from .version_space import KernelVersionSpace
 from ..utils import assert_positive_integer, metric_logger
 
 
-class EntropyReductionLearner(ActiveLearner):
+class EntropyReductionLearner(KernelVersionSpace):
 
     def __init__(self, data_sample_size: Optional[int] = None,
                  single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
-                 add_intercept: bool = True, decompose: bool = False,
+                 add_intercept: bool = True, decompose: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
 
         assert_positive_integer(data_sample_size, 'data_sample_size', allow_none=True)
 
-        logreg = DeterministicLogisticRegression(
+        super().__init__(
             single_chain=single_chain, n_samples=n_samples, warmup=warmup, thin=thin, cache_samples=cache_samples,
             rounding=rounding, rounding_cache=rounding_cache, rounding_options=rounding_options,
-            add_intercept=add_intercept
-        )
-
-        self.kernel_logreg = KernelBayesianLogisticRegression(
-            logreg, decompose=decompose,
+            add_intercept=add_intercept, decompose=decompose,
             kernel=kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter
         )
 
@@ -51,24 +45,18 @@ class EntropyReductionLearner(ActiveLearner):
         self.__sample = None
 
     def clear(self) -> None:
-        self.kernel_logreg.clear()
+        super().clear()
         self.__sample = None
 
-    def fit_data(self, data) -> None:
-        X, y = data.training_set()
-        self.kernel_logreg.fit(X, y)
+    def predict_all(self, X: np.ndarray) -> np.ndarray:
+        return self.clf.predict_all(X)
 
+    def fit_data(self, data) -> None:
+        super().fit_data(data)
         self.__sample = data.sample(self.data_sample_size)
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        return self.kernel_logreg.predict(X)
-
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        return self.kernel_logreg.predict_proba(X)
-
-    def rank(self, X):
-        cut_proba = self.predict_proba(X)
-        ranks = np.abs(cut_proba - 0.5)
+    def rank(self, X: np.ndarray) -> np.ndarray:
+        ranks = super().rank(X)
 
         min_rank = ranks.min()
         metric_logger.log_metric('min_cut_proba', min_rank)
@@ -84,9 +72,9 @@ class EntropyReductionLearner(ActiveLearner):
         return ranks
 
     @metric_logger.log_execution_time('entropy_time')
-    def __entropy(self, X):
-        H = self.kernel_logreg.predict_all(X)  # samples x data points
-        H_sample = self.kernel_logreg.predict_all(self.__sample)
+    def __entropy(self, X: np.ndarray) -> np.ndarray:
+        H = self.predict_all(X)  # samples x data points
+        H_sample = self.predict_all(self.__sample)
 
         sums = H.sum(axis=0)
         cut_proba = sums / H.shape[0]
@@ -103,7 +91,7 @@ class EntropyReductionLearner(ActiveLearner):
         return pos_entropy * cut_proba + neg_entropy * (1 - cut_proba)
 
     @staticmethod
-    def __compute_average_entropy(p):
+    def __compute_average_entropy(p: np.ndarray) -> np.ndarray:
         mp = 1 - p
         res = -xlogy(p, p).mean(axis=-1)
         res -= xlogy(mp, mp).mean(axis=-1)

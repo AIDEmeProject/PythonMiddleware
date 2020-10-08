@@ -63,7 +63,7 @@ class BayesianLinearVersionSpace(VersionSpaceBase):
 class KernelVersionSpace(VersionSpaceBase):
     def __init__(self, single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
-                 add_intercept: bool = True, decompose: bool = False,
+                 add_intercept: bool = True, decompose: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
         if not rounding:
             rounding_cache = False
