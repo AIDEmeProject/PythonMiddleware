@@ -50,7 +50,6 @@ class FactorizedLinearClassifier:
 
     def __get_optimizer(self, optimizer: str, opt_params):
         # TODO: allow for other optimization methods?
-
         optimizer = optimizer.upper()
 
         if optimizer == 'GD':
@@ -79,13 +78,10 @@ class FactorizedLinearClassifier:
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return np.exp(self._log_proba(X))
 
-    def partial_probas(self, X: np.ndarray) -> np.ndarray:
-        partial_proba = np.empty((len(self.partition), len(X)))
-
-        for i, (X_partial, w_partial) in enumerate(self.generate_subspace_data(X)):
-            partial_proba[i] = self._logistic_proba(X_partial, w_partial)
-
-        return partial_proba
+    def partial_proba(self, X: np.ndarray, i: int) -> np.ndarray:
+        begin = self.__offsets[i-1] if i > 0 else 0
+        end = self.__offsets[i]
+        return self._logistic_proba(X, self._weights[begin:end])
 
     def _log_proba(self, X: np.ndarray) -> np.ndarray:
         log_probas = np.zeros(len(X), dtype='float')
@@ -140,5 +136,7 @@ class LinearLoss:
         log_probas = self.fact_clf._log_proba(self.X)
 
         grads = self.fact_clf._grad_log_proba(self.X)
-        weights = np.where(self.y > 0, -1, 1 / np.expm1(-log_probas))
+        with warnings.catch_warnings():  # TODO: can we avoid this? Write in Cython?
+            warnings.simplefilter("ignore")
+            weights = np.where(self.y > 0, -1, 1 / np.expm1(-log_probas))
         return grads.dot(weights) / len(self.X)
