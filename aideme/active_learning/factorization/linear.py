@@ -17,10 +17,9 @@
 from __future__ import annotations
 
 import warnings
-from typing import Generator, List, Optional, Tuple, Any
+from typing import Generator, List, Optional, Tuple
 
 import numpy as np
-
 from scipy.special import expit
 
 from .gradient_descent import GradientDescentOptimizer
@@ -138,13 +137,12 @@ class FactorizedLinearLearner:
         raise ValueError("Unknown optimizer: {}".format(optimizer))
 
     def fit(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
-        return self._find_best_params(X, y, partition, x0)[0]
+        return self.fit_and_loss(X, y, partition, x0)[0]
 
     def compute_factorization_loss(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
-        _, res = self._find_best_params(X, y, partition, x0)
-        return res.fun
+        return self.fit_and_loss(X, y, partition, x0)[1]
 
-    def _find_best_params(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None) -> Tuple[FactorizedLinearClassifier, Any]:
+    def fit_and_loss(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None) -> Tuple[FactorizedLinearClassifier, float]:
         fact_clf = FactorizedLinearClassifier(partition, x0)
         loss = LinearLoss(X, y, fact_clf)
 
@@ -155,7 +153,7 @@ class FactorizedLinearLearner:
 
         fact_clf.weights = res.x
 
-        return fact_clf, res
+        return fact_clf, res.fun
 
 
 class LinearLoss:

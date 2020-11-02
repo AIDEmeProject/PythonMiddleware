@@ -77,7 +77,6 @@ class BruteForceSelector(FactorizationSelector):
             for partition in self.__generate_all_partitions(N, k):
 
                 if self._is_valid_partition(partition, max_dim):
-
                     loss = learner.compute_factorization_loss(X, y, partition)
                     if loss < opt_loss:
                         opt_partition, opt_loss = partition, loss
@@ -113,22 +112,22 @@ class GreedySelector(FactorizationSelector):
 
     def _select_best_partition(self, X: np.ndarray, y: np.ndarray, learner: FactorizedLinearLearner, max_dim: int, max_partitions: int):
         N = X.shape[1]
-        opt_clf, opt_res = learner._find_best_params(X, y, [[i] for i in range(N)])
+        opt_clf, opt_loss = learner.fit_and_loss(X, y, [[i] for i in range(N)])
 
         for k in range(N):
-            level_clf, level_res = opt_clf, opt_res
+            level_clf, level_loss = opt_clf, opt_loss
 
             for i in range(N - k):
                 for j in range(i + 1, N - k):
                     merged_clf = opt_clf.merge_partitions(i, j, self.warm_start)
 
                     if self._is_valid_partition(merged_clf.partition, max_dim):
-                        clf, res = learner._find_best_params(X, y, merged_clf.partition, merged_clf.weights)
-                        if res.fun < level_res.fun:
-                            level_clf, level_res = clf, res
+                        clf, loss = learner.fit_and_loss(X, y, merged_clf.partition, merged_clf.weights)
+                        if loss < level_loss:
+                            level_clf, level_loss = clf, loss
 
-            if level_res.fun < opt_res.fun:
-                opt_clf, opt_res = level_clf, level_res
+            if level_loss < opt_loss:
+                opt_clf, opt_loss = level_clf, level_loss
             else:
                 break
 
