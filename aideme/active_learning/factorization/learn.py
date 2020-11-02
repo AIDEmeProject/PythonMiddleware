@@ -20,7 +20,7 @@ from typing import Optional
 import numpy as np
 
 from aideme.utils import assert_positive_integer
-from .linear import FactorizedLinearClassifier
+from .linear import FactorizedLinearLearner
 
 
 class FactorizationSelector:
@@ -31,7 +31,7 @@ class FactorizationSelector:
         self._max_dim = max_dim
         self._max_partitions = max_partitions
 
-    def __call__(self, X: np.ndarray, y: np.ndarray, clf: FactorizedLinearClassifier):
+    def __call__(self, X: np.ndarray, y: np.ndarray, learner: FactorizedLinearLearner):
         N = X.shape[1]
         max_dim, max_partitions = self.__get_params(N)
 
@@ -41,20 +41,14 @@ class FactorizationSelector:
         if max_dim == 1:
             return [[i] for i in range(N)]
 
-        return self._select_best_partition(X, y, clf, max_dim, max_partitions)
+        return self._select_best_partition(X, y, learner, max_dim, max_partitions)
 
-    def _select_best_partition(self, X: np.ndarray, y: np.ndarray, clf: FactorizedLinearClassifier, max_dim: int, max_partitions: int):
+    def _select_best_partition(self, X: np.ndarray, y: np.ndarray, learner: FactorizedLinearLearner, max_dim: int, max_partitions: int):
         raise NotImplementedError
 
     @staticmethod
     def _is_valid_partition(partition, max_dim: int) -> bool:
         return max(map(len, partition)) <= max_dim
-
-    @staticmethod
-    def _compute_loss(X: np.ndarray, y: np.ndarray, clf: FactorizedLinearClassifier, part) -> float:
-        clf.set_partition(part)
-        res = clf.fit(X, y)
-        return res.fun
 
     def __get_params(self, N: int):
         max_dim = N if self._max_dim is None else self.__get_min(N, self._max_dim)
@@ -74,7 +68,7 @@ class FactorizationSelector:
 
 class BruteForceSelector(FactorizationSelector):
 
-    def _select_best_partition(self, X: np.ndarray, y: np.ndarray, clf: FactorizedLinearClassifier, max_dim: int, max_partitions: int):
+    def _select_best_partition(self, X: np.ndarray, y: np.ndarray, learner: FactorizedLinearLearner, max_dim: int, max_partitions: int):
         N = X.shape[1]
         min_partitions = ceil(N / max_dim)
         opt_partition, opt_loss = None, np.inf
@@ -84,7 +78,7 @@ class BruteForceSelector(FactorizationSelector):
 
                 if self._is_valid_partition(partition, max_dim):
 
-                    loss = self._compute_loss(X, y, clf, partition)
+                    loss = learner.compute_factorization_loss(X, y, partition)
                     if loss < opt_loss:
                         opt_partition, opt_loss = partition, loss
 
@@ -114,10 +108,10 @@ class BruteForceSelector(FactorizationSelector):
 
 class GreedySelector(FactorizationSelector):
 
-    def _select_best_partition(self, X: np.ndarray, y: np.ndarray, clf: FactorizedLinearClassifier, max_dim: int, max_partitions: int):
+    def _select_best_partition(self, X: np.ndarray, y: np.ndarray, learner: FactorizedLinearLearner, max_dim: int, max_partitions: int):
         N = X.shape[1]
         opt_partition = [[i] for i in range(N)]
-        opt_loss = self._compute_loss(X, y, clf, opt_partition)
+        opt_loss = learner.compute_factorization_loss(X, y, opt_partition)
 
         for k in range(N):
             level_loss, level_part = opt_loss, opt_partition
@@ -127,7 +121,7 @@ class GreedySelector(FactorizationSelector):
                     part = self.__merge_partitions(opt_partition, i, j)
 
                     if self._is_valid_partition(part, max_dim):
-                        loss = self._compute_loss(X, y, clf, part)
+                        loss = learner.compute_factorization_loss(X, y, part)
                         if loss < level_loss:
                             level_loss, level_part = loss, part
 

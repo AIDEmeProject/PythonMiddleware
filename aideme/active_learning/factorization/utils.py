@@ -15,5 +15,17 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .linear import FactorizedLinearLearner
-from .learn import BruteForceSelector, GreedySelector
+import warnings
+
+import numpy as np
+
+
+__LOGHALF = np.log(0.5)
+
+
+def log1mexp(x: np.ndarray) -> np.ndarray:
+    # compute log(1 - exp(x)) for x < 0
+    # see: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+    with warnings.catch_warnings():  # TODO: can we avoid this? Write in Cython?
+        warnings.simplefilter("ignore")
+        return np.where(x < __LOGHALF, np.log1p(-np.exp(x)), np.log(-np.expm1(x)))

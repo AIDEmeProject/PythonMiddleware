@@ -15,65 +15,38 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 import warnings
-from typing import Generator, List
+from typing import Generator, List, Optional, Tuple, Any
 
 import numpy as np
 
 from scipy.special import expit
 
 from .gradient_descent import GradientDescentOptimizer
-
-
-__MLOG2 = -np.log(2)
-
-
-def log1mexp(x: np.ndarray) -> np.ndarray:
-    # compute log(1 - exp(x)) for x < 0
-    # see: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
-    with warnings.catch_warnings():  # TODO: can we avoid this? Write in Cython?
-        warnings.simplefilter("ignore")
-        return np.where(x < __MLOG2, np.log1p(-np.exp(x)), np.log(-np.expm1(x)))
+from .utils import log1mexp
 
 
 class FactorizedLinearClassifier:
-    def __init__(self, partition: List[List[int]], optimizer: str = 'GD', **opt_params):
-        self.partition = partition
-        self.__offsets = np.cumsum([len(p) + 1 for p in self.partition])
+    __LOGHALF = np.log(0.5)
 
-        self._weights = None
+    def __init__(self, partition: List[List[int]], weights: Optional[np.ndarray] = None):
+        self._partition = partition
+        self._dim = len(partition) + sum(map(len, partition))
 
-        self.__opt = self.__get_optimizer(optimizer, opt_params)
+        if weights is None:
+            weights = np.zeros(self._dim)
 
-    def set_partition(self, partition):
-        self.partition = partition
-        self.__offsets = np.cumsum([len(p) + 1 for p in self.partition])
+        if len(weights) != self._dim:
+            raise ValueError("Incompatible dimension for weights: expected {}, but got {}".format(self._dim, len(weights)))
 
-    def __get_optimizer(self, optimizer: str, opt_params):
-        # TODO: allow for other optimization methods?
-        optimizer = optimizer.upper()
-
-        if optimizer == 'GD':
-            return GradientDescentOptimizer(**opt_params)
-
-        raise ValueError("Unknown optimizer: {}".format(optimizer))
+        self._weights = weights
+        self.__offsets = np.cumsum([len(p) + 1 for p in self._partition])
 
     @property
     def dim(self) -> int:
-        return len(self.partition) + sum(map(len, self.partition))
-
-    def fit(self, X: np.ndarray, y: np.ndarray):
-        loss = LinearLoss(X, y, self)
-        x0 = np.zeros(loss.fact_clf.dim)
-        res = self.__opt.optimize(x0, loss.loss, loss.grad)
-
-        if not res.converged:
-            warnings.warn("Optimization routine did not converge.\n{}".format(res))
-
-        self._weights = res.x
-        return res  # TODO: remove this
+        return self._dim
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return np.where(self.predict_proba(X) > 0.5, 1, 0)
+        return np.where(self._log_proba(X) > self.__LOGHALF, 1, 0)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return np.exp(self._log_proba(X))
@@ -86,7 +59,7 @@ class FactorizedLinearClassifier:
     def _log_proba(self, X: np.ndarray) -> np.ndarray:
         log_probas = np.zeros(len(X), dtype='float')
 
-        for X_partial, w_partial in self.generate_subspace_data(X):
+        for X_partial, w_partial in self.__generate_subspace_data(X):
             partial_proba = self._logistic_proba(X_partial, w_partial)
             log_probas += np.log(partial_proba)
 
@@ -95,18 +68,18 @@ class FactorizedLinearClassifier:
     def _grad_log_proba(self, X: np.ndarray) -> np.ndarray:
         grads = np.ones((self.dim, len(X)))
 
-        for begin, end, X_partial, w_partial in self.generate_subspace_data(X, include_endpoints=True):
+        for begin, end, X_partial, w_partial in self.__generate_subspace_data(X, include_endpoints=True):
             partial_proba = self._logistic_proba(X_partial, w_partial)
 
-            grads[begin + 1:end] = X_partial.T
+            grads[begin+1:end] = X_partial.T
             grads[begin:end] *= (1 - partial_proba)
 
         return grads
 
-    def generate_subspace_data(self, X: np.ndarray, include_endpoints: bool = False) -> Generator:
+    def __generate_subspace_data(self, X: np.ndarray, include_endpoints: bool = False) -> Generator:
         begin = 0
 
-        for p, end in zip(self.partition, self.__offsets):
+        for p, end in zip(self._partition, self.__offsets):
             if include_endpoints:
                 yield begin, end, X[:, p], self._weights[begin:end]
             else:
@@ -118,17 +91,52 @@ class FactorizedLinearClassifier:
         return expit(w[0] + X.dot(w[1:]))
 
 
+class FactorizedLinearLearner:
+    def __init__(self, optimizer: str = 'GD', **opt_params):
+        self.__opt = self.__get_optimizer(optimizer, opt_params)
+
+    def __get_optimizer(self, optimizer: str, opt_params):
+        # TODO: allow for other optimization methods?
+        optimizer = optimizer.upper()
+
+        if optimizer == 'GD':
+            return GradientDescentOptimizer(**opt_params)
+
+        raise ValueError("Unknown optimizer: {}".format(optimizer))
+
+    def fit(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
+        return self.__find_best_params(X, y, partition, x0)[0]
+
+    def compute_factorization_loss(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
+        _, res = self.__find_best_params(X, y, partition, x0)
+        return res.fun
+
+    def __find_best_params(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None) -> Tuple[FactorizedLinearClassifier, Any]:
+        fact_clf = FactorizedLinearClassifier(partition, x0)
+        loss = LinearLoss(X, y, fact_clf)
+
+        res = self.__opt.optimize(loss.x0, loss.loss, loss.grad)
+
+        if not res.converged:
+            warnings.warn("Optimization routine did not converge.\n{}".format(res))
+
+        fact_clf._weights = res.x
+
+        return fact_clf, res
+
+
 class LinearLoss:
     def __init__(self, X: np.ndarray, y: np.ndarray, fact_clf: FactorizedLinearClassifier):
         self.X = X
-        self.y = y
+        self.is_positive = y > 0
         self.fact_clf = fact_clf
+        self.x0 = self.fact_clf._weights.copy()
 
     def loss(self, weights: np.ndarray) -> np.ndarray:
         self.fact_clf._weights = weights
 
         log_probas = self.fact_clf._log_proba(self.X)
-        return -np.where(self.y > 0, log_probas, log1mexp(log_probas)).mean()
+        return -np.where(self.is_positive, log_probas, log1mexp(log_probas)).mean()
 
     def grad(self, weights: np.ndarray) -> np.ndarray:
         self.fact_clf._weights = weights
@@ -138,5 +146,5 @@ class LinearLoss:
         grads = self.fact_clf._grad_log_proba(self.X)
         with warnings.catch_warnings():  # TODO: can we avoid this? Write in Cython?
             warnings.simplefilter("ignore")
-            weights = np.where(self.y > 0, -1, 1 / np.expm1(-log_probas))
+            weights = np.where(self.is_positive, -1, 1 / np.expm1(-log_probas))
         return grads.dot(weights) / len(self.X)
