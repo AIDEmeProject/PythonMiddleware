@@ -16,3 +16,4 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .linear import FactorizedLinearClassifier
+from .learn import BruteForceSelector, GreedySelector
