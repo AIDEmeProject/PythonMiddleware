@@ -21,8 +21,8 @@ from typing import Generator, List, Optional, Tuple
 
 import numpy as np
 from scipy.special import expit
+import scipy.optimize
 
-from .gradient_descent import GradientDescentOptimizer
 from .utils import log1mexp
 
 
@@ -91,7 +91,7 @@ class FactorizedLinearClassifier:
         log_probas = np.zeros(len(X), dtype='float')
 
         for X_partial, w_partial in self.__generate_subspace_data(X):
-            partial_proba = self._logistic_proba(X_partial, w_partial)
+            partial_proba = self._logistic_proba(X_partial, w_partial)  # TODO: use a better method for computing -log(1 + exp(-x))
             log_probas += np.log(partial_proba)
 
         return log_probas
@@ -123,18 +123,14 @@ class FactorizedLinearClassifier:
 
 
 class FactorizedLinearLearner:
-    def __init__(self, optimizer: str = 'GD', **opt_params):
-        self.__opt = self.__get_optimizer(optimizer, opt_params)
-
-    @staticmethod
-    def __get_optimizer(optimizer: str, opt_params):
-        # TODO: allow for other optimization methods?
-        optimizer = optimizer.upper()
-
-        if optimizer == 'GD':
-            return GradientDescentOptimizer(**opt_params)
-
-        raise ValueError("Unknown optimizer: {}".format(optimizer))
+    def __init__(self, optimizer: str = 'BFGS', gtol: float = 1e-4, maxiter: Optional[int] = None):
+        """
+        :param optimizer: Scipy optimization method. Recommended options are 'BFGS' or 'CG'
+        :param gtol: gradient threshold tolerance
+        :param maxiter: maximum number of iterations. If None, no upper limit is set.
+        """
+        self._optimizer = optimizer
+        self._opt_options = {'gtol': gtol, 'maxiter': maxiter}
 
     def fit(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
         return self.fit_and_loss(X, y, partition, x0)[0]
@@ -146,9 +142,9 @@ class FactorizedLinearLearner:
         fact_clf = FactorizedLinearClassifier(partition, x0)
         loss = LinearLoss(X, y, fact_clf)
 
-        res = self.__opt.optimize(loss.x0, loss.loss, loss.grad)
+        res = scipy.optimize.minimize(loss, loss.x0, jac=True, method=self._optimizer, options=self._opt_options)
 
-        if not res.converged:
+        if not res.success:
             warnings.warn("Optimization routine did not converge.\n{}".format(res))
 
         fact_clf.weights = res.x
@@ -163,19 +159,14 @@ class LinearLoss:
         self.fact_clf = fact_clf
         self.x0 = self.fact_clf.weights.copy()
 
-    def loss(self, weights: np.ndarray) -> np.ndarray:
+    def __call__(self, weights: np.ndarray) -> Tuple[float, np.ndarray]:
         self.fact_clf.weights = weights
 
         log_probas = self.fact_clf._log_proba(self.X)
-        return -np.where(self.is_positive, log_probas, log1mexp(log_probas)).mean()
-
-    def grad(self, weights: np.ndarray) -> np.ndarray:
-        self.fact_clf.weights = weights
-
-        log_probas = self.fact_clf._log_proba(self.X)
+        loss = -np.where(self.is_positive, log_probas, log1mexp(log_probas)).mean()
 
         grads = self.fact_clf._grad_log_proba(self.X)
         with warnings.catch_warnings():  # TODO: can we avoid this? Write in Cython?
             warnings.simplefilter("ignore")
             weights = np.where(self.is_positive, -1, 1 / np.expm1(-log_probas))
-        return grads.dot(weights) / len(self.X)
+        return loss, grads.dot(weights) / len(self.X)
