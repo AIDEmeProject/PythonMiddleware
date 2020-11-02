@@ -107,35 +107,29 @@ class BruteForceSelector(FactorizationSelector):
 
 
 class GreedySelector(FactorizationSelector):
+    def __init__(self, max_partitions: Optional[int] = None, max_dim: Optional[int] = None, warm_start: bool = True):
+        super().__init__(max_partitions, max_dim)
+        self.warm_start = warm_start
 
     def _select_best_partition(self, X: np.ndarray, y: np.ndarray, learner: FactorizedLinearLearner, max_dim: int, max_partitions: int):
         N = X.shape[1]
-        opt_partition = [[i] for i in range(N)]
-        opt_loss = learner.compute_factorization_loss(X, y, opt_partition)
+        opt_clf, opt_res = learner._find_best_params(X, y, [[i] for i in range(N)])
 
         for k in range(N):
-            level_loss, level_part = opt_loss, opt_partition
+            level_clf, level_res = opt_clf, opt_res
 
             for i in range(N - k):
                 for j in range(i + 1, N - k):
-                    part = self.__merge_partitions(opt_partition, i, j)
+                    merged_clf = opt_clf.merge_partitions(i, j, self.warm_start)
 
-                    if self._is_valid_partition(part, max_dim):
-                        loss = learner.compute_factorization_loss(X, y, part)
-                        if loss < level_loss:
-                            level_loss, level_part = loss, part
+                    if self._is_valid_partition(merged_clf.partition, max_dim):
+                        clf, res = learner._find_best_params(X, y, merged_clf.partition, merged_clf.weights)
+                        if res.fun < level_res.fun:
+                            level_clf, level_res = clf, res
 
-            if level_loss < opt_loss:
-                opt_partition, opt_loss = level_part, level_loss
+            if level_res.fun < opt_res.fun:
+                opt_clf, opt_res = level_clf, level_res
             else:
                 break
 
-        return opt_partition
-
-    @staticmethod
-    def __merge_partitions(part, i, j):
-        if i == j:
-            return part
-
-        i, j = min(i, j), max(i, j)
-        return part[:i] + part[i+1:j] + part[j+1:] + [sorted(set(part[i] + part[j]))]
+        return opt_clf.partition

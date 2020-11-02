@@ -14,6 +14,8 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
 import warnings
 from typing import Generator, List, Optional, Tuple, Any
 
@@ -29,7 +31,7 @@ class FactorizedLinearClassifier:
     __LOGHALF = np.log(0.5)
 
     def __init__(self, partition: List[List[int]], weights: Optional[np.ndarray] = None):
-        self._partition = partition
+        self.partition = partition
         self._dim = len(partition) + sum(map(len, partition))
 
         if weights is None:
@@ -38,8 +40,8 @@ class FactorizedLinearClassifier:
         if len(weights) != self._dim:
             raise ValueError("Incompatible dimension for weights: expected {}, but got {}".format(self._dim, len(weights)))
 
-        self._weights = weights
-        self.__offsets = np.cumsum([len(p) + 1 for p in self._partition])
+        self.weights = weights
+        self.__offsets = np.cumsum([len(p) + 1 for p in self.partition])
 
     @property
     def dim(self) -> int:
@@ -54,7 +56,37 @@ class FactorizedLinearClassifier:
     def partial_proba(self, X: np.ndarray, i: int) -> np.ndarray:
         begin = self.__offsets[i-1] if i > 0 else 0
         end = self.__offsets[i]
-        return self._logistic_proba(X, self._weights[begin:end])
+        return self._logistic_proba(X, self.weights[begin:end])
+
+    def merge_partitions(self, i: int, j: int, merge_weights: bool = True) -> FactorizedLinearClassifier:
+        if i == j:
+            return self
+
+        i, j = min(i, j), max(i, j)
+
+        merged_part = (
+                self.partition[:i]
+                + self.partition[i + 1:j]
+                + self.partition[j + 1:]
+                + [self.partition[i] + self.partition[j]]
+        )
+
+        if not merge_weights:
+            return FactorizedLinearClassifier(merged_part)
+
+        begin_i, end_i = self.__offsets[i - 1] if i > 0 else 0, self.__offsets[i]
+        begin_j, end_j = self.__offsets[j - 1], self.__offsets[j]
+
+        merged_w = np.hstack([
+            self.weights[:begin_i],
+            self.weights[end_i:begin_j],
+            self.weights[end_j:],
+            [self.weights[begin_i] + self.weights[begin_j]],
+            self.weights[begin_i + 1:end_i],
+            self.weights[begin_j + 1:end_j]
+        ])
+
+        return FactorizedLinearClassifier(merged_part, merged_w)
 
     def _log_proba(self, X: np.ndarray) -> np.ndarray:
         log_probas = np.zeros(len(X), dtype='float')
@@ -79,11 +111,11 @@ class FactorizedLinearClassifier:
     def __generate_subspace_data(self, X: np.ndarray, include_endpoints: bool = False) -> Generator:
         begin = 0
 
-        for p, end in zip(self._partition, self.__offsets):
+        for p, end in zip(self.partition, self.__offsets):
             if include_endpoints:
-                yield begin, end, X[:, p], self._weights[begin:end]
+                yield begin, end, X[:, p], self.weights[begin:end]
             else:
-                yield X[:, p], self._weights[begin:end]
+                yield X[:, p], self.weights[begin:end]
             begin = end
 
     @staticmethod
@@ -95,7 +127,8 @@ class FactorizedLinearLearner:
     def __init__(self, optimizer: str = 'GD', **opt_params):
         self.__opt = self.__get_optimizer(optimizer, opt_params)
 
-    def __get_optimizer(self, optimizer: str, opt_params):
+    @staticmethod
+    def __get_optimizer(optimizer: str, opt_params):
         # TODO: allow for other optimization methods?
         optimizer = optimizer.upper()
 
@@ -105,13 +138,13 @@ class FactorizedLinearLearner:
         raise ValueError("Unknown optimizer: {}".format(optimizer))
 
     def fit(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
-        return self.__find_best_params(X, y, partition, x0)[0]
+        return self._find_best_params(X, y, partition, x0)[0]
 
     def compute_factorization_loss(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None):
-        _, res = self.__find_best_params(X, y, partition, x0)
+        _, res = self._find_best_params(X, y, partition, x0)
         return res.fun
 
-    def __find_best_params(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None) -> Tuple[FactorizedLinearClassifier, Any]:
+    def _find_best_params(self, X: np.ndarray, y: np.ndarray, partition: List[List[int]], x0: Optional[np.ndarray] = None) -> Tuple[FactorizedLinearClassifier, Any]:
         fact_clf = FactorizedLinearClassifier(partition, x0)
         loss = LinearLoss(X, y, fact_clf)
 
@@ -120,7 +153,7 @@ class FactorizedLinearLearner:
         if not res.converged:
             warnings.warn("Optimization routine did not converge.\n{}".format(res))
 
-        fact_clf._weights = res.x
+        fact_clf.weights = res.x
 
         return fact_clf, res
 
@@ -130,16 +163,16 @@ class LinearLoss:
         self.X = X
         self.is_positive = y > 0
         self.fact_clf = fact_clf
-        self.x0 = self.fact_clf._weights.copy()
+        self.x0 = self.fact_clf.weights.copy()
 
     def loss(self, weights: np.ndarray) -> np.ndarray:
-        self.fact_clf._weights = weights
+        self.fact_clf.weights = weights
 
         log_probas = self.fact_clf._log_proba(self.X)
         return -np.where(self.is_positive, log_probas, log1mexp(log_probas)).mean()
 
     def grad(self, weights: np.ndarray) -> np.ndarray:
-        self.fact_clf._weights = weights
+        self.fact_clf.weights = weights
 
         log_probas = self.fact_clf._log_proba(self.X)
 
