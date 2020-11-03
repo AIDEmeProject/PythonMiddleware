@@ -25,12 +25,11 @@ cdef double __LOGHALF = log(0.5)
 
 @boundscheck(False)
 @wraparound(False)
-cpdef double[::1] log1mexp(double[::1] x):
+def log1mexp(double[::1] x):
     """
     Computes log(1 - exp(x)) for x < 0
     See: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
     """
-
     cdef:
         unsigned int i,  N = x.shape[0]
         double[::1] res = np.empty(N)
@@ -39,6 +38,24 @@ cpdef double[::1] log1mexp(double[::1] x):
         res[i] = log1mexp_single(x[i])
 
     return res
+
+
+@boundscheck(False)
+@wraparound(False)
+@cdivision(True)
+def loss(double[::1] x, double[::1] y):
+    cdef:
+        unsigned int i,  N = x.shape[0]
+        double loss = 0
+
+    for i in range(N):
+        if y[i] > 0:
+            loss -= x[i]
+        else:
+            loss -= log1mexp_single(x[i])
+
+    loss /= N
+    return loss
 
 
 cdef double log1mexp_single(double x):
@@ -51,25 +68,7 @@ cdef double log1mexp_single(double x):
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-cpdef double loss(double[::1] x, double[::1] y):
-    cdef:
-        unsigned int i,  N = x.shape[0]
-        double loss = 0
-
-    for i in range(N):
-        if y[i] > 0:
-            loss += x[i]
-        else:
-            loss += log1mexp_single(x[i])
-
-    return -loss / N
-
-
-
-@boundscheck(False)
-@wraparound(False)
-@cdivision(True)
-cpdef double[::1] grad_weights(double[::1] x, double[::1] y):
+def grad_weights(double[::1] x, double[::1] y):
     cdef:
         unsigned int i, N = x.shape[0]
         double[::1] res = np.empty(N)
@@ -85,20 +84,19 @@ cpdef double[::1] grad_weights(double[::1] x, double[::1] y):
 
 @boundscheck(False)
 @wraparound(False)
-cpdef double[::1] log_sigmoid(double[::1] x):
+def log_sigmoid(double[::1] x):
     cdef:
         unsigned int i, N = x.shape[0]
         double[::1] res = np.empty(N)
 
     for i in range(N):
-        res[i] = log_sigmoid_single(x[i])
+        res[i] = -softmax(-x[i])
 
     return res
 
-cdef double log_sigmoid_single(double x):
-    # Computes -log(sigmoid(x)) = -softmax(-x)
-    if x <= 0:
-        return x - log1p(exp(x))
+cdef double softmax(double x):
+    # Computes softmax(x) = log(1 + exp(x))
+    if x >= 0:
+        return x + log1p(exp(-x))
     else:
-        return -log1p(exp(-x))
-
+        return log1p(exp(x))
