@@ -16,14 +16,14 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-import warnings
 from typing import Generator, List, Optional, Tuple
+import warnings
 
 import numpy as np
 from scipy.special import expit
 import scipy.optimize
 
-from .utils import log1mexp
+import aideme.active_learning.factorization.utils as utils
 
 
 class FactorizedLinearClassifier:
@@ -91,8 +91,8 @@ class FactorizedLinearClassifier:
         log_probas = np.zeros(len(X), dtype='float')
 
         for X_partial, w_partial in self.__generate_subspace_data(X):
-            partial_proba = self._logistic_proba(X_partial, w_partial)  # TODO: use a better method for computing -log(1 + exp(-x))
-            log_probas += np.log(partial_proba)
+            margin = self._margin(X_partial, w_partial)
+            log_probas += utils.log_sigmoid(margin)
 
         return log_probas
 
@@ -117,9 +117,13 @@ class FactorizedLinearClassifier:
                 yield X[:, p], self.weights[begin:end]
             begin = end
 
+    @classmethod
+    def _logistic_proba(cls, X, w):
+        return expit(cls._margin(X, w))
+
     @staticmethod
-    def _logistic_proba(X, w):
-        return expit(w[0] + X.dot(w[1:]))
+    def _margin(X, w):
+        return w[0] + X.dot(w[1:])
 
 
 class FactorizedLinearLearner:
@@ -155,7 +159,7 @@ class FactorizedLinearLearner:
 class LinearLoss:
     def __init__(self, X: np.ndarray, y: np.ndarray, fact_clf: FactorizedLinearClassifier):
         self.X = X
-        self.is_positive = y > 0
+        self.y = y
         self.fact_clf = fact_clf
         self.x0 = self.fact_clf.weights.copy()
 
@@ -163,10 +167,8 @@ class LinearLoss:
         self.fact_clf.weights = weights
 
         log_probas = self.fact_clf._log_proba(self.X)
-        loss = -np.where(self.is_positive, log_probas, log1mexp(log_probas)).mean()
+        loss = utils.loss(log_probas, self.y)
 
         grads = self.fact_clf._grad_log_proba(self.X)
-        with warnings.catch_warnings():  # TODO: can we avoid this? Write in Cython?
-            warnings.simplefilter("ignore")
-            weights = np.where(self.is_positive, -1, 1 / np.expm1(-log_probas))
+        weights = utils.grad_weights(log_probas, self.y)
         return loss, grads.dot(weights) / len(self.X)
