@@ -167,7 +167,7 @@ class LinearLoss:
         self.fact_clf.weights = weights
 
         log_probas = self.fact_clf._log_proba(self.X)
-        loss = utils.loss(log_probas, self.y)
+        loss = utils.compute_loss(log_probas, self.y)
 
         grads = self.fact_clf._grad_log_proba(self.X)
         weights = utils.grad_weights(log_probas, self.y)

@@ -25,44 +25,102 @@ cdef double __LOGHALF = log(0.5)
 
 @boundscheck(False)
 @wraparound(False)
-def log1mexp(double[::1] x):
-    """
-    Computes log(1 - exp(x)) for x < 0
-    See: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
-    """
+cpdef double[::1] compute_log_probas(double[:, ::1] margin):
     cdef:
-        unsigned int i,  N = x.shape[0]
-        double[::1] res = np.empty(N)
+        Py_ssize_t i, j
+        Py_ssize_t N = margin.shape[0], K = margin.shape[1]
+        double[::1] log_probas = np.empty(N, dtype=np.float64)
 
     for i in range(N):
-        res[i] = log1mexp_single(x[i])
+        log_probas[i] = 0
+        for j in range(K):
+            log_probas[i] -= softmax(-margin[i, j])
 
-    return res
+    return log_probas
 
 
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-def loss(double[::1] x, double[::1] y):
+def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):
     cdef:
-        unsigned int i,  N = x.shape[0]
+        Py_ssize_t i, j
+        Py_ssize_t N = margin.shape[0], K = margin.shape[1]
+
+    # STEP 1: compute log probas
+    cdef double[::1] log_probas = compute_log_probas(margin)
+
+    # STEP 2: compute loss and gradient factors
+    grad_factors = np.empty((N, K), dtype=np.float64)
+    cdef:
+        double weight, lp, loss = 0
+        double[:, ::1] grad_factors_view = grad_factors
+
+    for i in range(N):
+        lp = log_probas[i]
+
+        if y[i] > 0:
+            loss -= lp
+            weight = -1. / N
+        else:
+            loss -= log1mexp(lp)
+            weight = 1. / (N * expm1(-lp))
+
+        for j in range(K):
+            grad_factors_view[i, j] = weight * msigmoid(margin[i, j])
+
+    loss /= N
+    return loss, grad_factors
+
+
+@boundscheck(False)
+@wraparound(False)
+@cdivision(True)
+def compute_huber_loss_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):
+    cdef:
+        Py_ssize_t i, j
+        Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
+        double loss = 0, half_delta = delta / 2, pd = penalty * delta, w
+
+    grad = np.empty((N, K), dtype=np.float64)
+    cdef double[:, ::1] grad_view = grad
+
+    for i in range(N):
+        for j in range(K):
+            w = weights[i, j]
+
+            if w > delta:
+                loss += delta * (w - half_delta)
+                grad_view[i, j] = pd
+
+            elif w < -delta:
+                loss -= delta * (w + half_delta)
+                grad_view[i, j] = -pd
+
+            else:
+                loss += 0.5 * w * w
+                grad_view[i, j] = penalty * w
+
+    loss *= penalty
+    return loss, grad
+
+
+@boundscheck(False)
+@wraparound(False)
+@cdivision(True)
+def compute_loss(double[::1] log_probas, double[::1] y):
+    cdef:
+        unsigned int i,  N = log_probas.shape[0]
         double loss = 0
 
     for i in range(N):
         if y[i] > 0:
-            loss -= x[i]
+            loss -= log_probas[i]
         else:
-            loss -= log1mexp_single(x[i])
+            loss -= log1mexp(log_probas[i])
 
     loss /= N
     return loss
-
-
-cdef double log1mexp_single(double x):
-    if x < __LOGHALF:
-        return log1p(-exp(x))
-    else:
-        return log(-expm1(x))
 
 
 @boundscheck(False)
@@ -74,10 +132,7 @@ def grad_weights(double[::1] x, double[::1] y):
         double[::1] res = np.empty(N)
 
     for i in range(N):
-        if y[i] > 0:
-            res[i] = -1
-        else:
-            res[i] = 1 / expm1(-x[i])
+        res[i] = -1 if y[i] > 0 else 1. / expm1(-x[i])
 
     return res
 
@@ -94,9 +149,34 @@ def log_sigmoid(double[::1] x):
 
     return res
 
+
+cdef double log1mexp(double x):
+    """
+    Computes log(1 - exp(x)) for x < 0
+    See: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
+    """
+    if x < __LOGHALF:
+        return log1p(-exp(x))
+    else:
+        return log(-expm1(x))
+
+
 cdef double softmax(double x):
     # Computes softmax(x) = log(1 + exp(x))
     if x >= 0:
         return x + log1p(exp(-x))
     else:
         return log1p(exp(x))
+
+
+@cdivision(True)
+cdef double msigmoid(double x):
+    # Computes sigmoid(x) = 1 / (1 + exp(x))
+    cdef double expx
+    if x <= 0:
+        expx = exp(x)
+        return 1 / (1 + expx)
+    else:
+        expx = exp(-x)
+        return expx / (1 + expx)
+

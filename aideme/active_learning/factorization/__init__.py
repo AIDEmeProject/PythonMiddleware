@@ -17,3 +17,4 @@
 
 from .linear import FactorizedLinearLearner
 from .learn import BruteForceSelector, GreedySelector
+from .linear_factorization import LinearFactorizationLearner
