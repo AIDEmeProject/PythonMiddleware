@@ -21,23 +21,35 @@ import scipy.optimize
 
 import aideme.active_learning.factorization.utils as utils
 from aideme.utils import assert_non_negative, assert_positive_integer
+from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty
 
 
 class LinearFactorizationLearner:
-    # TODO: add optimization configs
-
-    def __init__(self, add_bias: bool = True, interaction_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
+    def __init__(self, add_bias: bool = True, interaction_penalty: float = 0, l1_penalty: float = 0,
+                 huber_penalty: float = 0, huber_delta: float = 1e-3):
         assert_non_negative(interaction_penalty, 'interaction_penalty')
         assert_non_negative(huber_penalty, 'huber_penalty')
         assert_non_negative(huber_delta, 'huber_delta')
 
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
+        self.l1_penalty = l1_penalty
         self.huber_penalty = huber_penalty
         self.huber_delta = huber_delta
 
         self._weights = None
         self._bias = 0
+
+        self._optimizer = self.__get_optimizer()
+
+    def __get_optimizer(self):
+        if self.l1_penalty > 0:
+            optimizer = ProximalGradientDescentOptimizer()
+            g, prox = l1_penalty(self.l1_penalty, self.add_bias)
+            # TODO: optimize f(x), fprime(x) computation
+            return lambda x0, func: optimizer.minimize(x0, lambda x: func(x)[0], lambda x: func(x, return_matrix=True)[1], g, prox)
+
+        return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs')
 
     def fit(self, X: np.ndarray, y: np.ndarray, max_partitions: int, x0: Optional[np.ndarray] = None):
         assert_positive_integer(max_partitions, 'max_partitions')
@@ -51,7 +63,7 @@ class LinearFactorizationLearner:
         if x0 is None:
             x0 = np.random.uniform(-1, 1, size=shape)
 
-        opt_result = scipy.optimize.minimize(loss, x0, jac=True, method='bfgs')
+        opt_result = self._optimizer(x0, loss)
 
         self._weights = opt_result.x.reshape(shape)
         if self.add_bias:
@@ -85,7 +97,7 @@ class LinearFactorizationLoss:
         self.huber_penalty = huber_penalty
         self.huber_delta = huber_delta
 
-    def __call__(self, weights: np.ndarray):
+    def __call__(self, weights: np.ndarray, return_matrix: bool = False):
         weights = weights.reshape(-1, self.X.shape[1])
 
         margins = self.X @ weights.T
@@ -98,7 +110,7 @@ class LinearFactorizationLoss:
         if self.huber_penalty > 0:
             loss += self.__add_penalty(self.compute_huber_penalty, weights, grads)
 
-        return loss, grads.ravel()
+        return loss, (grads if return_matrix else grads.ravel())
 
     def compute_interaction_penalty(self, weights):
         if self.add_bias:
