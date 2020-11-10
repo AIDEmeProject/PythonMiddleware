@@ -39,7 +39,7 @@ class ResultObject:
                                                                                             self.converged, self.iters)
 
 
-def l1_penalty(penalty: float, has_bias: bool = False):
+def l1_penalty_func_and_prox(penalty: float, has_bias: bool = False):
     assert_positive(penalty, 'penalty')
 
     def g(x):

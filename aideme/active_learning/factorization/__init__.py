@@ -18,4 +18,3 @@
 from .linear import FactorizedLinearLearner
 from .learn import BruteForceSelector, GreedySelector
 from .linear_factorization import LinearFactorizationLearner
-from .gradient_descent import l1_penalty, ProximalGradientDescentOptimizer

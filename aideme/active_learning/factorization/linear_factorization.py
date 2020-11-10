@@ -21,31 +21,31 @@ import scipy.optimize
 
 import aideme.active_learning.factorization.utils as utils
 from aideme.utils import assert_non_negative, assert_positive_integer
-from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty
+from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty_func_and_prox
 
 
 class LinearFactorizationLearner:
     def __init__(self, add_bias: bool = True, interaction_penalty: float = 0, l1_penalty: float = 0,
                  huber_penalty: float = 0, huber_delta: float = 1e-3):
         assert_non_negative(interaction_penalty, 'interaction_penalty')
+        assert_non_negative(l1_penalty, 'l1_penalty')
         assert_non_negative(huber_penalty, 'huber_penalty')
         assert_non_negative(huber_delta, 'huber_delta')
 
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
-        self.l1_penalty = l1_penalty
         self.huber_penalty = huber_penalty
         self.huber_delta = huber_delta
 
         self._weights = None
         self._bias = 0
 
-        self._optimizer = self.__get_optimizer()
+        self._optimizer = self.__get_optimizer(l1_penalty)
 
-    def __get_optimizer(self):
-        if self.l1_penalty > 0:
+    def __get_optimizer(self, l1_penalty):
+        if l1_penalty > 0:
             optimizer = ProximalGradientDescentOptimizer()
-            g, prox = l1_penalty(self.l1_penalty, self.add_bias)
+            g, prox = l1_penalty_func_and_prox(l1_penalty, self.add_bias)
             # TODO: optimize f(x), fprime(x) computation
             return lambda x0, func: optimizer.minimize(x0, lambda x: func(x)[0], lambda x: func(x, return_matrix=True)[1], g, prox)
 
@@ -116,12 +116,15 @@ class LinearFactorizationLoss:
         if self.add_bias:
             weights = weights[:, :-1]
 
-        M = weights @ weights.T
-        np.fill_diagonal(M, 0)
+        wsq = np.square(weights)
 
-        penalty = self.interaction_penalty * np.square(M).sum()
-        penalty_grad = (4 * self.interaction_penalty) * (M @ weights)
-        return penalty, penalty_grad
+        M = wsq @ wsq.T
+        np.fill_diagonal(M, 0)
+        penalty = 0.5 * self.interaction_penalty * M.sum()
+
+        col_sq = np.sum(wsq, axis=0)
+        grad = 2 * self.interaction_penalty * weights * (col_sq - wsq)
+        return penalty, grad
 
     def compute_huber_penalty(self, weights):
         return utils.compute_huber_loss_and_grad(weights, self.huber_penalty, self.huber_delta, int(self.add_bias))
