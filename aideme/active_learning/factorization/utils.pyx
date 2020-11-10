@@ -76,7 +76,29 @@ def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-def compute_huber_loss_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):
+def compute_loss(double[:, ::1] margin, double[::1] y):
+    cdef:
+        Py_ssize_t i, N = margin.shape[0]
+        double lp, loss = 0
+        double[::1] log_probas = compute_log_probas(margin)
+
+    for i in range(N):
+        lp = log_probas[i]
+
+        if y[i] > 0:
+            loss -= lp
+        else:
+            loss -= log1mexp(lp)
+
+    loss /= N
+    return loss
+
+
+
+@boundscheck(False)
+@wraparound(False)
+@cdivision(True)
+def compute_huber_penalty_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):
     cdef:
         Py_ssize_t i, j
         Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
@@ -108,7 +130,33 @@ def compute_huber_loss_and_grad(double[:, ::1] weights, double penalty, double d
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-def compute_loss(double[::1] log_probas, double[::1] y):
+def compute_huber_penalty(double[:, ::1] weights, double penalty, double delta, int remove_last):
+    cdef:
+        Py_ssize_t i, j
+        Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
+        double loss = 0, half_delta = delta / 2, w
+
+    for i in range(N):
+        for j in range(K):
+            w = weights[i, j]
+
+            if w > delta:
+                loss += delta * (w - half_delta)
+
+            elif w < -delta:
+                loss -= delta * (w + half_delta)
+
+            else:
+                loss += 0.5 * w * w
+
+    loss *= penalty
+    return loss
+
+
+@boundscheck(False)
+@wraparound(False)
+@cdivision(True)
+def compute_classification_loss(double[::1] log_probas, double[::1] y):
     cdef:
         unsigned int i,  N = log_probas.shape[0]
         double loss = 0

@@ -88,7 +88,8 @@ class ProximalGradientDescentOptimizer:
 
     def minimize(self, x0: np.ndarray, f: Callable, fprime: Callable, g: Callable, proxg: Callable) -> ResultObject:
         x = np.array(x0, copy=True)
-        prev_result, result = None, ResultObject(x, f(x) + g(x), fprime(x))
+        fval, fgrad = fprime(x)
+        prev_result, result = None, ResultObject(x, fval + g(x), fgrad)
 
         while not self._converged(prev_result, result):
             prev_result, result = result, self._advance(result, f, fprime, g, proxg)
@@ -109,7 +110,8 @@ class ProximalGradientDescentOptimizer:
     def _advance(self, result: ResultObject, f: Callable, fprime: Callable, g: Callable, proxg: Callable) -> ResultObject:
         step = self.step_optimizer(result, f, proxg)
         x = proxg(result.x - step * result.grad, step)
-        return ResultObject(x, f(x) + g(x), fprime(x), step, result.iters + 1)
+        fval, fgrad = fprime(x)
+        return ResultObject(x, fval + g(x), fgrad, step, result.iters + 1)
 
     def _run_callbacks(self, prev_result: ResultObject, result: ResultObject) -> None:
         for callback in self.callbacks:
