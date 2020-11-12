@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, List, Union
 
 import numpy as np
 import scipy.optimize
@@ -77,21 +77,28 @@ class LinearFactorizationLearner:
 
         return learner
 
-    def fit(self, X: np.ndarray, y: np.ndarray, max_partitions: int, x0: Optional[np.ndarray] = None):
-        assert_positive_integer(max_partitions, 'max_partitions')
+    def fit(self, X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], x0: Optional[np.ndarray] = None):
+        if isinstance(factorization, int):
+            assert_positive_integer(factorization, 'factorization')
+            num_subspaces = factorization
+            factorization = None
+        else:
+            num_subspaces = len(factorization)
 
         loss = LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias,
                                        interaction_penalty=self.interaction_penalty,
-                                       huber_penalty=self.huber_penalty, huber_delta=self.huber_delta)
-
-        shape = (max_partitions, loss.X.shape[1])
+                                       huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
+                                       factorization=factorization)
 
         if x0 is None:
-            x0 = np.random.uniform(-1, 1, size=shape)
+            x0 = np.random.uniform(-1, 1, size=(num_subspaces, loss.X.shape[1]))
+
+        if loss.factorization is not None:
+            x0 = x0[loss.factorization]
 
         opt_result = self._optimizer(x0, loss)
 
-        self._weights = self.__sort_matrix(opt_result.x.reshape(shape))  # sort matrix in order to make weights more consistent
+        self._weights = self.__sort_matrix(loss.get_weights_matrix(opt_result.x))  # sort matrix in order to make weights more consistent
         if self.add_bias:
             self._bias = self._weights[:, -1]
             self._weights = self._weights[:, :-1]
@@ -119,9 +126,17 @@ class LinearFactorizationLearner:
 
 class LinearFactorizationLoss:
     def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True, interaction_penalty: float = 0,
-                 huber_penalty: float = 0, huber_delta: float = 1e-3):
+                 huber_penalty: float = 0, huber_delta: float = 1e-3, factorization: Optional[List[List[int]]] = None):
         if add_bias:
             X = np.hstack([X, np.ones((X.shape[0], 1))])
+
+        if factorization is not None:
+            B = np.full((len(factorization), X.shape[1]), False)
+            for i, p in enumerate(factorization):
+                B[i, p] = True
+            if add_bias:
+                B[:, -1] = True
+            factorization = B
 
         self.X = X
         self.y = y
@@ -129,9 +144,10 @@ class LinearFactorizationLoss:
         self.interaction_penalty = interaction_penalty
         self.huber_penalty = huber_penalty
         self.huber_delta = huber_delta
+        self.factorization = factorization
 
     def __call__(self, weights: np.ndarray, return_matrix: bool = False):
-        weights = weights.reshape(-1, self.X.shape[1])
+        weights = self.get_weights_matrix(weights)
 
         margins = self.X @ weights.T
         loss, grad_weights = utils.compute_loss_and_grad(margins, self.y)
@@ -143,10 +159,16 @@ class LinearFactorizationLoss:
         if self.huber_penalty > 0:
             loss += self.__add_penalty(self._compute_huber_penalty_and_grad, weights, grads)
 
+        if self.factorization is not None:
+            if return_matrix:
+                grads[~self.factorization] = 0  # only works for first-order optimizers (e.g. gradient descent)
+            else:
+                grads = grads[self.factorization]
+
         return loss, (grads if return_matrix else grads.ravel())
 
     def compute_loss(self, weights: np.ndarray):
-        weights = weights.reshape(-1, self.X.shape[1])
+        weights = self.get_weights_matrix(weights)
 
         margins = self.X @ weights.T
         loss = utils.compute_loss(margins, self.y)
@@ -159,11 +181,19 @@ class LinearFactorizationLoss:
 
         return loss
 
+    def get_weights_matrix(self, weights):
+        if self.factorization is None:
+            return weights.reshape(-1, self.X.shape[1])
+
+        w = np.zeros((len(self.factorization), self.X.shape[1]))
+        w[self.factorization] = weights
+        return w
+
     def _compute_interaction_penalty_and_grad(self, weights):
-        penalty, weights, wsq, nterms = self.__interaction_penalty_helper(weights)
+        penalty, weights, wsq = self.__interaction_penalty_helper(weights)
 
         col_sq = np.sum(wsq, axis=0)
-        grad = (2 * self.interaction_penalty / nterms) * weights * (col_sq - wsq)
+        grad = (2 * self.interaction_penalty) * weights * (col_sq - wsq)
         return penalty, grad
 
     def _compute_interaction_penalty(self, weights):
@@ -173,13 +203,12 @@ class LinearFactorizationLoss:
         if self.add_bias:
             weights = weights[:, :-1]
 
-        nterms = weights.shape[0] * (weights.shape[0] - 1) / 2
         wsq = np.square(weights)
 
         M = wsq @ wsq.T
         np.fill_diagonal(M, 0)
-        penalty = 0.5 * self.interaction_penalty * M.sum() / nterms
-        return penalty, weights, wsq, nterms
+        penalty = 0.5 * self.interaction_penalty * M.sum()
+        return penalty, weights, wsq
 
     def _compute_huber_penalty_and_grad(self, weights):
         return utils.compute_huber_penalty_and_grad(weights, self.huber_penalty, self.huber_delta, int(self.add_bias))
