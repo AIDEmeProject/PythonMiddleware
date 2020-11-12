@@ -37,7 +37,7 @@ class LinearFactorizationLearner:
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
         self.l1_penalty = l1_penalty
-        self.huber_penalty = huber_penalty
+        self.huber_penalty = huber_penalty / huber_delta
         self.huber_delta = huber_delta
 
         self._weights = None
@@ -160,28 +160,26 @@ class LinearFactorizationLoss:
         return loss
 
     def _compute_interaction_penalty_and_grad(self, weights):
-        if self.add_bias:
-            weights = weights[:, :-1]
-
-        wsq = np.square(weights)
-
-        M = wsq @ wsq.T
-        np.fill_diagonal(M, 0)
-        penalty = 0.5 * self.interaction_penalty * M.sum()
+        penalty, weights, wsq, nterms = self.__interaction_penalty_helper(weights)
 
         col_sq = np.sum(wsq, axis=0)
-        grad = 2 * self.interaction_penalty * weights * (col_sq - wsq)
+        grad = (2 * self.interaction_penalty / nterms) * weights * (col_sq - wsq)
         return penalty, grad
 
     def _compute_interaction_penalty(self, weights):
+        return self.__interaction_penalty_helper(weights)[0]
+
+    def __interaction_penalty_helper(self, weights):
         if self.add_bias:
             weights = weights[:, :-1]
 
+        nterms = weights.shape[0] * (weights.shape[0] - 1) / 2
         wsq = np.square(weights)
 
         M = wsq @ wsq.T
         np.fill_diagonal(M, 0)
-        return 0.5 * self.interaction_penalty * M.sum()
+        penalty = 0.5 * self.interaction_penalty * M.sum() / nterms
+        return penalty, weights, wsq, nterms
 
     def _compute_huber_penalty_and_grad(self, weights):
         return utils.compute_huber_penalty_and_grad(weights, self.huber_penalty, self.huber_delta, int(self.add_bias))
