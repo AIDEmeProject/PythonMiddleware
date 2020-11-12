@@ -22,23 +22,25 @@ import numpy as np
 import scipy.optimize
 
 import aideme.active_learning.factorization.utils as utils
-from aideme.utils import assert_non_negative, assert_positive_integer
+from aideme.utils import assert_non_negative, assert_positive, assert_positive_integer
 from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty_func_and_prox
 
 
 class LinearFactorizationLearner:
     def __init__(self, add_bias: bool = True, interaction_penalty: float = 0, l1_penalty: float = 0,
-                 huber_penalty: float = 0, huber_delta: float = 1e-3):
+                 huber_penalty: float = 0, huber_delta: float = 1e-3, tol: float = 1e-4):
         assert_non_negative(interaction_penalty, 'interaction_penalty')
         assert_non_negative(l1_penalty, 'l1_penalty')
         assert_non_negative(huber_penalty, 'huber_penalty')
         assert_non_negative(huber_delta, 'huber_delta')
+        assert_positive(tol, 'tol')
 
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
         self.l1_penalty = l1_penalty
         self.huber_penalty = huber_penalty / huber_delta
         self.huber_delta = huber_delta
+        self.tol = tol
 
         self._weights = None
         self._bias = None
@@ -47,15 +49,11 @@ class LinearFactorizationLearner:
 
     def __get_optimizer(self):
         if self.l1_penalty > 0:
-            optimizer = ProximalGradientDescentOptimizer()  # TODO: allow to modify optimization parameters
+            optimizer = ProximalGradientDescentOptimizer(conv_threshold=self.tol)
             g, prox = l1_penalty_func_and_prox(self.l1_penalty, self.add_bias)
             return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True), g, prox)
 
-        return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs')
-
-    @property
-    def num_subspaces(self) -> int:
-        return self._weights.shape[0] if self._weights is not None else 0
+        return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs', options={'gtol': self.tol})
 
     @property
     def bias(self):
@@ -70,7 +68,8 @@ class LinearFactorizationLearner:
 
     def copy(self) -> LinearFactorizationLearner:
         learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
-                                             l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta)
+                                             l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
+                                             tol=self.tol)
         learner._weights = self.weights
         if self.add_bias:
             learner._bias = self.bias
