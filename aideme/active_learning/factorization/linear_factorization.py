@@ -14,6 +14,8 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
 from typing import Optional
 
 import numpy as np
@@ -34,18 +36,44 @@ class LinearFactorizationLearner:
 
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
+        self.l1_penalty = l1_penalty
         self.huber_penalty = huber_penalty
         self.huber_delta = huber_delta
 
         self._weights = None
         self._bias = 0
 
-        self._optimizer = self.__get_optimizer(l1_penalty)
+        self._optimizer = self.__get_optimizer()
 
-    def __get_optimizer(self, l1_penalty):
-        if l1_penalty > 0:
+    def copy(self) -> LinearFactorizationLearner:
+        learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
+                                             l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta)
+        if self._weights is not None:
+            learner._weights = self._weights.copy()
+            if self.add_bias:
+                learner._bias = self._bias.copy()
+
+        return learner
+
+    @property
+    def num_subspaces(self) -> int:
+        return self._weights.shape[0] if self._weights is not None else 0
+
+    @property
+    def bias(self):
+        if self._weights is None:
+            return None
+
+        return self._bias.copy() if self.add_bias else np.zeros(self._weights.shape[0])
+
+    @property
+    def weights(self):
+        return self._weights.copy()
+
+    def __get_optimizer(self):
+        if self.l1_penalty > 0:
             optimizer = ProximalGradientDescentOptimizer()  # TODO: allow to modify optimization parameters
-            g, prox = l1_penalty_func_and_prox(l1_penalty, self.add_bias)
+            g, prox = l1_penalty_func_and_prox(self.l1_penalty, self.add_bias)
             return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True), g, prox)
 
         return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs')
@@ -64,7 +92,7 @@ class LinearFactorizationLearner:
 
         opt_result = self._optimizer(x0, loss)
 
-        self._weights = opt_result.x.reshape(shape)
+        self._weights = self.__sort_matrix(opt_result.x.reshape(shape))  # sort matrix in order to make weights more consistent
         if self.add_bias:
             self._bias = self._weights[:, -1]
             self._weights = self._weights[:, :-1]
@@ -81,6 +109,9 @@ class LinearFactorizationLearner:
 
     def _margin(self, X: np.ndarray) -> np.ndarray:
         return X @ self._weights.T + self._bias
+
+    def __sort_matrix(self, weights: np.ndarray) -> np.ndarray:
+        return np.array(sorted(list(x) for x in weights))
 
 
 class LinearFactorizationLoss:
@@ -103,7 +134,7 @@ class LinearFactorizationLoss:
         loss, grad_weights = utils.compute_loss_and_grad(margins, self.y)
         grads = grad_weights.T @ self.X
 
-        if self.interaction_penalty > 0:
+        if self.interaction_penalty > 0 and weights.shape[0] > 1:
             loss += self.__add_penalty(self._compute_interaction_penalty_and_grad, weights, grads)
 
         if self.huber_penalty > 0:
@@ -117,7 +148,7 @@ class LinearFactorizationLoss:
         margins = self.X @ weights.T
         loss = utils.compute_loss(margins, self.y)
 
-        if self.interaction_penalty > 0:
+        if self.interaction_penalty > 0 and weights.shape[0] > 1:
             loss += self._compute_interaction_penalty(weights)
 
         if self.huber_penalty > 0:
