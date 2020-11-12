@@ -41,34 +41,9 @@ class LinearFactorizationLearner:
         self.huber_delta = huber_delta
 
         self._weights = None
-        self._bias = 0
+        self._bias = None
 
         self._optimizer = self.__get_optimizer()
-
-    def copy(self) -> LinearFactorizationLearner:
-        learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
-                                             l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta)
-        if self._weights is not None:
-            learner._weights = self._weights.copy()
-            if self.add_bias:
-                learner._bias = self._bias.copy()
-
-        return learner
-
-    @property
-    def num_subspaces(self) -> int:
-        return self._weights.shape[0] if self._weights is not None else 0
-
-    @property
-    def bias(self):
-        if self._weights is None:
-            return None
-
-        return self._bias.copy() if self.add_bias else np.zeros(self._weights.shape[0])
-
-    @property
-    def weights(self):
-        return self._weights.copy()
 
     def __get_optimizer(self):
         if self.l1_penalty > 0:
@@ -77,6 +52,30 @@ class LinearFactorizationLearner:
             return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True), g, prox)
 
         return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs')
+
+    @property
+    def num_subspaces(self) -> int:
+        return self._weights.shape[0] if self._weights is not None else 0
+
+    @property
+    def bias(self):
+        if self._bias is None:
+            return None
+
+        return self._bias.copy() if self.add_bias else np.zeros(self._weights.shape[0])
+
+    @property
+    def weights(self):
+        return None if self._weights is None else self._weights.copy()
+
+    def copy(self) -> LinearFactorizationLearner:
+        learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
+                                             l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta)
+        learner._weights = self.weights
+        if self.add_bias:
+            learner._bias = self.bias
+
+        return learner
 
     def fit(self, X: np.ndarray, y: np.ndarray, max_partitions: int, x0: Optional[np.ndarray] = None):
         assert_positive_integer(max_partitions, 'max_partitions')
@@ -108,9 +107,13 @@ class LinearFactorizationLearner:
         return np.exp(log_probas)
 
     def _margin(self, X: np.ndarray) -> np.ndarray:
-        return X @ self._weights.T + self._bias
+        margin = X @ self._weights.T
+        if self.add_bias:
+            margin += self._bias
+        return margin
 
-    def __sort_matrix(self, weights: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def __sort_matrix(weights: np.ndarray) -> np.ndarray:
         return np.array(sorted(list(x) for x in weights))
 
 
