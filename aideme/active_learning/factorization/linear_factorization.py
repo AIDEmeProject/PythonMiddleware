@@ -66,6 +66,10 @@ class LinearFactorizationLearner:
     def weights(self):
         return None if self._weights is None else self._weights.copy()
 
+    @property
+    def num_subspaces(self):
+        return 0 if self._weights is None else self._weights.shape[0]
+
     def copy(self) -> LinearFactorizationLearner:
         learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
                                              l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
