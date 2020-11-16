@@ -27,10 +27,12 @@ from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty_func_
 
 
 class LinearFactorizationLearner:
-    def __init__(self, add_bias: bool = True, interaction_penalty: float = 0, l1_penalty: float = 0,
+    def __init__(self, add_bias: bool = True, interaction_penalty: float = 0,
+                 l1_penalty: float = 0, l2_penalty: float = 0,
                  huber_penalty: float = 0, huber_delta: float = 1e-3, tol: float = 1e-4):
         assert_non_negative(interaction_penalty, 'interaction_penalty')
         assert_non_negative(l1_penalty, 'l1_penalty')
+        assert_non_negative(l2_penalty, 'l2_penalty')
         assert_non_negative(huber_penalty, 'huber_penalty')
         assert_non_negative(huber_delta, 'huber_delta')
         assert_positive(tol, 'tol')
@@ -38,6 +40,7 @@ class LinearFactorizationLearner:
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
         self.l1_penalty = l1_penalty
+        self.l2_penalty = l2_penalty
         self.huber_penalty = huber_penalty / huber_delta
         self.huber_delta = huber_delta
         self.tol = tol
@@ -72,7 +75,8 @@ class LinearFactorizationLearner:
 
     def copy(self) -> LinearFactorizationLearner:
         learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
-                                             l1_penalty=self.l1_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
+                                             l1_penalty=self.l1_penalty, l2_penalty=self.l2_penalty,
+                                             huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
                                              tol=self.tol)
         learner._weights = self.weights
         if self.add_bias:
@@ -89,7 +93,7 @@ class LinearFactorizationLearner:
             num_subspaces = len(factorization)
 
         loss = LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias,
-                                       interaction_penalty=self.interaction_penalty,
+                                       interaction_penalty=self.interaction_penalty, l2_penalty=self.l2_penalty,
                                        huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
                                        factorization=factorization)
 
@@ -128,7 +132,8 @@ class LinearFactorizationLearner:
 
 
 class LinearFactorizationLoss:
-    def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True, interaction_penalty: float = 0,
+    def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True,
+                 interaction_penalty: float = 0, l2_penalty: float = 0,
                  huber_penalty: float = 0, huber_delta: float = 1e-3, factorization: Optional[List[List[int]]] = None):
         if add_bias:
             X = np.hstack([X, np.ones((X.shape[0], 1))])
@@ -145,6 +150,7 @@ class LinearFactorizationLoss:
         self.y = y
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
+        self.l2_penalty = l2_penalty
         self.huber_penalty = huber_penalty
         self.huber_delta = huber_delta
         self.factorization = factorization
@@ -161,6 +167,9 @@ class LinearFactorizationLoss:
 
         if self.huber_penalty > 0:
             loss += self.__add_penalty(self._compute_huber_penalty_and_grad, weights, grads)
+
+        if self.l2_penalty > 0:
+            loss += self.__add_penalty(self._compute_l2_penalty_and_grad, weights, grads)
 
         if self.factorization is not None:
             if return_matrix:
@@ -181,6 +190,9 @@ class LinearFactorizationLoss:
 
         if self.huber_penalty > 0:
             loss += self._compute_huber_penalty(weights)
+
+        if self.l2_penalty > 0:
+            loss += self._compute_l2_penalty(weights)
 
         return loss
 
@@ -218,6 +230,20 @@ class LinearFactorizationLoss:
 
     def _compute_huber_penalty(self, weights):
         return utils.compute_huber_penalty(weights, self.huber_penalty, self.huber_delta, int(self.add_bias))
+
+    def _compute_l2_penalty_and_grad(self, weights):
+        if self.add_bias:
+            weights = weights[:, :-1]
+
+        penalty = self.l2_penalty * weights.ravel().dot(weights.ravel())
+        return penalty, 2 * self.l2_penalty * weights
+
+    def _compute_l2_penalty(self, weights):
+        if self.add_bias:
+            weights = weights[:, :-1]
+
+        penalty = self.l2_penalty * weights.ravel().dot(weights.ravel())
+        return penalty
 
     def __add_penalty(self, penalty_func, weights, grads):
         penalty_loss, grads_loss = penalty_func(weights)
