@@ -19,6 +19,7 @@ from typing import Callable, Optional, Dict, List
 import warnings
 
 import numpy as np
+import scipy.optimize
 
 from aideme import assert_positive, assert_positive_integer
 
@@ -34,26 +35,59 @@ class ResultObject:
         self.iters = iters
 
     def __repr__(self):
-        return "Result\nx={}\nfun={}\ngrad={}\ngrad_norm={}\nconverged={}\niters={}".format(self.x, self.fun, self.grad,
-                                                                                            self.grad_norm,
-                                                                                            self.converged, self.iters)
+        return "Result\nx={}\nfun={}\ngrad={}\ngrad_norm={}\nstep={}\nconverged={}\niters={}".format(
+            self.x, self.fun, self.grad, self.grad_norm, self.step, self.converged, self.iters
+        )
 
 
-def l1_penalty_func_and_prox(penalty: float, has_bias: bool = False):
-    assert_positive(penalty, 'penalty')
+class GradientDescentOptimizer:
+    def __init__(self, add_noise: bool = False, grad_norm_threshold: float = 1e-4,
+                 max_iter: Optional[int] = None, step_size: Optional[float] = None):
+        assert_positive(grad_norm_threshold, 'grad_norm_threshold')
+        assert_positive_integer(max_iter, 'max_iter', allow_none=True)
+        assert_positive(step_size, 'step_size', allow_none=True)
 
-    def g(x):
-        if has_bias:
-            x = x[:, :-1]
-        return penalty * np.abs(x).sum()
+        self.add_noise = add_noise
+        self.step_optimizer = self.__get_step_optimizer(step_size)
+        self.grad_norm_threshold = grad_norm_threshold
+        self.max_iter = max_iter if max_iter else np.inf
 
-    def prox(x, t):
-        p = np.sign(x) * np.maximum(np.abs(x) - penalty * t, 0)
-        if has_bias:
-            p[:, -1] = x[:, -1]
-        return p
+    def __get_step_optimizer(self, step_size: Optional[float] = None) -> Callable:
+        if step_size is None:
+            return lambda func, x, dir: scipy.optimize.minimize_scalar(lambda step: func(x - step * dir), method='Brent').x
 
-    return g, prox
+        return lambda func, x, dir: step_size
+
+    def minimize(self, x0: np.ndarray, func: Callable, func_and_grad: Callable, func_threshold: float = -np.inf) -> ResultObject:
+        x = np.array(x0, copy=True)
+        fval, grad = func_and_grad(x)
+        prev_result, result = None, ResultObject(x, fval, grad)
+
+        while not self._converged(result):
+            prev_result, result = result, self._advance(result, func, func_and_grad)
+            if result.iters >= self.max_iter or result.fun < func_threshold:
+                return result
+
+        result.converged = True
+        return result
+
+    def _converged(self, result: ResultObject) -> bool:
+        return result.grad_norm <= self.grad_norm_threshold
+
+    def _advance(self, result: ResultObject, func: Callable, func_and_grad: Callable) -> ResultObject:
+        search_dir = self.__get_search_dir(result)
+        step = self.step_optimizer(func, result.x, search_dir)
+        x = result.x - step * search_dir
+        fval, grad = func_and_grad(x)
+        return ResultObject(x, fval, grad, step, result.iters + 1)
+
+    def __get_search_dir(self, result: ResultObject):
+        search_dir = result.grad.copy()
+        if self.add_noise:
+            noise = np.random.normal(size=search_dir.shape)
+            noise /= np.linalg.norm(noise)
+            search_dir += noise
+        return search_dir
 
 
 class ProximalGradientDescentOptimizer:
@@ -116,6 +150,23 @@ class ProximalGradientDescentOptimizer:
     def _run_callbacks(self, prev_result: ResultObject, result: ResultObject) -> None:
         for callback in self.callbacks:
             callback(prev_result, result)
+
+
+def l1_penalty_func_and_prox(penalty: float, has_bias: bool = False):
+    assert_positive(penalty, 'penalty')
+
+    def g(x):
+        if has_bias:
+            x = x[:, :-1]
+        return penalty * np.abs(x).sum()
+
+    def prox(x, t):
+        p = np.sign(x) * np.maximum(np.abs(x) - penalty * t, 0)
+        if has_bias:
+            p[:, -1] = x[:, -1]
+        return p
+
+    return g, prox
 
 
 def fixed_size_step(step_size):

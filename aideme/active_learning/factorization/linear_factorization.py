@@ -23,13 +23,13 @@ import scipy.optimize
 
 import aideme.active_learning.factorization.utils as utils
 from aideme.utils import assert_non_negative, assert_positive, assert_positive_integer
-from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty_func_and_prox
+from .gradient_descent import ProximalGradientDescentOptimizer, GradientDescentOptimizer, l1_penalty_func_and_prox
 
 
 class LinearFactorizationLearner:
-    def __init__(self, add_bias: bool = True, interaction_penalty: float = 0,
+    def __init__(self, add_bias: bool = True, optimizer: str = 'bfgs', interaction_penalty: float = 0,
                  l1_penalty: float = 0, l2_penalty: float = 0,
-                 huber_penalty: float = 0, huber_delta: float = 1e-3, tol: float = 1e-4):
+                 huber_penalty: float = 0, huber_delta: float = 1e-3, tol: float = 1e-4, **opt_params):
         assert_non_negative(interaction_penalty, 'interaction_penalty')
         assert_non_negative(l1_penalty, 'l1_penalty')
         assert_non_negative(l2_penalty, 'l2_penalty')
@@ -48,15 +48,22 @@ class LinearFactorizationLearner:
         self._weights = None
         self._bias = None
 
-        self._optimizer = self.__get_optimizer()
+        self._optimizer = self.__get_optimizer(optimizer, opt_params)
 
-    def __get_optimizer(self):
+    def __get_optimizer(self, method: str, opt_params):
         if self.l1_penalty > 0:
-            optimizer = ProximalGradientDescentOptimizer(conv_threshold=self.tol)
+            optimizer = ProximalGradientDescentOptimizer(conv_threshold=self.tol, **opt_params)
             g, prox = l1_penalty_func_and_prox(self.l1_penalty, self.add_bias)
             return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True), g, prox)
 
-        return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs', options={'gtol': self.tol})
+        if method == 'bfgs':
+            return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs', options={'gtol': self.tol})
+
+        if method == 'noisy-gd':
+            optimizer = GradientDescentOptimizer(grad_norm_threshold=self.tol, **opt_params)
+            return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True))
+
+        raise ValueError("Unknown optimizer")
 
     @property
     def bias(self):
