@@ -18,36 +18,40 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
-
+from aideme.utils import assert_positive_integer
 from .active_learner import ActiveLearner
 
 if TYPE_CHECKING:
-    pass
+    import numpy as np
+    from .active_learner import IndexedDataset
 
 
 class RandomSampler(ActiveLearner):
     """
     Randomly picks the next point to label. Usually used as baseline method for comparison.
     """
-    def __init__(self, clf):
+    def __init__(self, clf, batch_size: int = 1):
         """
         :param clf: Classifier object implementing two methods:
             - fit(X, y): fits the classifier over the labeled data X,y
             - predict(X): returns the class labels for a given set X
 
-            Additionally, this object can use implement predict_proba(X), but it is not mandatory.
-        """
-        self._clf = clf
+            Additionally, this object should implement predict_proba(X), but it is not mandatory.
 
-    def fit(self, X, y):
+        :param batch_size: number of random points to sample at every iteration. Default is 1.
+        """
+        assert_positive_integer(batch_size, 'batch_size')
+        self._clf = clf
+        self._batch_size = batch_size
+
+    def fit(self, X: np.ndarray, y: np.ndarray) -> None:
         self._clf.fit(X, y)
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         return self._clf.predict(X)
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return self._clf.predict_proba(X)
 
-    def rank(self, X):
-        return np.random.permutation(len(X))
+    def _select_next(self, dataset: IndexedDataset) -> IndexedDataset:
+        return dataset.sample(self._batch_size)
