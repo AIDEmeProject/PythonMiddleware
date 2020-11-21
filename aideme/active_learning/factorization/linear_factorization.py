@@ -19,23 +19,21 @@ from __future__ import annotations
 from typing import Optional, List, Union
 
 import numpy as np
-import scipy.optimize
 
 import aideme.active_learning.factorization.utils as utils
-from aideme.utils import assert_non_negative, assert_positive, assert_positive_integer
-from .gradient_descent import ProximalGradientDescentOptimizer, GradientDescentOptimizer, l1_penalty_func_and_prox
+from aideme.utils import assert_non_negative, assert_positive_integer
+from .gradient_descent import ProximalGradientDescentOptimizer, l1_penalty_func_and_prox
+from .optimization import OptimizationAlgorithm
 
 
 class LinearFactorizationLearner:
-    def __init__(self, add_bias: bool = True, optimizer: str = 'bfgs', interaction_penalty: float = 0,
-                 l1_penalty: float = 0, l2_penalty: float = 0,
-                 huber_penalty: float = 0, huber_delta: float = 1e-3, tol: float = 1e-4, **opt_params):
+    def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
+                 l1_penalty: float = 0, l2_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
         assert_non_negative(interaction_penalty, 'interaction_penalty')
         assert_non_negative(l1_penalty, 'l1_penalty')
         assert_non_negative(l2_penalty, 'l2_penalty')
         assert_non_negative(huber_penalty, 'huber_penalty')
         assert_non_negative(huber_delta, 'huber_delta')
-        assert_positive(tol, 'tol')
 
         self.add_bias = add_bias
         self.interaction_penalty = interaction_penalty
@@ -43,27 +41,19 @@ class LinearFactorizationLearner:
         self.l2_penalty = l2_penalty
         self.huber_penalty = huber_penalty / huber_delta
         self.huber_delta = huber_delta
-        self.tol = tol
 
         self._weights = None
         self._bias = None
 
-        self._optimizer = self.__get_optimizer(optimizer, opt_params)
+        self._optimizer = optimizer
 
-    def __get_optimizer(self, method: str, opt_params):
+    def __get_optimizer(self, method: OptimizationAlgorithm):
         if self.l1_penalty > 0:
-            optimizer = ProximalGradientDescentOptimizer(conv_threshold=self.tol, **opt_params)
+            optimizer = ProximalGradientDescentOptimizer()
             g, prox = l1_penalty_func_and_prox(self.l1_penalty, self.add_bias)
-            return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True), g, prox)
+            return lambda x0, func, grad: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True), g, prox)
 
-        if method == 'bfgs':
-            return lambda x0, func: scipy.optimize.minimize(func, x0, jac=True, method='bfgs', options={'gtol': self.tol})
-
-        if method == 'noisy-gd':
-            optimizer = GradientDescentOptimizer(grad_norm_threshold=self.tol, **opt_params)
-            return lambda x0, func: optimizer.minimize(x0, func.compute_loss, lambda x: func(x, return_matrix=True))
-
-        raise ValueError("Unknown optimizer")
+        return lambda x0, func: method.minimize(x0, lambda x: func(x, return_matrix=True), True)
 
     @property
     def bias(self):
@@ -81,10 +71,11 @@ class LinearFactorizationLearner:
         return 0 if self._weights is None else self._weights.shape[0]
 
     def copy(self) -> LinearFactorizationLearner:
-        learner = LinearFactorizationLearner(add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
-                                             l1_penalty=self.l1_penalty, l2_penalty=self.l2_penalty,
-                                             huber_penalty=self.huber_penalty, huber_delta=self.huber_delta,
-                                             tol=self.tol)
+        learner = LinearFactorizationLearner(
+            optimizer=self._optimizer, add_bias=self.add_bias, interaction_penalty=self.interaction_penalty,
+            l1_penalty=self.l1_penalty, l2_penalty=self.l2_penalty, huber_penalty=self.huber_penalty, huber_delta=self.huber_delta
+        )
+
         learner._weights = self.weights
         if self.add_bias:
             learner._bias = self.bias
@@ -110,7 +101,7 @@ class LinearFactorizationLearner:
         if loss.factorization is not None:
             x0 = x0[loss.factorization]
 
-        opt_result = self._optimizer(x0, loss)
+        opt_result = self._optimizer.minimize(x0, loss.compute_loss, lambda x: loss(x, return_matrix=True)[1])
 
         self._weights = self.__sort_matrix(loss.get_weights_matrix(opt_result.x))  # sort matrix in order to make weights more consistent
         if self.add_bias:
