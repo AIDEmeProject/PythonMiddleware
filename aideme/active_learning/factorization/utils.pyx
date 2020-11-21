@@ -42,35 +42,27 @@ cpdef double[::1] compute_log_probas(double[:, ::1] margin):
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):
+def compute_grad_factors(double[:, ::1] margin, double[::1] y):
     cdef:
         Py_ssize_t i, j
         Py_ssize_t N = margin.shape[0], K = margin.shape[1]
+        double[::1] log_probas = compute_log_probas(margin)
 
-    # STEP 1: compute log probas
-    cdef double[::1] log_probas = compute_log_probas(margin)
-
-    # STEP 2: compute loss and gradient factors
     grad_factors = np.empty((N, K), dtype=np.float64)
     cdef:
-        double weight, lp, loss = 0
+        double weight
         double[:, ::1] grad_factors_view = grad_factors
 
     for i in range(N):
-        lp = log_probas[i]
-
         if y[i] > 0:
-            loss -= lp
             weight = -1. / N
         else:
-            loss -= log1mexp(lp)
-            weight = 1. / (N * expm1(-lp))
+            weight = 1. / (N * expm1(-log_probas[i]))
 
         for j in range(K):
             grad_factors_view[i, j] = weight * msigmoid(margin[i, j])
 
-    loss /= N
-    return loss, grad_factors
+    return grad_factors
 
 
 @boundscheck(False)
@@ -94,46 +86,13 @@ def compute_loss(double[:, ::1] margin, double[::1] y):
     return loss
 
 
-
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-def compute_huber_penalty_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):
+def compute_huber_penalty(double[:, :] weights, double penalty, double delta):
     cdef:
         Py_ssize_t i, j
-        Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
-        double loss = 0, half_delta = delta / 2, pd = penalty * delta, w
-
-    grad = np.empty((N, K), dtype=np.float64)
-    cdef double[:, ::1] grad_view = grad
-
-    for i in range(N):
-        for j in range(K):
-            w = weights[i, j]
-
-            if w > delta:
-                loss += delta * (w - half_delta)
-                grad_view[i, j] = pd
-
-            elif w < -delta:
-                loss -= delta * (w + half_delta)
-                grad_view[i, j] = -pd
-
-            else:
-                loss += 0.5 * w * w
-                grad_view[i, j] = penalty * w
-
-    loss *= penalty
-    return loss, grad
-
-
-@boundscheck(False)
-@wraparound(False)
-@cdivision(True)
-def compute_huber_penalty(double[:, ::1] weights, double penalty, double delta, int remove_last):
-    cdef:
-        Py_ssize_t i, j
-        Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
+        Py_ssize_t N = weights.shape[0], K = weights.shape[1]
         double loss = 0, half_delta = delta / 2, w
 
     for i in range(N):

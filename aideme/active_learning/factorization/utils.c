@@ -1655,6 +1655,9 @@ static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_d_dc_d
 /* ObjectToMemviewSlice.proto */
 static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dc_double(PyObject *, int writable_flag);
 
+/* ObjectToMemviewSlice.proto */
+static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dsds_double(PyObject *, int writable_flag);
+
 /* MemviewDtypeToObject.proto */
 static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp);
 static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj);
@@ -1670,10 +1673,10 @@ __pyx_memoryview_copy_new_contig(const __Pyx_memviewslice *from_mvs,
                                  int dtype_is_object);
 
 /* CIntFromPy.proto */
-static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
+static CYTHON_INLINE unsigned int __Pyx_PyInt_As_unsigned_int(PyObject *);
 
 /* CIntFromPy.proto */
-static CYTHON_INLINE unsigned int __Pyx_PyInt_As_unsigned_int(PyObject *);
+static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 /* CIntFromPy.proto */
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
@@ -1782,13 +1785,11 @@ static const char __pyx_k_y[] = "y";
 static const char __pyx_k_id[] = "id";
 static const char __pyx_k_lp[] = "lp";
 static const char __pyx_k_np[] = "np";
-static const char __pyx_k_pd[] = "pd";
 static const char __pyx_k_new[] = "__new__";
 static const char __pyx_k_obj[] = "obj";
 static const char __pyx_k_res[] = "res";
 static const char __pyx_k_base[] = "base";
 static const char __pyx_k_dict[] = "__dict__";
-static const char __pyx_k_grad[] = "grad";
 static const char __pyx_k_loss[] = "loss";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_mode[] = "mode";
@@ -1833,7 +1834,6 @@ static const char __pyx_k_pyx_type[] = "__pyx_type";
 static const char __pyx_k_setstate[] = "__setstate__";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_enumerate[] = "enumerate";
-static const char __pyx_k_grad_view[] = "grad_view";
 static const char __pyx_k_pyx_state[] = "__pyx_state";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
 static const char __pyx_k_IndexError[] = "IndexError";
@@ -1845,7 +1845,6 @@ static const char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static const char __pyx_k_MemoryError[] = "MemoryError";
 static const char __pyx_k_PickleError[] = "PickleError";
 static const char __pyx_k_log_sigmoid[] = "log_sigmoid";
-static const char __pyx_k_remove_last[] = "remove_last";
 static const char __pyx_k_compute_loss[] = "compute_loss";
 static const char __pyx_k_grad_factors[] = "grad_factors";
 static const char __pyx_k_grad_weights[] = "grad_weights";
@@ -1862,9 +1861,9 @@ static const char __pyx_k_grad_factors_view[] = "grad_factors_view";
 static const char __pyx_k_pyx_unpickle_Enum[] = "__pyx_unpickle_Enum";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_strided_and_direct[] = "<strided and direct>";
+static const char __pyx_k_compute_grad_factors[] = "compute_grad_factors";
 static const char __pyx_k_strided_and_indirect[] = "<strided and indirect>";
 static const char __pyx_k_compute_huber_penalty[] = "compute_huber_penalty";
-static const char __pyx_k_compute_loss_and_grad[] = "compute_loss_and_grad";
 static const char __pyx_k_contiguous_and_direct[] = "<contiguous and direct>";
 static const char __pyx_k_MemoryView_of_r_object[] = "<MemoryView of %r object>";
 static const char __pyx_k_MemoryView_of_r_at_0x_x[] = "<MemoryView of %r at 0x%x>";
@@ -1874,7 +1873,6 @@ static const char __pyx_k_Invalid_shape_in_axis_d_d[] = "Invalid shape in axis %
 static const char __pyx_k_compute_classification_loss[] = "compute_classification_loss";
 static const char __pyx_k_itemsize_0_for_cython_array[] = "itemsize <= 0 for cython.array";
 static const char __pyx_k_unable_to_allocate_array_data[] = "unable to allocate array data.";
-static const char __pyx_k_compute_huber_penalty_and_grad[] = "compute_huber_penalty_and_grad";
 static const char __pyx_k_strided_and_direct_or_indirect[] = "<strided and direct or indirect>";
 static const char __pyx_k_Buffer_view_does_not_expose_stri[] = "Buffer view does not expose strides";
 static const char __pyx_k_Can_only_create_a_buffer_that_is[] = "Can only create a buffer that is contiguous in memory.";
@@ -1925,10 +1923,9 @@ static PyObject *__pyx_n_u_c;
 static PyObject *__pyx_n_s_class;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_compute_classification_loss;
+static PyObject *__pyx_n_s_compute_grad_factors;
 static PyObject *__pyx_n_s_compute_huber_penalty;
-static PyObject *__pyx_n_s_compute_huber_penalty_and_grad;
 static PyObject *__pyx_n_s_compute_loss;
-static PyObject *__pyx_n_s_compute_loss_and_grad;
 static PyObject *__pyx_kp_s_contiguous_and_direct;
 static PyObject *__pyx_kp_s_contiguous_and_indirect;
 static PyObject *__pyx_n_s_delta;
@@ -1946,10 +1943,8 @@ static PyObject *__pyx_n_s_fortran;
 static PyObject *__pyx_n_u_fortran;
 static PyObject *__pyx_n_s_getstate;
 static PyObject *__pyx_kp_s_got_differing_extents_in_dimensi;
-static PyObject *__pyx_n_s_grad;
 static PyObject *__pyx_n_s_grad_factors;
 static PyObject *__pyx_n_s_grad_factors_view;
-static PyObject *__pyx_n_s_grad_view;
 static PyObject *__pyx_n_s_grad_weights;
 static PyObject *__pyx_n_s_half_delta;
 static PyObject *__pyx_n_s_i;
@@ -1975,7 +1970,6 @@ static PyObject *__pyx_n_s_np;
 static PyObject *__pyx_n_s_numpy;
 static PyObject *__pyx_n_s_obj;
 static PyObject *__pyx_n_s_pack;
-static PyObject *__pyx_n_s_pd;
 static PyObject *__pyx_n_s_penalty;
 static PyObject *__pyx_n_s_pickle;
 static PyObject *__pyx_n_s_pyx_PickleError;
@@ -1990,7 +1984,6 @@ static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_reduce;
 static PyObject *__pyx_n_s_reduce_cython;
 static PyObject *__pyx_n_s_reduce_ex;
-static PyObject *__pyx_n_s_remove_last;
 static PyObject *__pyx_n_s_res;
 static PyObject *__pyx_n_s_setstate;
 static PyObject *__pyx_n_s_setstate_cython;
@@ -2015,13 +2008,12 @@ static PyObject *__pyx_n_s_weights;
 static PyObject *__pyx_n_s_x;
 static PyObject *__pyx_n_s_y;
 static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_compute_log_probas(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_margin); /* proto */
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2compute_loss_and_grad(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_margin, __Pyx_memviewslice __pyx_v_y); /* proto */
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2compute_grad_factors(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_margin, __Pyx_memviewslice __pyx_v_y); /* proto */
 static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4compute_loss(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_margin, __Pyx_memviewslice __pyx_v_y); /* proto */
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_6compute_huber_penalty_and_grad(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, double __pyx_v_penalty, double __pyx_v_delta, int __pyx_v_remove_last); /* proto */
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8compute_huber_penalty(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, double __pyx_v_penalty, double __pyx_v_delta, int __pyx_v_remove_last); /* proto */
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10compute_classification_loss(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_log_probas, __Pyx_memviewslice __pyx_v_y); /* proto */
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12grad_weights(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, __Pyx_memviewslice __pyx_v_y); /* proto */
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log_sigmoid(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x); /* proto */
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_6compute_huber_penalty(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, double __pyx_v_penalty, double __pyx_v_delta); /* proto */
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8compute_classification_loss(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_log_probas, __Pyx_memviewslice __pyx_v_y); /* proto */
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10grad_weights(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, __Pyx_memviewslice __pyx_v_y); /* proto */
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12log_sigmoid(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2097,20 +2089,18 @@ static PyObject *__pyx_tuple__25;
 static PyObject *__pyx_tuple__27;
 static PyObject *__pyx_tuple__29;
 static PyObject *__pyx_tuple__31;
+static PyObject *__pyx_tuple__32;
 static PyObject *__pyx_tuple__33;
 static PyObject *__pyx_tuple__34;
 static PyObject *__pyx_tuple__35;
 static PyObject *__pyx_tuple__36;
-static PyObject *__pyx_tuple__37;
-static PyObject *__pyx_tuple__38;
 static PyObject *__pyx_codeobj__20;
 static PyObject *__pyx_codeobj__22;
 static PyObject *__pyx_codeobj__24;
 static PyObject *__pyx_codeobj__26;
 static PyObject *__pyx_codeobj__28;
 static PyObject *__pyx_codeobj__30;
-static PyObject *__pyx_codeobj__32;
-static PyObject *__pyx_codeobj__39;
+static PyObject *__pyx_codeobj__37;
 /* Late includes */
 
 /* "aideme/active_learning/factorization/utils.pyx":28
@@ -2351,15 +2341,15 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_compu
 /* "aideme/active_learning/factorization/utils.pyx":45
  * @wraparound(False)
  * @cdivision(True)
- * def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
+ * def compute_grad_factors(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3compute_loss_and_grad(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_3compute_loss_and_grad = {"compute_loss_and_grad", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_3compute_loss_and_grad, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3compute_loss_and_grad(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3compute_grad_factors(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_3compute_grad_factors = {"compute_grad_factors", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_3compute_grad_factors, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3compute_grad_factors(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_margin = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_y = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_lineno = 0;
@@ -2367,7 +2357,7 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3comp
   int __pyx_clineno = 0;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("compute_loss_and_grad (wrapper)", 0);
+  __Pyx_RefNannySetupContext("compute_grad_factors (wrapper)", 0);
   {
     static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_margin,&__pyx_n_s_y,0};
     PyObject* values[2] = {0,0};
@@ -2391,11 +2381,11 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3comp
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("compute_loss_and_grad", 1, 2, 2, 1); __PYX_ERR(0, 45, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_grad_factors", 1, 2, 2, 1); __PYX_ERR(0, 45, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_loss_and_grad") < 0)) __PYX_ERR(0, 45, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_grad_factors") < 0)) __PYX_ERR(0, 45, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2408,20 +2398,20 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_3comp
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("compute_loss_and_grad", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 45, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("compute_grad_factors", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 45, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_loss_and_grad", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_grad_factors", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_2compute_loss_and_grad(__pyx_self, __pyx_v_margin, __pyx_v_y);
+  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_2compute_grad_factors(__pyx_self, __pyx_v_margin, __pyx_v_y);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2compute_loss_and_grad(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_margin, __Pyx_memviewslice __pyx_v_y) {
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2compute_grad_factors(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_margin, __Pyx_memviewslice __pyx_v_y) {
   Py_ssize_t __pyx_v_i;
   Py_ssize_t __pyx_v_j;
   Py_ssize_t __pyx_v_N;
@@ -2429,8 +2419,6 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
   __Pyx_memviewslice __pyx_v_log_probas = { 0, 0, { 0 }, { 0 }, { 0 } };
   PyObject *__pyx_v_grad_factors = NULL;
   double __pyx_v_weight;
-  double __pyx_v_lp;
-  double __pyx_v_loss;
   __Pyx_memviewslice __pyx_v_grad_factors_view = { 0, 0, { 0 }, { 0 }, { 0 } };
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -2455,47 +2443,47 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("compute_loss_and_grad", 0);
+  __Pyx_RefNannySetupContext("compute_grad_factors", 0);
 
   /* "aideme/active_learning/factorization/utils.pyx":48
  *     cdef:
  *         Py_ssize_t i, j
  *         Py_ssize_t N = margin.shape[0], K = margin.shape[1]             # <<<<<<<<<<<<<<
+ *         double[::1] log_probas = compute_log_probas(margin)
  * 
- *     # STEP 1: compute log probas
  */
   __pyx_v_N = (__pyx_v_margin.shape[0]);
   __pyx_v_K = (__pyx_v_margin.shape[1]);
 
-  /* "aideme/active_learning/factorization/utils.pyx":51
+  /* "aideme/active_learning/factorization/utils.pyx":49
+ *         Py_ssize_t i, j
+ *         Py_ssize_t N = margin.shape[0], K = margin.shape[1]
+ *         double[::1] log_probas = compute_log_probas(margin)             # <<<<<<<<<<<<<<
  * 
- *     # STEP 1: compute log probas
- *     cdef double[::1] log_probas = compute_log_probas(margin)             # <<<<<<<<<<<<<<
- * 
- *     # STEP 2: compute loss and gradient factors
+ *     grad_factors = np.empty((N, K), dtype=np.float64)
  */
-  __pyx_t_1 = __pyx_f_6aideme_15active_learning_13factorization_5utils_compute_log_probas(__pyx_v_margin, 0); if (unlikely(!__pyx_t_1.memview)) __PYX_ERR(0, 51, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_6aideme_15active_learning_13factorization_5utils_compute_log_probas(__pyx_v_margin, 0); if (unlikely(!__pyx_t_1.memview)) __PYX_ERR(0, 49, __pyx_L1_error)
   __pyx_v_log_probas = __pyx_t_1;
   __pyx_t_1.memview = NULL;
   __pyx_t_1.data = NULL;
 
-  /* "aideme/active_learning/factorization/utils.pyx":54
+  /* "aideme/active_learning/factorization/utils.pyx":51
+ *         double[::1] log_probas = compute_log_probas(margin)
  * 
- *     # STEP 2: compute loss and gradient factors
  *     grad_factors = np.empty((N, K), dtype=np.float64)             # <<<<<<<<<<<<<<
  *     cdef:
- *         double weight, lp, loss = 0
+ *         double weight
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyInt_FromSsize_t(__pyx_v_N); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_2 = PyInt_FromSsize_t(__pyx_v_N); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyInt_FromSsize_t(__pyx_v_K); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_4 = PyInt_FromSsize_t(__pyx_v_K); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_2);
@@ -2503,21 +2491,21 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
   PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_4);
   __pyx_t_2 = 0;
   __pyx_t_4 = 0;
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_5);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_5);
   __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (PyDict_SetItem(__pyx_t_5, __pyx_n_s_dtype, __pyx_t_6) < 0) __PYX_ERR(0, 54, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_n_s_dtype, __pyx_t_6) < 0) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 54, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -2525,111 +2513,75 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
   __pyx_v_grad_factors = __pyx_t_6;
   __pyx_t_6 = 0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":56
- *     grad_factors = np.empty((N, K), dtype=np.float64)
+  /* "aideme/active_learning/factorization/utils.pyx":54
  *     cdef:
- *         double weight, lp, loss = 0             # <<<<<<<<<<<<<<
- *         double[:, ::1] grad_factors_view = grad_factors
- * 
- */
-  __pyx_v_loss = 0.0;
-
-  /* "aideme/active_learning/factorization/utils.pyx":57
- *     cdef:
- *         double weight, lp, loss = 0
+ *         double weight
  *         double[:, ::1] grad_factors_view = grad_factors             # <<<<<<<<<<<<<<
  * 
  *     for i in range(N):
  */
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(__pyx_v_grad_factors, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(__pyx_v_grad_factors, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 54, __pyx_L1_error)
   __pyx_v_grad_factors_view = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "aideme/active_learning/factorization/utils.pyx":59
+  /* "aideme/active_learning/factorization/utils.pyx":56
  *         double[:, ::1] grad_factors_view = grad_factors
  * 
  *     for i in range(N):             # <<<<<<<<<<<<<<
- *         lp = log_probas[i]
- * 
+ *         if y[i] > 0:
+ *             weight = -1. / N
  */
   __pyx_t_8 = __pyx_v_N;
   __pyx_t_9 = __pyx_t_8;
   for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
     __pyx_v_i = __pyx_t_10;
 
-    /* "aideme/active_learning/factorization/utils.pyx":60
+    /* "aideme/active_learning/factorization/utils.pyx":57
  * 
  *     for i in range(N):
- *         lp = log_probas[i]             # <<<<<<<<<<<<<<
- * 
- *         if y[i] > 0:
- */
-    __pyx_t_11 = __pyx_v_i;
-    __pyx_v_lp = (*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_log_probas.data) + __pyx_t_11)) )));
-
-    /* "aideme/active_learning/factorization/utils.pyx":62
- *         lp = log_probas[i]
- * 
  *         if y[i] > 0:             # <<<<<<<<<<<<<<
- *             loss -= lp
  *             weight = -1. / N
+ *         else:
  */
     __pyx_t_11 = __pyx_v_i;
     __pyx_t_12 = (((*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_y.data) + __pyx_t_11)) ))) > 0.0) != 0);
     if (__pyx_t_12) {
 
-      /* "aideme/active_learning/factorization/utils.pyx":63
- * 
+      /* "aideme/active_learning/factorization/utils.pyx":58
+ *     for i in range(N):
  *         if y[i] > 0:
- *             loss -= lp             # <<<<<<<<<<<<<<
- *             weight = -1. / N
- *         else:
- */
-      __pyx_v_loss = (__pyx_v_loss - __pyx_v_lp);
-
-      /* "aideme/active_learning/factorization/utils.pyx":64
- *         if y[i] > 0:
- *             loss -= lp
  *             weight = -1. / N             # <<<<<<<<<<<<<<
  *         else:
- *             loss -= log1mexp(lp)
+ *             weight = 1. / (N * expm1(-log_probas[i]))
  */
       __pyx_v_weight = (-1. / ((double)__pyx_v_N));
 
-      /* "aideme/active_learning/factorization/utils.pyx":62
- *         lp = log_probas[i]
+      /* "aideme/active_learning/factorization/utils.pyx":57
  * 
+ *     for i in range(N):
  *         if y[i] > 0:             # <<<<<<<<<<<<<<
- *             loss -= lp
  *             weight = -1. / N
+ *         else:
  */
       goto __pyx_L5;
     }
 
-    /* "aideme/active_learning/factorization/utils.pyx":66
+    /* "aideme/active_learning/factorization/utils.pyx":60
  *             weight = -1. / N
  *         else:
- *             loss -= log1mexp(lp)             # <<<<<<<<<<<<<<
- *             weight = 1. / (N * expm1(-lp))
- * 
- */
-    /*else*/ {
-      __pyx_v_loss = (__pyx_v_loss - __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(__pyx_v_lp));
-
-      /* "aideme/active_learning/factorization/utils.pyx":67
- *         else:
- *             loss -= log1mexp(lp)
- *             weight = 1. / (N * expm1(-lp))             # <<<<<<<<<<<<<<
+ *             weight = 1. / (N * expm1(-log_probas[i]))             # <<<<<<<<<<<<<<
  * 
  *         for j in range(K):
  */
-      __pyx_v_weight = (1. / (__pyx_v_N * expm1((-__pyx_v_lp))));
+    /*else*/ {
+      __pyx_t_11 = __pyx_v_i;
+      __pyx_v_weight = (1. / (__pyx_v_N * expm1((-(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_log_probas.data) + __pyx_t_11)) )))))));
     }
     __pyx_L5:;
 
-    /* "aideme/active_learning/factorization/utils.pyx":69
- *             weight = 1. / (N * expm1(-lp))
+    /* "aideme/active_learning/factorization/utils.pyx":62
+ *             weight = 1. / (N * expm1(-log_probas[i]))
  * 
  *         for j in range(K):             # <<<<<<<<<<<<<<
  *             grad_factors_view[i, j] = weight * msigmoid(margin[i, j])
@@ -2640,12 +2592,12 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
     for (__pyx_t_15 = 0; __pyx_t_15 < __pyx_t_14; __pyx_t_15+=1) {
       __pyx_v_j = __pyx_t_15;
 
-      /* "aideme/active_learning/factorization/utils.pyx":70
+      /* "aideme/active_learning/factorization/utils.pyx":63
  * 
  *         for j in range(K):
  *             grad_factors_view[i, j] = weight * msigmoid(margin[i, j])             # <<<<<<<<<<<<<<
  * 
- *     loss /= N
+ *     return grad_factors
  */
       __pyx_t_11 = __pyx_v_i;
       __pyx_t_16 = __pyx_v_j;
@@ -2655,41 +2607,22 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
     }
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":72
+  /* "aideme/active_learning/factorization/utils.pyx":65
  *             grad_factors_view[i, j] = weight * msigmoid(margin[i, j])
  * 
- *     loss /= N             # <<<<<<<<<<<<<<
- *     return loss, grad_factors
- * 
- */
-  __pyx_v_loss = (__pyx_v_loss / __pyx_v_N);
-
-  /* "aideme/active_learning/factorization/utils.pyx":73
- * 
- *     loss /= N
- *     return loss, grad_factors             # <<<<<<<<<<<<<<
+ *     return grad_factors             # <<<<<<<<<<<<<<
  * 
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_6 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 73, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 73, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_GIVEREF(__pyx_t_6);
-  PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_6);
   __Pyx_INCREF(__pyx_v_grad_factors);
-  __Pyx_GIVEREF(__pyx_v_grad_factors);
-  PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_v_grad_factors);
-  __pyx_t_6 = 0;
-  __pyx_r = __pyx_t_5;
-  __pyx_t_5 = 0;
+  __pyx_r = __pyx_v_grad_factors;
   goto __pyx_L0;
 
   /* "aideme/active_learning/factorization/utils.pyx":45
  * @wraparound(False)
  * @cdivision(True)
- * def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
+ * def compute_grad_factors(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
@@ -2703,7 +2636,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __PYX_XDEC_MEMVIEW(&__pyx_t_7, 1);
-  __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_loss_and_grad", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_grad_factors", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_log_probas, 1);
@@ -2716,7 +2649,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_2comp
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":79
+/* "aideme/active_learning/factorization/utils.pyx":71
  * @wraparound(False)
  * @cdivision(True)
  * def compute_loss(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
@@ -2759,11 +2692,11 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_5comp
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("compute_loss", 1, 2, 2, 1); __PYX_ERR(0, 79, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_loss", 1, 2, 2, 1); __PYX_ERR(0, 71, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_loss") < 0)) __PYX_ERR(0, 79, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_loss") < 0)) __PYX_ERR(0, 71, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2771,12 +2704,12 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_5comp
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_margin = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_margin.memview)) __PYX_ERR(0, 79, __pyx_L3_error)
-    __pyx_v_y = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_y.memview)) __PYX_ERR(0, 79, __pyx_L3_error)
+    __pyx_v_margin = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_margin.memview)) __PYX_ERR(0, 71, __pyx_L3_error)
+    __pyx_v_y = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_y.memview)) __PYX_ERR(0, 71, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("compute_loss", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 79, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("compute_loss", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 71, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_loss", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2809,7 +2742,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("compute_loss", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":81
+  /* "aideme/active_learning/factorization/utils.pyx":73
  * def compute_loss(double[:, ::1] margin, double[::1] y):
  *     cdef:
  *         Py_ssize_t i, N = margin.shape[0]             # <<<<<<<<<<<<<<
@@ -2818,7 +2751,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
  */
   __pyx_v_N = (__pyx_v_margin.shape[0]);
 
-  /* "aideme/active_learning/factorization/utils.pyx":82
+  /* "aideme/active_learning/factorization/utils.pyx":74
  *     cdef:
  *         Py_ssize_t i, N = margin.shape[0]
  *         double lp, loss = 0             # <<<<<<<<<<<<<<
@@ -2827,19 +2760,19 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
  */
   __pyx_v_loss = 0.0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":83
+  /* "aideme/active_learning/factorization/utils.pyx":75
  *         Py_ssize_t i, N = margin.shape[0]
  *         double lp, loss = 0
  *         double[::1] log_probas = compute_log_probas(margin)             # <<<<<<<<<<<<<<
  * 
  *     for i in range(N):
  */
-  __pyx_t_1 = __pyx_f_6aideme_15active_learning_13factorization_5utils_compute_log_probas(__pyx_v_margin, 0); if (unlikely(!__pyx_t_1.memview)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_6aideme_15active_learning_13factorization_5utils_compute_log_probas(__pyx_v_margin, 0); if (unlikely(!__pyx_t_1.memview)) __PYX_ERR(0, 75, __pyx_L1_error)
   __pyx_v_log_probas = __pyx_t_1;
   __pyx_t_1.memview = NULL;
   __pyx_t_1.data = NULL;
 
-  /* "aideme/active_learning/factorization/utils.pyx":85
+  /* "aideme/active_learning/factorization/utils.pyx":77
  *         double[::1] log_probas = compute_log_probas(margin)
  * 
  *     for i in range(N):             # <<<<<<<<<<<<<<
@@ -2851,7 +2784,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
   for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_3; __pyx_t_4+=1) {
     __pyx_v_i = __pyx_t_4;
 
-    /* "aideme/active_learning/factorization/utils.pyx":86
+    /* "aideme/active_learning/factorization/utils.pyx":78
  * 
  *     for i in range(N):
  *         lp = log_probas[i]             # <<<<<<<<<<<<<<
@@ -2861,7 +2794,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
     __pyx_t_5 = __pyx_v_i;
     __pyx_v_lp = (*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_log_probas.data) + __pyx_t_5)) )));
 
-    /* "aideme/active_learning/factorization/utils.pyx":88
+    /* "aideme/active_learning/factorization/utils.pyx":80
  *         lp = log_probas[i]
  * 
  *         if y[i] > 0:             # <<<<<<<<<<<<<<
@@ -2872,7 +2805,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
     __pyx_t_6 = (((*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_y.data) + __pyx_t_5)) ))) > 0.0) != 0);
     if (__pyx_t_6) {
 
-      /* "aideme/active_learning/factorization/utils.pyx":89
+      /* "aideme/active_learning/factorization/utils.pyx":81
  * 
  *         if y[i] > 0:
  *             loss -= lp             # <<<<<<<<<<<<<<
@@ -2881,7 +2814,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
  */
       __pyx_v_loss = (__pyx_v_loss - __pyx_v_lp);
 
-      /* "aideme/active_learning/factorization/utils.pyx":88
+      /* "aideme/active_learning/factorization/utils.pyx":80
  *         lp = log_probas[i]
  * 
  *         if y[i] > 0:             # <<<<<<<<<<<<<<
@@ -2891,7 +2824,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
       goto __pyx_L5;
     }
 
-    /* "aideme/active_learning/factorization/utils.pyx":91
+    /* "aideme/active_learning/factorization/utils.pyx":83
  *             loss -= lp
  *         else:
  *             loss -= log1mexp(lp)             # <<<<<<<<<<<<<<
@@ -2904,7 +2837,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
     __pyx_L5:;
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":93
+  /* "aideme/active_learning/factorization/utils.pyx":85
  *             loss -= log1mexp(lp)
  * 
  *     loss /= N             # <<<<<<<<<<<<<<
@@ -2913,7 +2846,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
  */
   __pyx_v_loss = (__pyx_v_loss / __pyx_v_N);
 
-  /* "aideme/active_learning/factorization/utils.pyx":94
+  /* "aideme/active_learning/factorization/utils.pyx":86
  * 
  *     loss /= N
  *     return loss             # <<<<<<<<<<<<<<
@@ -2921,13 +2854,13 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_7 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 94, __pyx_L1_error)
+  __pyx_t_7 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_r = __pyx_t_7;
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":79
+  /* "aideme/active_learning/factorization/utils.pyx":71
  * @wraparound(False)
  * @cdivision(True)
  * def compute_loss(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
@@ -2950,427 +2883,21 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_4comp
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":101
+/* "aideme/active_learning/factorization/utils.pyx":92
  * @wraparound(False)
  * @cdivision(True)
- * def compute_huber_penalty_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
+ * def compute_huber_penalty(double[:, :] weights, double penalty, double delta):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty_and_grad(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty_and_grad = {"compute_huber_penalty_and_grad", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty_and_grad, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty_and_grad(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty = {"compute_huber_penalty", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_weights = { 0, 0, { 0 }, { 0 }, { 0 } };
   double __pyx_v_penalty;
   double __pyx_v_delta;
-  int __pyx_v_remove_last;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("compute_huber_penalty_and_grad (wrapper)", 0);
-  {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_weights,&__pyx_n_s_penalty,&__pyx_n_s_delta,&__pyx_n_s_remove_last,0};
-    PyObject* values[4] = {0,0,0,0};
-    if (unlikely(__pyx_kwds)) {
-      Py_ssize_t kw_args;
-      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
-      switch (pos_args) {
-        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
-        CYTHON_FALLTHROUGH;
-        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
-        CYTHON_FALLTHROUGH;
-        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-        CYTHON_FALLTHROUGH;
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        CYTHON_FALLTHROUGH;
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = PyDict_Size(__pyx_kwds);
-      switch (pos_args) {
-        case  0:
-        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_weights)) != 0)) kw_args--;
-        else goto __pyx_L5_argtuple_error;
-        CYTHON_FALLTHROUGH;
-        case  1:
-        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_penalty)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty_and_grad", 1, 4, 4, 1); __PYX_ERR(0, 101, __pyx_L3_error)
-        }
-        CYTHON_FALLTHROUGH;
-        case  2:
-        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_delta)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty_and_grad", 1, 4, 4, 2); __PYX_ERR(0, 101, __pyx_L3_error)
-        }
-        CYTHON_FALLTHROUGH;
-        case  3:
-        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_remove_last)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty_and_grad", 1, 4, 4, 3); __PYX_ERR(0, 101, __pyx_L3_error)
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_huber_penalty_and_grad") < 0)) __PYX_ERR(0, 101, __pyx_L3_error)
-      }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
-      goto __pyx_L5_argtuple_error;
-    } else {
-      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
-      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
-    }
-    __pyx_v_weights = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_weights.memview)) __PYX_ERR(0, 101, __pyx_L3_error)
-    __pyx_v_penalty = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_penalty == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L3_error)
-    __pyx_v_delta = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_delta == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L3_error)
-    __pyx_v_remove_last = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v_remove_last == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L3_error)
-  }
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("compute_huber_penalty_and_grad", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 101, __pyx_L3_error)
-  __pyx_L3_error:;
-  __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_huber_penalty_and_grad", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return NULL;
-  __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_6compute_huber_penalty_and_grad(__pyx_self, __pyx_v_weights, __pyx_v_penalty, __pyx_v_delta, __pyx_v_remove_last);
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_6compute_huber_penalty_and_grad(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, double __pyx_v_penalty, double __pyx_v_delta, int __pyx_v_remove_last) {
-  Py_ssize_t __pyx_v_i;
-  Py_ssize_t __pyx_v_j;
-  Py_ssize_t __pyx_v_N;
-  Py_ssize_t __pyx_v_K;
-  double __pyx_v_loss;
-  double __pyx_v_half_delta;
-  double __pyx_v_pd;
-  double __pyx_v_w;
-  PyObject *__pyx_v_grad = NULL;
-  __Pyx_memviewslice __pyx_v_grad_view = { 0, 0, { 0 }, { 0 }, { 0 } };
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  __Pyx_memviewslice __pyx_t_6 = { 0, 0, { 0 }, { 0 }, { 0 } };
-  Py_ssize_t __pyx_t_7;
-  Py_ssize_t __pyx_t_8;
-  Py_ssize_t __pyx_t_9;
-  Py_ssize_t __pyx_t_10;
-  Py_ssize_t __pyx_t_11;
-  Py_ssize_t __pyx_t_12;
-  Py_ssize_t __pyx_t_13;
-  Py_ssize_t __pyx_t_14;
-  int __pyx_t_15;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("compute_huber_penalty_and_grad", 0);
-
-  /* "aideme/active_learning/factorization/utils.pyx":104
- *     cdef:
- *         Py_ssize_t i, j
- *         Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last             # <<<<<<<<<<<<<<
- *         double loss = 0, half_delta = delta / 2, pd = penalty * delta, w
- * 
- */
-  __pyx_v_N = (__pyx_v_weights.shape[0]);
-  __pyx_v_K = ((__pyx_v_weights.shape[1]) - __pyx_v_remove_last);
-
-  /* "aideme/active_learning/factorization/utils.pyx":105
- *         Py_ssize_t i, j
- *         Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
- *         double loss = 0, half_delta = delta / 2, pd = penalty * delta, w             # <<<<<<<<<<<<<<
- * 
- *     grad = np.empty((N, K), dtype=np.float64)
- */
-  __pyx_v_loss = 0.0;
-  __pyx_v_half_delta = (__pyx_v_delta / 2.0);
-  __pyx_v_pd = (__pyx_v_penalty * __pyx_v_delta);
-
-  /* "aideme/active_learning/factorization/utils.pyx":107
- *         double loss = 0, half_delta = delta / 2, pd = penalty * delta, w
- * 
- *     grad = np.empty((N, K), dtype=np.float64)             # <<<<<<<<<<<<<<
- *     cdef double[:, ::1] grad_view = grad
- * 
- */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_empty); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_N); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = PyInt_FromSsize_t(__pyx_v_K); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_GIVEREF(__pyx_t_1);
-  PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_3);
-  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_3);
-  __pyx_t_1 = 0;
-  __pyx_t_3 = 0;
-  __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GIVEREF(__pyx_t_4);
-  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_4);
-  __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_float64); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_dtype, __pyx_t_5) < 0) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_v_grad = __pyx_t_5;
-  __pyx_t_5 = 0;
-
-  /* "aideme/active_learning/factorization/utils.pyx":108
- * 
- *     grad = np.empty((N, K), dtype=np.float64)
- *     cdef double[:, ::1] grad_view = grad             # <<<<<<<<<<<<<<
- * 
- *     for i in range(N):
- */
-  __pyx_t_6 = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(__pyx_v_grad, PyBUF_WRITABLE); if (unlikely(!__pyx_t_6.memview)) __PYX_ERR(0, 108, __pyx_L1_error)
-  __pyx_v_grad_view = __pyx_t_6;
-  __pyx_t_6.memview = NULL;
-  __pyx_t_6.data = NULL;
-
-  /* "aideme/active_learning/factorization/utils.pyx":110
- *     cdef double[:, ::1] grad_view = grad
- * 
- *     for i in range(N):             # <<<<<<<<<<<<<<
- *         for j in range(K):
- *             w = weights[i, j]
- */
-  __pyx_t_7 = __pyx_v_N;
-  __pyx_t_8 = __pyx_t_7;
-  for (__pyx_t_9 = 0; __pyx_t_9 < __pyx_t_8; __pyx_t_9+=1) {
-    __pyx_v_i = __pyx_t_9;
-
-    /* "aideme/active_learning/factorization/utils.pyx":111
- * 
- *     for i in range(N):
- *         for j in range(K):             # <<<<<<<<<<<<<<
- *             w = weights[i, j]
- * 
- */
-    __pyx_t_10 = __pyx_v_K;
-    __pyx_t_11 = __pyx_t_10;
-    for (__pyx_t_12 = 0; __pyx_t_12 < __pyx_t_11; __pyx_t_12+=1) {
-      __pyx_v_j = __pyx_t_12;
-
-      /* "aideme/active_learning/factorization/utils.pyx":112
- *     for i in range(N):
- *         for j in range(K):
- *             w = weights[i, j]             # <<<<<<<<<<<<<<
- * 
- *             if w > delta:
- */
-      __pyx_t_13 = __pyx_v_i;
-      __pyx_t_14 = __pyx_v_j;
-      __pyx_v_w = (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_weights.data + __pyx_t_13 * __pyx_v_weights.strides[0]) )) + __pyx_t_14)) )));
-
-      /* "aideme/active_learning/factorization/utils.pyx":114
- *             w = weights[i, j]
- * 
- *             if w > delta:             # <<<<<<<<<<<<<<
- *                 loss += delta * (w - half_delta)
- *                 grad_view[i, j] = pd
- */
-      __pyx_t_15 = ((__pyx_v_w > __pyx_v_delta) != 0);
-      if (__pyx_t_15) {
-
-        /* "aideme/active_learning/factorization/utils.pyx":115
- * 
- *             if w > delta:
- *                 loss += delta * (w - half_delta)             # <<<<<<<<<<<<<<
- *                 grad_view[i, j] = pd
- * 
- */
-        __pyx_v_loss = (__pyx_v_loss + (__pyx_v_delta * (__pyx_v_w - __pyx_v_half_delta)));
-
-        /* "aideme/active_learning/factorization/utils.pyx":116
- *             if w > delta:
- *                 loss += delta * (w - half_delta)
- *                 grad_view[i, j] = pd             # <<<<<<<<<<<<<<
- * 
- *             elif w < -delta:
- */
-        __pyx_t_14 = __pyx_v_i;
-        __pyx_t_13 = __pyx_v_j;
-        *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_grad_view.data + __pyx_t_14 * __pyx_v_grad_view.strides[0]) )) + __pyx_t_13)) )) = __pyx_v_pd;
-
-        /* "aideme/active_learning/factorization/utils.pyx":114
- *             w = weights[i, j]
- * 
- *             if w > delta:             # <<<<<<<<<<<<<<
- *                 loss += delta * (w - half_delta)
- *                 grad_view[i, j] = pd
- */
-        goto __pyx_L7;
-      }
-
-      /* "aideme/active_learning/factorization/utils.pyx":118
- *                 grad_view[i, j] = pd
- * 
- *             elif w < -delta:             # <<<<<<<<<<<<<<
- *                 loss -= delta * (w + half_delta)
- *                 grad_view[i, j] = -pd
- */
-      __pyx_t_15 = ((__pyx_v_w < (-__pyx_v_delta)) != 0);
-      if (__pyx_t_15) {
-
-        /* "aideme/active_learning/factorization/utils.pyx":119
- * 
- *             elif w < -delta:
- *                 loss -= delta * (w + half_delta)             # <<<<<<<<<<<<<<
- *                 grad_view[i, j] = -pd
- * 
- */
-        __pyx_v_loss = (__pyx_v_loss - (__pyx_v_delta * (__pyx_v_w + __pyx_v_half_delta)));
-
-        /* "aideme/active_learning/factorization/utils.pyx":120
- *             elif w < -delta:
- *                 loss -= delta * (w + half_delta)
- *                 grad_view[i, j] = -pd             # <<<<<<<<<<<<<<
- * 
- *             else:
- */
-        __pyx_t_13 = __pyx_v_i;
-        __pyx_t_14 = __pyx_v_j;
-        *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_grad_view.data + __pyx_t_13 * __pyx_v_grad_view.strides[0]) )) + __pyx_t_14)) )) = (-__pyx_v_pd);
-
-        /* "aideme/active_learning/factorization/utils.pyx":118
- *                 grad_view[i, j] = pd
- * 
- *             elif w < -delta:             # <<<<<<<<<<<<<<
- *                 loss -= delta * (w + half_delta)
- *                 grad_view[i, j] = -pd
- */
-        goto __pyx_L7;
-      }
-
-      /* "aideme/active_learning/factorization/utils.pyx":123
- * 
- *             else:
- *                 loss += 0.5 * w * w             # <<<<<<<<<<<<<<
- *                 grad_view[i, j] = penalty * w
- * 
- */
-      /*else*/ {
-        __pyx_v_loss = (__pyx_v_loss + ((0.5 * __pyx_v_w) * __pyx_v_w));
-
-        /* "aideme/active_learning/factorization/utils.pyx":124
- *             else:
- *                 loss += 0.5 * w * w
- *                 grad_view[i, j] = penalty * w             # <<<<<<<<<<<<<<
- * 
- *     loss *= penalty
- */
-        __pyx_t_14 = __pyx_v_i;
-        __pyx_t_13 = __pyx_v_j;
-        *((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_grad_view.data + __pyx_t_14 * __pyx_v_grad_view.strides[0]) )) + __pyx_t_13)) )) = (__pyx_v_penalty * __pyx_v_w);
-      }
-      __pyx_L7:;
-    }
-  }
-
-  /* "aideme/active_learning/factorization/utils.pyx":126
- *                 grad_view[i, j] = penalty * w
- * 
- *     loss *= penalty             # <<<<<<<<<<<<<<
- *     return loss, grad
- * 
- */
-  __pyx_v_loss = (__pyx_v_loss * __pyx_v_penalty);
-
-  /* "aideme/active_learning/factorization/utils.pyx":127
- * 
- *     loss *= penalty
- *     return loss, grad             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 127, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 127, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_GIVEREF(__pyx_t_5);
-  PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_5);
-  __Pyx_INCREF(__pyx_v_grad);
-  __Pyx_GIVEREF(__pyx_v_grad);
-  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_grad);
-  __pyx_t_5 = 0;
-  __pyx_r = __pyx_t_4;
-  __pyx_t_4 = 0;
-  goto __pyx_L0;
-
-  /* "aideme/active_learning/factorization/utils.pyx":101
- * @wraparound(False)
- * @cdivision(True)
- * def compute_huber_penalty_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
- *     cdef:
- *         Py_ssize_t i, j
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __PYX_XDEC_MEMVIEW(&__pyx_t_6, 1);
-  __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_huber_penalty_and_grad", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_grad);
-  __PYX_XDEC_MEMVIEW(&__pyx_v_grad_view, 1);
-  __PYX_XDEC_MEMVIEW(&__pyx_v_weights, 1);
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "aideme/active_learning/factorization/utils.pyx":133
- * @wraparound(False)
- * @cdivision(True)
- * def compute_huber_penalty(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
- *     cdef:
- *         Py_ssize_t i, j
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_9compute_huber_penalty(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_9compute_huber_penalty = {"compute_huber_penalty", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_9compute_huber_penalty, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_9compute_huber_penalty(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  __Pyx_memviewslice __pyx_v_weights = { 0, 0, { 0 }, { 0 }, { 0 } };
-  double __pyx_v_penalty;
-  double __pyx_v_delta;
-  int __pyx_v_remove_last;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -3378,14 +2905,12 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_9comp
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("compute_huber_penalty (wrapper)", 0);
   {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_weights,&__pyx_n_s_penalty,&__pyx_n_s_delta,&__pyx_n_s_remove_last,0};
-    PyObject* values[4] = {0,0,0,0};
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_weights,&__pyx_n_s_penalty,&__pyx_n_s_delta,0};
+    PyObject* values[3] = {0,0,0};
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
       switch (pos_args) {
-        case  4: values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
-        CYTHON_FALLTHROUGH;
         case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
         CYTHON_FALLTHROUGH;
         case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
@@ -3404,53 +2929,45 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_9comp
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_penalty)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 4, 4, 1); __PYX_ERR(0, 133, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 3, 3, 1); __PYX_ERR(0, 92, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_delta)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 4, 4, 2); __PYX_ERR(0, 133, __pyx_L3_error)
-        }
-        CYTHON_FALLTHROUGH;
-        case  3:
-        if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_remove_last)) != 0)) kw_args--;
-        else {
-          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 4, 4, 3); __PYX_ERR(0, 133, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 3, 3, 2); __PYX_ERR(0, 92, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_huber_penalty") < 0)) __PYX_ERR(0, 133, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_huber_penalty") < 0)) __PYX_ERR(0, 92, __pyx_L3_error)
       }
-    } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
-      values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
-    __pyx_v_weights = __Pyx_PyObject_to_MemoryviewSlice_d_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_weights.memview)) __PYX_ERR(0, 133, __pyx_L3_error)
-    __pyx_v_penalty = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_penalty == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 133, __pyx_L3_error)
-    __pyx_v_delta = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_delta == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 133, __pyx_L3_error)
-    __pyx_v_remove_last = __Pyx_PyInt_As_int(values[3]); if (unlikely((__pyx_v_remove_last == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 133, __pyx_L3_error)
+    __pyx_v_weights = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_weights.memview)) __PYX_ERR(0, 92, __pyx_L3_error)
+    __pyx_v_penalty = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_penalty == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 92, __pyx_L3_error)
+    __pyx_v_delta = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_delta == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 92, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 133, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("compute_huber_penalty", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 92, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_huber_penalty", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_8compute_huber_penalty(__pyx_self, __pyx_v_weights, __pyx_v_penalty, __pyx_v_delta, __pyx_v_remove_last);
+  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_6compute_huber_penalty(__pyx_self, __pyx_v_weights, __pyx_v_penalty, __pyx_v_delta);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8compute_huber_penalty(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, double __pyx_v_penalty, double __pyx_v_delta, int __pyx_v_remove_last) {
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_6compute_huber_penalty(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_weights, double __pyx_v_penalty, double __pyx_v_delta) {
   Py_ssize_t __pyx_v_i;
   Py_ssize_t __pyx_v_j;
   Py_ssize_t __pyx_v_N;
@@ -3475,19 +2992,19 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("compute_huber_penalty", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":136
+  /* "aideme/active_learning/factorization/utils.pyx":95
  *     cdef:
  *         Py_ssize_t i, j
- *         Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last             # <<<<<<<<<<<<<<
+ *         Py_ssize_t N = weights.shape[0], K = weights.shape[1]             # <<<<<<<<<<<<<<
  *         double loss = 0, half_delta = delta / 2, w
  * 
  */
   __pyx_v_N = (__pyx_v_weights.shape[0]);
-  __pyx_v_K = ((__pyx_v_weights.shape[1]) - __pyx_v_remove_last);
+  __pyx_v_K = (__pyx_v_weights.shape[1]);
 
-  /* "aideme/active_learning/factorization/utils.pyx":137
+  /* "aideme/active_learning/factorization/utils.pyx":96
  *         Py_ssize_t i, j
- *         Py_ssize_t N = weights.shape[0], K = weights.shape[1] - remove_last
+ *         Py_ssize_t N = weights.shape[0], K = weights.shape[1]
  *         double loss = 0, half_delta = delta / 2, w             # <<<<<<<<<<<<<<
  * 
  *     for i in range(N):
@@ -3495,7 +3012,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
   __pyx_v_loss = 0.0;
   __pyx_v_half_delta = (__pyx_v_delta / 2.0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":139
+  /* "aideme/active_learning/factorization/utils.pyx":98
  *         double loss = 0, half_delta = delta / 2, w
  * 
  *     for i in range(N):             # <<<<<<<<<<<<<<
@@ -3507,7 +3024,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "aideme/active_learning/factorization/utils.pyx":140
+    /* "aideme/active_learning/factorization/utils.pyx":99
  * 
  *     for i in range(N):
  *         for j in range(K):             # <<<<<<<<<<<<<<
@@ -3519,7 +3036,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
     for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
       __pyx_v_j = __pyx_t_6;
 
-      /* "aideme/active_learning/factorization/utils.pyx":141
+      /* "aideme/active_learning/factorization/utils.pyx":100
  *     for i in range(N):
  *         for j in range(K):
  *             w = weights[i, j]             # <<<<<<<<<<<<<<
@@ -3528,9 +3045,9 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
  */
       __pyx_t_7 = __pyx_v_i;
       __pyx_t_8 = __pyx_v_j;
-      __pyx_v_w = (*((double *) ( /* dim=1 */ ((char *) (((double *) ( /* dim=0 */ (__pyx_v_weights.data + __pyx_t_7 * __pyx_v_weights.strides[0]) )) + __pyx_t_8)) )));
+      __pyx_v_w = (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_weights.data + __pyx_t_7 * __pyx_v_weights.strides[0]) ) + __pyx_t_8 * __pyx_v_weights.strides[1]) )));
 
-      /* "aideme/active_learning/factorization/utils.pyx":143
+      /* "aideme/active_learning/factorization/utils.pyx":102
  *             w = weights[i, j]
  * 
  *             if w > delta:             # <<<<<<<<<<<<<<
@@ -3540,7 +3057,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
       __pyx_t_9 = ((__pyx_v_w > __pyx_v_delta) != 0);
       if (__pyx_t_9) {
 
-        /* "aideme/active_learning/factorization/utils.pyx":144
+        /* "aideme/active_learning/factorization/utils.pyx":103
  * 
  *             if w > delta:
  *                 loss += delta * (w - half_delta)             # <<<<<<<<<<<<<<
@@ -3549,7 +3066,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
  */
         __pyx_v_loss = (__pyx_v_loss + (__pyx_v_delta * (__pyx_v_w - __pyx_v_half_delta)));
 
-        /* "aideme/active_learning/factorization/utils.pyx":143
+        /* "aideme/active_learning/factorization/utils.pyx":102
  *             w = weights[i, j]
  * 
  *             if w > delta:             # <<<<<<<<<<<<<<
@@ -3559,7 +3076,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
         goto __pyx_L7;
       }
 
-      /* "aideme/active_learning/factorization/utils.pyx":146
+      /* "aideme/active_learning/factorization/utils.pyx":105
  *                 loss += delta * (w - half_delta)
  * 
  *             elif w < -delta:             # <<<<<<<<<<<<<<
@@ -3569,7 +3086,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
       __pyx_t_9 = ((__pyx_v_w < (-__pyx_v_delta)) != 0);
       if (__pyx_t_9) {
 
-        /* "aideme/active_learning/factorization/utils.pyx":147
+        /* "aideme/active_learning/factorization/utils.pyx":106
  * 
  *             elif w < -delta:
  *                 loss -= delta * (w + half_delta)             # <<<<<<<<<<<<<<
@@ -3578,7 +3095,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
  */
         __pyx_v_loss = (__pyx_v_loss - (__pyx_v_delta * (__pyx_v_w + __pyx_v_half_delta)));
 
-        /* "aideme/active_learning/factorization/utils.pyx":146
+        /* "aideme/active_learning/factorization/utils.pyx":105
  *                 loss += delta * (w - half_delta)
  * 
  *             elif w < -delta:             # <<<<<<<<<<<<<<
@@ -3588,7 +3105,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
         goto __pyx_L7;
       }
 
-      /* "aideme/active_learning/factorization/utils.pyx":150
+      /* "aideme/active_learning/factorization/utils.pyx":109
  * 
  *             else:
  *                 loss += 0.5 * w * w             # <<<<<<<<<<<<<<
@@ -3602,7 +3119,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
     }
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":152
+  /* "aideme/active_learning/factorization/utils.pyx":111
  *                 loss += 0.5 * w * w
  * 
  *     loss *= penalty             # <<<<<<<<<<<<<<
@@ -3611,7 +3128,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
  */
   __pyx_v_loss = (__pyx_v_loss * __pyx_v_penalty);
 
-  /* "aideme/active_learning/factorization/utils.pyx":153
+  /* "aideme/active_learning/factorization/utils.pyx":112
  * 
  *     loss *= penalty
  *     return loss             # <<<<<<<<<<<<<<
@@ -3619,16 +3136,16 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_10 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 153, __pyx_L1_error)
+  __pyx_t_10 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_r = __pyx_t_10;
   __pyx_t_10 = 0;
   goto __pyx_L0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":133
+  /* "aideme/active_learning/factorization/utils.pyx":92
  * @wraparound(False)
  * @cdivision(True)
- * def compute_huber_penalty(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
+ * def compute_huber_penalty(double[:, :] weights, double penalty, double delta):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
@@ -3645,7 +3162,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":159
+/* "aideme/active_learning/factorization/utils.pyx":118
  * @wraparound(False)
  * @cdivision(True)
  * def compute_classification_loss(double[::1] log_probas, double[::1] y):             # <<<<<<<<<<<<<<
@@ -3654,9 +3171,9 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8comp
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_11compute_classification_loss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_11compute_classification_loss = {"compute_classification_loss", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_11compute_classification_loss, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_11compute_classification_loss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_9compute_classification_loss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_9compute_classification_loss = {"compute_classification_loss", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_9compute_classification_loss, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_9compute_classification_loss(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_log_probas = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_y = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_lineno = 0;
@@ -3688,11 +3205,11 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_11com
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("compute_classification_loss", 1, 2, 2, 1); __PYX_ERR(0, 159, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("compute_classification_loss", 1, 2, 2, 1); __PYX_ERR(0, 118, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_classification_loss") < 0)) __PYX_ERR(0, 159, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_classification_loss") < 0)) __PYX_ERR(0, 118, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3700,25 +3217,25 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_11com
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_log_probas = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_log_probas.memview)) __PYX_ERR(0, 159, __pyx_L3_error)
-    __pyx_v_y = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_y.memview)) __PYX_ERR(0, 159, __pyx_L3_error)
+    __pyx_v_log_probas = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_log_probas.memview)) __PYX_ERR(0, 118, __pyx_L3_error)
+    __pyx_v_y = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_y.memview)) __PYX_ERR(0, 118, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("compute_classification_loss", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 159, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("compute_classification_loss", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 118, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("aideme.active_learning.factorization.utils.compute_classification_loss", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_10compute_classification_loss(__pyx_self, __pyx_v_log_probas, __pyx_v_y);
+  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_8compute_classification_loss(__pyx_self, __pyx_v_log_probas, __pyx_v_y);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10compute_classification_loss(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_log_probas, __Pyx_memviewslice __pyx_v_y) {
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_8compute_classification_loss(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_log_probas, __Pyx_memviewslice __pyx_v_y) {
   unsigned int __pyx_v_i;
   unsigned int __pyx_v_N;
   double __pyx_v_loss;
@@ -3735,7 +3252,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("compute_classification_loss", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":161
+  /* "aideme/active_learning/factorization/utils.pyx":120
  * def compute_classification_loss(double[::1] log_probas, double[::1] y):
  *     cdef:
  *         unsigned int i,  N = log_probas.shape[0]             # <<<<<<<<<<<<<<
@@ -3744,7 +3261,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
  */
   __pyx_v_N = (__pyx_v_log_probas.shape[0]);
 
-  /* "aideme/active_learning/factorization/utils.pyx":162
+  /* "aideme/active_learning/factorization/utils.pyx":121
  *     cdef:
  *         unsigned int i,  N = log_probas.shape[0]
  *         double loss = 0             # <<<<<<<<<<<<<<
@@ -3753,7 +3270,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
  */
   __pyx_v_loss = 0.0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":164
+  /* "aideme/active_learning/factorization/utils.pyx":123
  *         double loss = 0
  * 
  *     for i in range(N):             # <<<<<<<<<<<<<<
@@ -3765,7 +3282,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "aideme/active_learning/factorization/utils.pyx":165
+    /* "aideme/active_learning/factorization/utils.pyx":124
  * 
  *     for i in range(N):
  *         if y[i] > 0:             # <<<<<<<<<<<<<<
@@ -3776,7 +3293,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
     __pyx_t_5 = (((*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_y.data) + __pyx_t_4)) ))) > 0.0) != 0);
     if (__pyx_t_5) {
 
-      /* "aideme/active_learning/factorization/utils.pyx":166
+      /* "aideme/active_learning/factorization/utils.pyx":125
  *     for i in range(N):
  *         if y[i] > 0:
  *             loss -= log_probas[i]             # <<<<<<<<<<<<<<
@@ -3786,7 +3303,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
       __pyx_t_4 = __pyx_v_i;
       __pyx_v_loss = (__pyx_v_loss - (*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_log_probas.data) + __pyx_t_4)) ))));
 
-      /* "aideme/active_learning/factorization/utils.pyx":165
+      /* "aideme/active_learning/factorization/utils.pyx":124
  * 
  *     for i in range(N):
  *         if y[i] > 0:             # <<<<<<<<<<<<<<
@@ -3796,7 +3313,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
       goto __pyx_L5;
     }
 
-    /* "aideme/active_learning/factorization/utils.pyx":168
+    /* "aideme/active_learning/factorization/utils.pyx":127
  *             loss -= log_probas[i]
  *         else:
  *             loss -= log1mexp(log_probas[i])             # <<<<<<<<<<<<<<
@@ -3810,7 +3327,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
     __pyx_L5:;
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":170
+  /* "aideme/active_learning/factorization/utils.pyx":129
  *             loss -= log1mexp(log_probas[i])
  * 
  *     loss /= N             # <<<<<<<<<<<<<<
@@ -3819,7 +3336,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
  */
   __pyx_v_loss = (__pyx_v_loss / __pyx_v_N);
 
-  /* "aideme/active_learning/factorization/utils.pyx":171
+  /* "aideme/active_learning/factorization/utils.pyx":130
  * 
  *     loss /= N
  *     return loss             # <<<<<<<<<<<<<<
@@ -3827,13 +3344,13 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_6 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_t_6 = PyFloat_FromDouble(__pyx_v_loss); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 130, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __pyx_r = __pyx_t_6;
   __pyx_t_6 = 0;
   goto __pyx_L0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":159
+  /* "aideme/active_learning/factorization/utils.pyx":118
  * @wraparound(False)
  * @cdivision(True)
  * def compute_classification_loss(double[::1] log_probas, double[::1] y):             # <<<<<<<<<<<<<<
@@ -3854,7 +3371,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":177
+/* "aideme/active_learning/factorization/utils.pyx":136
  * @wraparound(False)
  * @cdivision(True)
  * def grad_weights(double[::1] x, double[::1] y):             # <<<<<<<<<<<<<<
@@ -3863,9 +3380,9 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10com
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_13grad_weights(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_13grad_weights = {"grad_weights", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_13grad_weights, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_13grad_weights(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_11grad_weights(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_11grad_weights = {"grad_weights", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6aideme_15active_learning_13factorization_5utils_11grad_weights, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_11grad_weights(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_y = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_lineno = 0;
@@ -3897,11 +3414,11 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_13gra
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_y)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("grad_weights", 1, 2, 2, 1); __PYX_ERR(0, 177, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("grad_weights", 1, 2, 2, 1); __PYX_ERR(0, 136, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "grad_weights") < 0)) __PYX_ERR(0, 177, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "grad_weights") < 0)) __PYX_ERR(0, 136, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3909,25 +3426,25 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_13gra
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_x = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_x.memview)) __PYX_ERR(0, 177, __pyx_L3_error)
-    __pyx_v_y = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_y.memview)) __PYX_ERR(0, 177, __pyx_L3_error)
+    __pyx_v_x = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_x.memview)) __PYX_ERR(0, 136, __pyx_L3_error)
+    __pyx_v_y = __Pyx_PyObject_to_MemoryviewSlice_dc_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_y.memview)) __PYX_ERR(0, 136, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("grad_weights", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 177, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("grad_weights", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 136, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("aideme.active_learning.factorization.utils.grad_weights", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_12grad_weights(__pyx_self, __pyx_v_x, __pyx_v_y);
+  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_10grad_weights(__pyx_self, __pyx_v_x, __pyx_v_y);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12grad_weights(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, __Pyx_memviewslice __pyx_v_y) {
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_10grad_weights(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x, __Pyx_memviewslice __pyx_v_y) {
   unsigned int __pyx_v_i;
   unsigned int __pyx_v_N;
   __Pyx_memviewslice __pyx_v_res = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -3949,7 +3466,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("grad_weights", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":179
+  /* "aideme/active_learning/factorization/utils.pyx":138
  * def grad_weights(double[::1] x, double[::1] y):
  *     cdef:
  *         unsigned int i, N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -3958,19 +3475,19 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "aideme/active_learning/factorization/utils.pyx":180
+  /* "aideme/active_learning/factorization/utils.pyx":139
  *     cdef:
  *         unsigned int i, N = x.shape[0]
  *         double[::1] res = np.empty(N)             # <<<<<<<<<<<<<<
  * 
  *     for i in range(N):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 180, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 180, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyInt_From_unsigned_int(__pyx_v_N); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 180, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_unsigned_int(__pyx_v_N); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -3985,16 +3502,16 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
   __pyx_t_1 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, __pyx_t_2) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2);
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 180, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_5 = __Pyx_PyObject_to_MemoryviewSlice_dc_double(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 180, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_to_MemoryviewSlice_dc_double(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 139, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_res = __pyx_t_5;
   __pyx_t_5.memview = NULL;
   __pyx_t_5.data = NULL;
 
-  /* "aideme/active_learning/factorization/utils.pyx":182
+  /* "aideme/active_learning/factorization/utils.pyx":141
  *         double[::1] res = np.empty(N)
  * 
  *     for i in range(N):             # <<<<<<<<<<<<<<
@@ -4006,7 +3523,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
   for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
     __pyx_v_i = __pyx_t_8;
 
-    /* "aideme/active_learning/factorization/utils.pyx":183
+    /* "aideme/active_learning/factorization/utils.pyx":142
  * 
  *     for i in range(N):
  *         res[i] = -1 if y[i] > 0 else 1. / expm1(-x[i])             # <<<<<<<<<<<<<<
@@ -4024,7 +3541,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
     *((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_res.data) + __pyx_t_10)) )) = __pyx_t_9;
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":185
+  /* "aideme/active_learning/factorization/utils.pyx":144
  *         res[i] = -1 if y[i] > 0 else 1. / expm1(-x[i])
  * 
  *     return res             # <<<<<<<<<<<<<<
@@ -4032,13 +3549,13 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_res, 1, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_res, 1, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 144, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":177
+  /* "aideme/active_learning/factorization/utils.pyx":136
  * @wraparound(False)
  * @cdivision(True)
  * def grad_weights(double[::1] x, double[::1] y):             # <<<<<<<<<<<<<<
@@ -4064,7 +3581,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":190
+/* "aideme/active_learning/factorization/utils.pyx":149
  * @boundscheck(False)
  * @wraparound(False)
  * def log_sigmoid(double[::1] x):             # <<<<<<<<<<<<<<
@@ -4073,9 +3590,9 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12gra
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_15log_sigmoid(PyObject *__pyx_self, PyObject *__pyx_arg_x); /*proto*/
-static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_15log_sigmoid = {"log_sigmoid", (PyCFunction)__pyx_pw_6aideme_15active_learning_13factorization_5utils_15log_sigmoid, METH_O, 0};
-static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_15log_sigmoid(PyObject *__pyx_self, PyObject *__pyx_arg_x) {
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_13log_sigmoid(PyObject *__pyx_self, PyObject *__pyx_arg_x); /*proto*/
+static PyMethodDef __pyx_mdef_6aideme_15active_learning_13factorization_5utils_13log_sigmoid = {"log_sigmoid", (PyCFunction)__pyx_pw_6aideme_15active_learning_13factorization_5utils_13log_sigmoid, METH_O, 0};
+static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_13log_sigmoid(PyObject *__pyx_self, PyObject *__pyx_arg_x) {
   __Pyx_memviewslice __pyx_v_x = { 0, 0, { 0 }, { 0 }, { 0 } };
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
@@ -4084,7 +3601,7 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_15log
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("log_sigmoid (wrapper)", 0);
   assert(__pyx_arg_x); {
-    __pyx_v_x = __Pyx_PyObject_to_MemoryviewSlice_dc_double(__pyx_arg_x, PyBUF_WRITABLE); if (unlikely(!__pyx_v_x.memview)) __PYX_ERR(0, 190, __pyx_L3_error)
+    __pyx_v_x = __Pyx_PyObject_to_MemoryviewSlice_dc_double(__pyx_arg_x, PyBUF_WRITABLE); if (unlikely(!__pyx_v_x.memview)) __PYX_ERR(0, 149, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -4092,14 +3609,14 @@ static PyObject *__pyx_pw_6aideme_15active_learning_13factorization_5utils_15log
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_14log_sigmoid(__pyx_self, __pyx_v_x);
+  __pyx_r = __pyx_pf_6aideme_15active_learning_13factorization_5utils_12log_sigmoid(__pyx_self, __pyx_v_x);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log_sigmoid(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x) {
+static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_12log_sigmoid(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_x) {
   unsigned int __pyx_v_i;
   unsigned int __pyx_v_N;
   __Pyx_memviewslice __pyx_v_res = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -4120,7 +3637,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("log_sigmoid", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":192
+  /* "aideme/active_learning/factorization/utils.pyx":151
  * def log_sigmoid(double[::1] x):
  *     cdef:
  *         unsigned int i, N = x.shape[0]             # <<<<<<<<<<<<<<
@@ -4129,19 +3646,19 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
  */
   __pyx_v_N = (__pyx_v_x.shape[0]);
 
-  /* "aideme/active_learning/factorization/utils.pyx":193
+  /* "aideme/active_learning/factorization/utils.pyx":152
  *     cdef:
  *         unsigned int i, N = x.shape[0]
  *         double[::1] res = np.empty(N)             # <<<<<<<<<<<<<<
  * 
  *     for i in range(N):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 193, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 152, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 193, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_empty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 152, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyInt_From_unsigned_int(__pyx_v_N); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 193, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_unsigned_int(__pyx_v_N); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 152, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -4156,16 +3673,16 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
   __pyx_t_1 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, __pyx_t_2) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2);
   __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 193, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 152, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_5 = __Pyx_PyObject_to_MemoryviewSlice_dc_double(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 193, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_to_MemoryviewSlice_dc_double(__pyx_t_1, PyBUF_WRITABLE); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 152, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_res = __pyx_t_5;
   __pyx_t_5.memview = NULL;
   __pyx_t_5.data = NULL;
 
-  /* "aideme/active_learning/factorization/utils.pyx":195
+  /* "aideme/active_learning/factorization/utils.pyx":154
  *         double[::1] res = np.empty(N)
  * 
  *     for i in range(N):             # <<<<<<<<<<<<<<
@@ -4177,7 +3694,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
   for (__pyx_t_8 = 0; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
     __pyx_v_i = __pyx_t_8;
 
-    /* "aideme/active_learning/factorization/utils.pyx":196
+    /* "aideme/active_learning/factorization/utils.pyx":155
  * 
  *     for i in range(N):
  *         res[i] = -softmax(-x[i])             # <<<<<<<<<<<<<<
@@ -4189,7 +3706,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
     *((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_res.data) + __pyx_t_10)) )) = (-__pyx_f_6aideme_15active_learning_13factorization_5utils_softmax((-(*((double *) ( /* dim=0 */ ((char *) (((double *) __pyx_v_x.data) + __pyx_t_9)) ))))));
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":198
+  /* "aideme/active_learning/factorization/utils.pyx":157
  *         res[i] = -softmax(-x[i])
  * 
  *     return res             # <<<<<<<<<<<<<<
@@ -4197,13 +3714,13 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_res, 1, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 198, __pyx_L1_error)
+  __pyx_t_1 = __pyx_memoryview_fromslice(__pyx_v_res, 1, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 157, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":190
+  /* "aideme/active_learning/factorization/utils.pyx":149
  * @boundscheck(False)
  * @wraparound(False)
  * def log_sigmoid(double[::1] x):             # <<<<<<<<<<<<<<
@@ -4228,7 +3745,7 @@ static PyObject *__pyx_pf_6aideme_15active_learning_13factorization_5utils_14log
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":201
+/* "aideme/active_learning/factorization/utils.pyx":160
  * 
  * 
  * cdef double log1mexp(double x):             # <<<<<<<<<<<<<<
@@ -4242,7 +3759,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("log1mexp", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":206
+  /* "aideme/active_learning/factorization/utils.pyx":165
  *     See: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
  *     """
  *     if x < __LOGHALF:             # <<<<<<<<<<<<<<
@@ -4252,7 +3769,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(
   __pyx_t_1 = ((__pyx_v_x < __pyx_v_6aideme_15active_learning_13factorization_5utils___LOGHALF) != 0);
   if (__pyx_t_1) {
 
-    /* "aideme/active_learning/factorization/utils.pyx":207
+    /* "aideme/active_learning/factorization/utils.pyx":166
  *     """
  *     if x < __LOGHALF:
  *         return log1p(-exp(x))             # <<<<<<<<<<<<<<
@@ -4262,7 +3779,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(
     __pyx_r = log1p((-exp(__pyx_v_x)));
     goto __pyx_L0;
 
-    /* "aideme/active_learning/factorization/utils.pyx":206
+    /* "aideme/active_learning/factorization/utils.pyx":165
  *     See: https://cran.r-project.org/web/packages/Rmpfr/vignettes/log1mexp-note.pdf
  *     """
  *     if x < __LOGHALF:             # <<<<<<<<<<<<<<
@@ -4271,7 +3788,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(
  */
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":209
+  /* "aideme/active_learning/factorization/utils.pyx":168
  *         return log1p(-exp(x))
  *     else:
  *         return log(-expm1(x))             # <<<<<<<<<<<<<<
@@ -4283,7 +3800,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(
     goto __pyx_L0;
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":201
+  /* "aideme/active_learning/factorization/utils.pyx":160
  * 
  * 
  * cdef double log1mexp(double x):             # <<<<<<<<<<<<<<
@@ -4297,7 +3814,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_log1mexp(
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":212
+/* "aideme/active_learning/factorization/utils.pyx":171
  * 
  * 
  * cdef double softmax(double x):             # <<<<<<<<<<<<<<
@@ -4311,7 +3828,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_softmax(d
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("softmax", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":214
+  /* "aideme/active_learning/factorization/utils.pyx":173
  * cdef double softmax(double x):
  *     # Computes softmax(x) = log(1 + exp(x))
  *     if x >= 0:             # <<<<<<<<<<<<<<
@@ -4321,7 +3838,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_softmax(d
   __pyx_t_1 = ((__pyx_v_x >= 0.0) != 0);
   if (__pyx_t_1) {
 
-    /* "aideme/active_learning/factorization/utils.pyx":215
+    /* "aideme/active_learning/factorization/utils.pyx":174
  *     # Computes softmax(x) = log(1 + exp(x))
  *     if x >= 0:
  *         return x + log1p(exp(-x))             # <<<<<<<<<<<<<<
@@ -4331,7 +3848,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_softmax(d
     __pyx_r = (__pyx_v_x + log1p(exp((-__pyx_v_x))));
     goto __pyx_L0;
 
-    /* "aideme/active_learning/factorization/utils.pyx":214
+    /* "aideme/active_learning/factorization/utils.pyx":173
  * cdef double softmax(double x):
  *     # Computes softmax(x) = log(1 + exp(x))
  *     if x >= 0:             # <<<<<<<<<<<<<<
@@ -4340,7 +3857,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_softmax(d
  */
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":217
+  /* "aideme/active_learning/factorization/utils.pyx":176
  *         return x + log1p(exp(-x))
  *     else:
  *         return log1p(exp(x))             # <<<<<<<<<<<<<<
@@ -4352,7 +3869,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_softmax(d
     goto __pyx_L0;
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":212
+  /* "aideme/active_learning/factorization/utils.pyx":171
  * 
  * 
  * cdef double softmax(double x):             # <<<<<<<<<<<<<<
@@ -4366,7 +3883,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_softmax(d
   return __pyx_r;
 }
 
-/* "aideme/active_learning/factorization/utils.pyx":221
+/* "aideme/active_learning/factorization/utils.pyx":180
  * 
  * @cdivision(True)
  * cdef double msigmoid(double x):             # <<<<<<<<<<<<<<
@@ -4381,7 +3898,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("msigmoid", 0);
 
-  /* "aideme/active_learning/factorization/utils.pyx":224
+  /* "aideme/active_learning/factorization/utils.pyx":183
  *     # Computes sigmoid(x) = 1 / (1 + exp(x))
  *     cdef double expx
  *     if x <= 0:             # <<<<<<<<<<<<<<
@@ -4391,7 +3908,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
   __pyx_t_1 = ((__pyx_v_x <= 0.0) != 0);
   if (__pyx_t_1) {
 
-    /* "aideme/active_learning/factorization/utils.pyx":225
+    /* "aideme/active_learning/factorization/utils.pyx":184
  *     cdef double expx
  *     if x <= 0:
  *         expx = exp(x)             # <<<<<<<<<<<<<<
@@ -4400,7 +3917,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
  */
     __pyx_v_expx = exp(__pyx_v_x);
 
-    /* "aideme/active_learning/factorization/utils.pyx":226
+    /* "aideme/active_learning/factorization/utils.pyx":185
  *     if x <= 0:
  *         expx = exp(x)
  *         return 1 / (1 + expx)             # <<<<<<<<<<<<<<
@@ -4410,7 +3927,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
     __pyx_r = (1.0 / (1.0 + __pyx_v_expx));
     goto __pyx_L0;
 
-    /* "aideme/active_learning/factorization/utils.pyx":224
+    /* "aideme/active_learning/factorization/utils.pyx":183
  *     # Computes sigmoid(x) = 1 / (1 + exp(x))
  *     cdef double expx
  *     if x <= 0:             # <<<<<<<<<<<<<<
@@ -4419,7 +3936,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
  */
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":228
+  /* "aideme/active_learning/factorization/utils.pyx":187
  *         return 1 / (1 + expx)
  *     else:
  *         expx = exp(-x)             # <<<<<<<<<<<<<<
@@ -4429,7 +3946,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
   /*else*/ {
     __pyx_v_expx = exp((-__pyx_v_x));
 
-    /* "aideme/active_learning/factorization/utils.pyx":229
+    /* "aideme/active_learning/factorization/utils.pyx":188
  *     else:
  *         expx = exp(-x)
  *         return expx / (1 + expx)             # <<<<<<<<<<<<<<
@@ -4439,7 +3956,7 @@ static double __pyx_f_6aideme_15active_learning_13factorization_5utils_msigmoid(
     goto __pyx_L0;
   }
 
-  /* "aideme/active_learning/factorization/utils.pyx":221
+  /* "aideme/active_learning/factorization/utils.pyx":180
  * 
  * @cdivision(True)
  * cdef double msigmoid(double x):             # <<<<<<<<<<<<<<
@@ -18267,10 +17784,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_class, __pyx_k_class, sizeof(__pyx_k_class), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_compute_classification_loss, __pyx_k_compute_classification_loss, sizeof(__pyx_k_compute_classification_loss), 0, 0, 1, 1},
+  {&__pyx_n_s_compute_grad_factors, __pyx_k_compute_grad_factors, sizeof(__pyx_k_compute_grad_factors), 0, 0, 1, 1},
   {&__pyx_n_s_compute_huber_penalty, __pyx_k_compute_huber_penalty, sizeof(__pyx_k_compute_huber_penalty), 0, 0, 1, 1},
-  {&__pyx_n_s_compute_huber_penalty_and_grad, __pyx_k_compute_huber_penalty_and_grad, sizeof(__pyx_k_compute_huber_penalty_and_grad), 0, 0, 1, 1},
   {&__pyx_n_s_compute_loss, __pyx_k_compute_loss, sizeof(__pyx_k_compute_loss), 0, 0, 1, 1},
-  {&__pyx_n_s_compute_loss_and_grad, __pyx_k_compute_loss_and_grad, sizeof(__pyx_k_compute_loss_and_grad), 0, 0, 1, 1},
   {&__pyx_kp_s_contiguous_and_direct, __pyx_k_contiguous_and_direct, sizeof(__pyx_k_contiguous_and_direct), 0, 0, 1, 0},
   {&__pyx_kp_s_contiguous_and_indirect, __pyx_k_contiguous_and_indirect, sizeof(__pyx_k_contiguous_and_indirect), 0, 0, 1, 0},
   {&__pyx_n_s_delta, __pyx_k_delta, sizeof(__pyx_k_delta), 0, 0, 1, 1},
@@ -18288,10 +17804,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_u_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 1, 0, 1},
   {&__pyx_n_s_getstate, __pyx_k_getstate, sizeof(__pyx_k_getstate), 0, 0, 1, 1},
   {&__pyx_kp_s_got_differing_extents_in_dimensi, __pyx_k_got_differing_extents_in_dimensi, sizeof(__pyx_k_got_differing_extents_in_dimensi), 0, 0, 1, 0},
-  {&__pyx_n_s_grad, __pyx_k_grad, sizeof(__pyx_k_grad), 0, 0, 1, 1},
   {&__pyx_n_s_grad_factors, __pyx_k_grad_factors, sizeof(__pyx_k_grad_factors), 0, 0, 1, 1},
   {&__pyx_n_s_grad_factors_view, __pyx_k_grad_factors_view, sizeof(__pyx_k_grad_factors_view), 0, 0, 1, 1},
-  {&__pyx_n_s_grad_view, __pyx_k_grad_view, sizeof(__pyx_k_grad_view), 0, 0, 1, 1},
   {&__pyx_n_s_grad_weights, __pyx_k_grad_weights, sizeof(__pyx_k_grad_weights), 0, 0, 1, 1},
   {&__pyx_n_s_half_delta, __pyx_k_half_delta, sizeof(__pyx_k_half_delta), 0, 0, 1, 1},
   {&__pyx_n_s_i, __pyx_k_i, sizeof(__pyx_k_i), 0, 0, 1, 1},
@@ -18317,7 +17831,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
   {&__pyx_n_s_obj, __pyx_k_obj, sizeof(__pyx_k_obj), 0, 0, 1, 1},
   {&__pyx_n_s_pack, __pyx_k_pack, sizeof(__pyx_k_pack), 0, 0, 1, 1},
-  {&__pyx_n_s_pd, __pyx_k_pd, sizeof(__pyx_k_pd), 0, 0, 1, 1},
   {&__pyx_n_s_penalty, __pyx_k_penalty, sizeof(__pyx_k_penalty), 0, 0, 1, 1},
   {&__pyx_n_s_pickle, __pyx_k_pickle, sizeof(__pyx_k_pickle), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_PickleError, __pyx_k_pyx_PickleError, sizeof(__pyx_k_pyx_PickleError), 0, 0, 1, 1},
@@ -18332,7 +17845,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_reduce, __pyx_k_reduce, sizeof(__pyx_k_reduce), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_cython, __pyx_k_reduce_cython, sizeof(__pyx_k_reduce_cython), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_ex, __pyx_k_reduce_ex, sizeof(__pyx_k_reduce_ex), 0, 0, 1, 1},
-  {&__pyx_n_s_remove_last, __pyx_k_remove_last, sizeof(__pyx_k_remove_last), 0, 0, 1, 1},
   {&__pyx_n_s_res, __pyx_k_res, sizeof(__pyx_k_res), 0, 0, 1, 1},
   {&__pyx_n_s_setstate, __pyx_k_setstate, sizeof(__pyx_k_setstate), 0, 0, 1, 1},
   {&__pyx_n_s_setstate_cython, __pyx_k_setstate_cython, sizeof(__pyx_k_setstate_cython), 0, 0, 1, 1},
@@ -18571,86 +18083,74 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "aideme/active_learning/factorization/utils.pyx":45
  * @wraparound(False)
  * @cdivision(True)
- * def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
+ * def compute_grad_factors(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
-  __pyx_tuple__19 = PyTuple_Pack(12, __pyx_n_s_margin, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_N, __pyx_n_s_K, __pyx_n_s_log_probas, __pyx_n_s_grad_factors, __pyx_n_s_weight, __pyx_n_s_lp, __pyx_n_s_loss, __pyx_n_s_grad_factors_view); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __pyx_tuple__19 = PyTuple_Pack(10, __pyx_n_s_margin, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_N, __pyx_n_s_K, __pyx_n_s_log_probas, __pyx_n_s_grad_factors, __pyx_n_s_weight, __pyx_n_s_grad_factors_view); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(0, 45, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__19);
   __Pyx_GIVEREF(__pyx_tuple__19);
-  __pyx_codeobj__20 = (PyObject*)__Pyx_PyCode_New(2, 0, 12, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__19, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_loss_and_grad, 45, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__20)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __pyx_codeobj__20 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__19, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_grad_factors, 45, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__20)) __PYX_ERR(0, 45, __pyx_L1_error)
 
-  /* "aideme/active_learning/factorization/utils.pyx":79
+  /* "aideme/active_learning/factorization/utils.pyx":71
  * @wraparound(False)
  * @cdivision(True)
  * def compute_loss(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, N = margin.shape[0]
  */
-  __pyx_tuple__21 = PyTuple_Pack(7, __pyx_n_s_margin, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_lp, __pyx_n_s_loss, __pyx_n_s_log_probas); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __pyx_tuple__21 = PyTuple_Pack(7, __pyx_n_s_margin, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_lp, __pyx_n_s_loss, __pyx_n_s_log_probas); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__21);
   __Pyx_GIVEREF(__pyx_tuple__21);
-  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(2, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_loss, 79, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(2, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_loss, 71, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(0, 71, __pyx_L1_error)
 
-  /* "aideme/active_learning/factorization/utils.pyx":101
+  /* "aideme/active_learning/factorization/utils.pyx":92
  * @wraparound(False)
  * @cdivision(True)
- * def compute_huber_penalty_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
+ * def compute_huber_penalty(double[:, :] weights, double penalty, double delta):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
-  __pyx_tuple__23 = PyTuple_Pack(14, __pyx_n_s_weights, __pyx_n_s_penalty, __pyx_n_s_delta, __pyx_n_s_remove_last, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_N, __pyx_n_s_K, __pyx_n_s_loss, __pyx_n_s_half_delta, __pyx_n_s_pd, __pyx_n_s_w, __pyx_n_s_grad, __pyx_n_s_grad_view); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_tuple__23 = PyTuple_Pack(10, __pyx_n_s_weights, __pyx_n_s_penalty, __pyx_n_s_delta, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_N, __pyx_n_s_K, __pyx_n_s_loss, __pyx_n_s_half_delta, __pyx_n_s_w); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(0, 92, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__23);
   __Pyx_GIVEREF(__pyx_tuple__23);
-  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(4, 0, 14, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_huber_penalty_and_grad, 101, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(3, 0, 10, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_huber_penalty, 92, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(0, 92, __pyx_L1_error)
 
-  /* "aideme/active_learning/factorization/utils.pyx":133
- * @wraparound(False)
- * @cdivision(True)
- * def compute_huber_penalty(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
- *     cdef:
- *         Py_ssize_t i, j
- */
-  __pyx_tuple__25 = PyTuple_Pack(11, __pyx_n_s_weights, __pyx_n_s_penalty, __pyx_n_s_delta, __pyx_n_s_remove_last, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_N, __pyx_n_s_K, __pyx_n_s_loss, __pyx_n_s_half_delta, __pyx_n_s_w); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 133, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__25);
-  __Pyx_GIVEREF(__pyx_tuple__25);
-  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(4, 0, 11, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_huber_penalty, 133, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 133, __pyx_L1_error)
-
-  /* "aideme/active_learning/factorization/utils.pyx":159
+  /* "aideme/active_learning/factorization/utils.pyx":118
  * @wraparound(False)
  * @cdivision(True)
  * def compute_classification_loss(double[::1] log_probas, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i,  N = log_probas.shape[0]
  */
-  __pyx_tuple__27 = PyTuple_Pack(5, __pyx_n_s_log_probas, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_loss); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(0, 159, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__27);
-  __Pyx_GIVEREF(__pyx_tuple__27);
-  __pyx_codeobj__28 = (PyObject*)__Pyx_PyCode_New(2, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__27, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_classification_loss, 159, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__28)) __PYX_ERR(0, 159, __pyx_L1_error)
+  __pyx_tuple__25 = PyTuple_Pack(5, __pyx_n_s_log_probas, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_loss); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 118, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__25);
+  __Pyx_GIVEREF(__pyx_tuple__25);
+  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(2, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_compute_classification_loss, 118, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 118, __pyx_L1_error)
 
-  /* "aideme/active_learning/factorization/utils.pyx":177
+  /* "aideme/active_learning/factorization/utils.pyx":136
  * @wraparound(False)
  * @cdivision(True)
  * def grad_weights(double[::1] x, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i, N = x.shape[0]
  */
-  __pyx_tuple__29 = PyTuple_Pack(5, __pyx_n_s_x, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_res); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(0, 177, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__29);
-  __Pyx_GIVEREF(__pyx_tuple__29);
-  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(2, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_grad_weights, 177, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(0, 177, __pyx_L1_error)
+  __pyx_tuple__27 = PyTuple_Pack(5, __pyx_n_s_x, __pyx_n_s_y, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_res); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(0, 136, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__27);
+  __Pyx_GIVEREF(__pyx_tuple__27);
+  __pyx_codeobj__28 = (PyObject*)__Pyx_PyCode_New(2, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__27, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_grad_weights, 136, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__28)) __PYX_ERR(0, 136, __pyx_L1_error)
 
-  /* "aideme/active_learning/factorization/utils.pyx":190
+  /* "aideme/active_learning/factorization/utils.pyx":149
  * @boundscheck(False)
  * @wraparound(False)
  * def log_sigmoid(double[::1] x):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i, N = x.shape[0]
  */
-  __pyx_tuple__31 = PyTuple_Pack(5, __pyx_n_s_x, __pyx_n_s_x, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_res); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(0, 190, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__31);
-  __Pyx_GIVEREF(__pyx_tuple__31);
-  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(1, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_log_sigmoid, 190, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_tuple__29 = PyTuple_Pack(5, __pyx_n_s_x, __pyx_n_s_x, __pyx_n_s_i, __pyx_n_s_N, __pyx_n_s_res); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(0, 149, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__29);
+  __Pyx_GIVEREF(__pyx_tuple__29);
+  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(1, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_aideme_active_learning_factoriza, __pyx_n_s_log_sigmoid, 149, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(0, 149, __pyx_L1_error)
 
   /* "View.MemoryView":286
  *         return self.name
@@ -18659,9 +18159,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_tuple__33 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__33)) __PYX_ERR(1, 286, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__33);
-  __Pyx_GIVEREF(__pyx_tuple__33);
+  __pyx_tuple__31 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(1, 286, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__31);
+  __Pyx_GIVEREF(__pyx_tuple__31);
 
   /* "View.MemoryView":287
  * 
@@ -18670,9 +18170,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_tuple__34 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__34)) __PYX_ERR(1, 287, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__34);
-  __Pyx_GIVEREF(__pyx_tuple__34);
+  __pyx_tuple__32 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__32)) __PYX_ERR(1, 287, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__32);
+  __Pyx_GIVEREF(__pyx_tuple__32);
 
   /* "View.MemoryView":288
  * cdef generic = Enum("<strided and direct or indirect>")
@@ -18681,9 +18181,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__35 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__35)) __PYX_ERR(1, 288, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__35);
-  __Pyx_GIVEREF(__pyx_tuple__35);
+  __pyx_tuple__33 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__33)) __PYX_ERR(1, 288, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__33);
+  __Pyx_GIVEREF(__pyx_tuple__33);
 
   /* "View.MemoryView":291
  * 
@@ -18692,9 +18192,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_tuple__36 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__36)) __PYX_ERR(1, 291, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__36);
-  __Pyx_GIVEREF(__pyx_tuple__36);
+  __pyx_tuple__34 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__34)) __PYX_ERR(1, 291, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__34);
+  __Pyx_GIVEREF(__pyx_tuple__34);
 
   /* "View.MemoryView":292
  * 
@@ -18703,19 +18203,19 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__37 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__37)) __PYX_ERR(1, 292, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__37);
-  __Pyx_GIVEREF(__pyx_tuple__37);
+  __pyx_tuple__35 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__35)) __PYX_ERR(1, 292, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__35);
+  __Pyx_GIVEREF(__pyx_tuple__35);
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_Enum(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
  */
-  __pyx_tuple__38 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__38)) __PYX_ERR(1, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__38);
-  __Pyx_GIVEREF(__pyx_tuple__38);
-  __pyx_codeobj__39 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__38, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__39)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_tuple__36 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__36)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__36);
+  __Pyx_GIVEREF(__pyx_tuple__36);
+  __pyx_codeobj__37 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__36, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__37)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -19087,85 +18587,73 @@ if (!__Pyx_RefNanny) {
   /* "aideme/active_learning/factorization/utils.pyx":45
  * @wraparound(False)
  * @cdivision(True)
- * def compute_loss_and_grad(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
+ * def compute_grad_factors(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_3compute_loss_and_grad, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_3compute_grad_factors, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_loss_and_grad, __pyx_t_1) < 0) __PYX_ERR(0, 45, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_grad_factors, __pyx_t_1) < 0) __PYX_ERR(0, 45, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":79
+  /* "aideme/active_learning/factorization/utils.pyx":71
  * @wraparound(False)
  * @cdivision(True)
  * def compute_loss(double[:, ::1] margin, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, N = margin.shape[0]
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_5compute_loss, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_5compute_loss, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_loss, __pyx_t_1) < 0) __PYX_ERR(0, 79, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_loss, __pyx_t_1) < 0) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":101
+  /* "aideme/active_learning/factorization/utils.pyx":92
  * @wraparound(False)
  * @cdivision(True)
- * def compute_huber_penalty_and_grad(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
+ * def compute_huber_penalty(double[:, :] weights, double penalty, double delta):             # <<<<<<<<<<<<<<
  *     cdef:
  *         Py_ssize_t i, j
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty_and_grad, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_7compute_huber_penalty, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_huber_penalty_and_grad, __pyx_t_1) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_huber_penalty, __pyx_t_1) < 0) __PYX_ERR(0, 92, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":133
- * @wraparound(False)
- * @cdivision(True)
- * def compute_huber_penalty(double[:, ::1] weights, double penalty, double delta, int remove_last):             # <<<<<<<<<<<<<<
- *     cdef:
- *         Py_ssize_t i, j
- */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_9compute_huber_penalty, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 133, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_huber_penalty, __pyx_t_1) < 0) __PYX_ERR(0, 133, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "aideme/active_learning/factorization/utils.pyx":159
+  /* "aideme/active_learning/factorization/utils.pyx":118
  * @wraparound(False)
  * @cdivision(True)
  * def compute_classification_loss(double[::1] log_probas, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i,  N = log_probas.shape[0]
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_11compute_classification_loss, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 159, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_9compute_classification_loss, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_classification_loss, __pyx_t_1) < 0) __PYX_ERR(0, 159, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_classification_loss, __pyx_t_1) < 0) __PYX_ERR(0, 118, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":177
+  /* "aideme/active_learning/factorization/utils.pyx":136
  * @wraparound(False)
  * @cdivision(True)
  * def grad_weights(double[::1] x, double[::1] y):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i, N = x.shape[0]
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_13grad_weights, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 177, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_11grad_weights, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 136, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_grad_weights, __pyx_t_1) < 0) __PYX_ERR(0, 177, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_grad_weights, __pyx_t_1) < 0) __PYX_ERR(0, 136, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "aideme/active_learning/factorization/utils.pyx":190
+  /* "aideme/active_learning/factorization/utils.pyx":149
  * @boundscheck(False)
  * @wraparound(False)
  * def log_sigmoid(double[::1] x):             # <<<<<<<<<<<<<<
  *     cdef:
  *         unsigned int i, N = x.shape[0]
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_15log_sigmoid, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_6aideme_15active_learning_13factorization_5utils_13log_sigmoid, NULL, __pyx_n_s_aideme_active_learning_factoriza_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 149, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_log_sigmoid, __pyx_t_1) < 0) __PYX_ERR(0, 190, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_log_sigmoid, __pyx_t_1) < 0) __PYX_ERR(0, 149, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "aideme/active_learning/factorization/utils.pyx":1
@@ -19198,7 +18686,7 @@ if (!__Pyx_RefNanny) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__33, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 286, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__31, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 286, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(generic);
   __Pyx_DECREF_SET(generic, __pyx_t_1);
@@ -19212,7 +18700,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__34, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 287, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__32, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 287, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(strided);
   __Pyx_DECREF_SET(strided, __pyx_t_1);
@@ -19226,7 +18714,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__35, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 288, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__33, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 288, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(indirect);
   __Pyx_DECREF_SET(indirect, __pyx_t_1);
@@ -19240,7 +18728,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__36, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 291, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__34, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 291, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(contiguous);
   __Pyx_DECREF_SET(contiguous, __pyx_t_1);
@@ -19254,7 +18742,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__37, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 292, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__35, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 292, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(indirect_contiguous);
   __Pyx_DECREF_SET(indirect_contiguous, __pyx_t_1);
@@ -22335,27 +21823,28 @@ __pyx_fail:
     return result;
 }
 
-/* CIntFromPyVerify */
-  #define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
-    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
-#define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
-    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
-#define __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, exc)\
-    {\
-        func_type value = func_value;\
-        if (sizeof(target_type) < sizeof(func_type)) {\
-            if (unlikely(value != (func_type) (target_type) value)) {\
-                func_type zero = 0;\
-                if (exc && unlikely(value == (func_type)-1 && PyErr_Occurred()))\
-                    return (target_type) -1;\
-                if (is_unsigned && unlikely(value < zero))\
-                    goto raise_neg_overflow;\
-                else\
-                    goto raise_overflow;\
-            }\
-        }\
-        return (target_type) value;\
+/* ObjectToMemviewSlice */
+  static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dsds_double(PyObject *obj, int writable_flag) {
+    __Pyx_memviewslice result = { 0, 0, { 0 }, { 0 }, { 0 } };
+    __Pyx_BufFmt_StackElem stack[1];
+    int axes_specs[] = { (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_STRIDED), (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_STRIDED) };
+    int retcode;
+    if (obj == Py_None) {
+        result.memview = (struct __pyx_memoryview_obj *) Py_None;
+        return result;
     }
+    retcode = __Pyx_ValidateAndInit_memviewslice(axes_specs, 0,
+                                                 PyBUF_RECORDS_RO | writable_flag, 2,
+                                                 &__Pyx_TypeInfo_double, stack,
+                                                 &result, obj);
+    if (unlikely(retcode == -1))
+        goto __pyx_fail;
+    return result;
+__pyx_fail:
+    result.memview = NULL;
+    result.data = NULL;
+    return result;
+}
 
 /* MemviewDtypeToObject */
   static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp) {
@@ -22399,6 +21888,28 @@ static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *o
                                      little, !is_unsigned);
     }
 }
+
+/* CIntFromPyVerify */
+  #define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
+    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
+#define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
+    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
+#define __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, exc)\
+    {\
+        func_type value = func_value;\
+        if (sizeof(target_type) < sizeof(func_type)) {\
+            if (unlikely(value != (func_type) (target_type) value)) {\
+                func_type zero = 0;\
+                if (exc && unlikely(value == (func_type)-1 && PyErr_Occurred()))\
+                    return (target_type) -1;\
+                if (is_unsigned && unlikely(value < zero))\
+                    goto raise_neg_overflow;\
+                else\
+                    goto raise_overflow;\
+            }\
+        }\
+        return (target_type) value;\
+    }
 
 /* MemviewSliceCopyTemplate */
   static __Pyx_memviewslice
@@ -22465,195 +21976,6 @@ no_fail:
     __Pyx_XDECREF(array_obj);
     __Pyx_RefNannyFinishContext();
     return new_mvs;
-}
-
-/* CIntFromPy */
-  static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
-    const int neg_one = (int) ((int) 0 - (int) 1), const_zero = (int) 0;
-    const int is_unsigned = neg_one > const_zero;
-#if PY_MAJOR_VERSION < 3
-    if (likely(PyInt_Check(x))) {
-        if (sizeof(int) < sizeof(long)) {
-            __PYX_VERIFY_RETURN_INT(int, long, PyInt_AS_LONG(x))
-        } else {
-            long val = PyInt_AS_LONG(x);
-            if (is_unsigned && unlikely(val < 0)) {
-                goto raise_neg_overflow;
-            }
-            return (int) val;
-        }
-    } else
-#endif
-    if (likely(PyLong_Check(x))) {
-        if (is_unsigned) {
-#if CYTHON_USE_PYLONG_INTERNALS
-            const digit* digits = ((PyLongObject*)x)->ob_digit;
-            switch (Py_SIZE(x)) {
-                case  0: return (int) 0;
-                case  1: __PYX_VERIFY_RETURN_INT(int, digit, digits[0])
-                case 2:
-                    if (8 * sizeof(int) > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) >= 2 * PyLong_SHIFT) {
-                            return (int) (((((int)digits[1]) << PyLong_SHIFT) | (int)digits[0]));
-                        }
-                    }
-                    break;
-                case 3:
-                    if (8 * sizeof(int) > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) >= 3 * PyLong_SHIFT) {
-                            return (int) (((((((int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0]));
-                        }
-                    }
-                    break;
-                case 4:
-                    if (8 * sizeof(int) > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) >= 4 * PyLong_SHIFT) {
-                            return (int) (((((((((int)digits[3]) << PyLong_SHIFT) | (int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0]));
-                        }
-                    }
-                    break;
-            }
-#endif
-#if CYTHON_COMPILING_IN_CPYTHON
-            if (unlikely(Py_SIZE(x) < 0)) {
-                goto raise_neg_overflow;
-            }
-#else
-            {
-                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
-                if (unlikely(result < 0))
-                    return (int) -1;
-                if (unlikely(result == 1))
-                    goto raise_neg_overflow;
-            }
-#endif
-            if (sizeof(int) <= sizeof(unsigned long)) {
-                __PYX_VERIFY_RETURN_INT_EXC(int, unsigned long, PyLong_AsUnsignedLong(x))
-#ifdef HAVE_LONG_LONG
-            } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
-                __PYX_VERIFY_RETURN_INT_EXC(int, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
-#endif
-            }
-        } else {
-#if CYTHON_USE_PYLONG_INTERNALS
-            const digit* digits = ((PyLongObject*)x)->ob_digit;
-            switch (Py_SIZE(x)) {
-                case  0: return (int) 0;
-                case -1: __PYX_VERIFY_RETURN_INT(int, sdigit, (sdigit) (-(sdigit)digits[0]))
-                case  1: __PYX_VERIFY_RETURN_INT(int,  digit, +digits[0])
-                case -2:
-                    if (8 * sizeof(int) - 1 > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) - 1 > 2 * PyLong_SHIFT) {
-                            return (int) (((int)-1)*(((((int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
-                        }
-                    }
-                    break;
-                case 2:
-                    if (8 * sizeof(int) > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) - 1 > 2 * PyLong_SHIFT) {
-                            return (int) ((((((int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
-                        }
-                    }
-                    break;
-                case -3:
-                    if (8 * sizeof(int) - 1 > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) - 1 > 3 * PyLong_SHIFT) {
-                            return (int) (((int)-1)*(((((((int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
-                        }
-                    }
-                    break;
-                case 3:
-                    if (8 * sizeof(int) > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) - 1 > 3 * PyLong_SHIFT) {
-                            return (int) ((((((((int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
-                        }
-                    }
-                    break;
-                case -4:
-                    if (8 * sizeof(int) - 1 > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) - 1 > 4 * PyLong_SHIFT) {
-                            return (int) (((int)-1)*(((((((((int)digits[3]) << PyLong_SHIFT) | (int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
-                        }
-                    }
-                    break;
-                case 4:
-                    if (8 * sizeof(int) > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(int) - 1 > 4 * PyLong_SHIFT) {
-                            return (int) ((((((((((int)digits[3]) << PyLong_SHIFT) | (int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
-                        }
-                    }
-                    break;
-            }
-#endif
-            if (sizeof(int) <= sizeof(long)) {
-                __PYX_VERIFY_RETURN_INT_EXC(int, long, PyLong_AsLong(x))
-#ifdef HAVE_LONG_LONG
-            } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
-                __PYX_VERIFY_RETURN_INT_EXC(int, PY_LONG_LONG, PyLong_AsLongLong(x))
-#endif
-            }
-        }
-        {
-#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
-            PyErr_SetString(PyExc_RuntimeError,
-                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
-#else
-            int val;
-            PyObject *v = __Pyx_PyNumber_IntOrLong(x);
- #if PY_MAJOR_VERSION < 3
-            if (likely(v) && !PyLong_Check(v)) {
-                PyObject *tmp = v;
-                v = PyNumber_Long(tmp);
-                Py_DECREF(tmp);
-            }
- #endif
-            if (likely(v)) {
-                int one = 1; int is_little = (int)*(unsigned char *)&one;
-                unsigned char *bytes = (unsigned char *)&val;
-                int ret = _PyLong_AsByteArray((PyLongObject *)v,
-                                              bytes, sizeof(val),
-                                              is_little, !is_unsigned);
-                Py_DECREF(v);
-                if (likely(!ret))
-                    return val;
-            }
-#endif
-            return (int) -1;
-        }
-    } else {
-        int val;
-        PyObject *tmp = __Pyx_PyNumber_IntOrLong(x);
-        if (!tmp) return (int) -1;
-        val = __Pyx_PyInt_As_int(tmp);
-        Py_DECREF(tmp);
-        return val;
-    }
-raise_overflow:
-    PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to int");
-    return (int) -1;
-raise_neg_overflow:
-    PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to int");
-    return (int) -1;
 }
 
 /* CIntFromPy */
@@ -22843,6 +22165,195 @@ raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
         "can't convert negative value to unsigned int");
     return (unsigned int) -1;
+}
+
+/* CIntFromPy */
+  static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
+    const int neg_one = (int) ((int) 0 - (int) 1), const_zero = (int) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(int) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(int, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (int) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (int) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(int, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(int) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) >= 2 * PyLong_SHIFT) {
+                            return (int) (((((int)digits[1]) << PyLong_SHIFT) | (int)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(int) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) >= 3 * PyLong_SHIFT) {
+                            return (int) (((((((int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(int) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) >= 4 * PyLong_SHIFT) {
+                            return (int) (((((((((int)digits[3]) << PyLong_SHIFT) | (int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (int) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(int) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(int, unsigned long, PyLong_AsUnsignedLong(x))
+#ifdef HAVE_LONG_LONG
+            } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(int, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+#endif
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (int) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(int, sdigit, (sdigit) (-(sdigit)digits[0]))
+                case  1: __PYX_VERIFY_RETURN_INT(int,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(int) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) - 1 > 2 * PyLong_SHIFT) {
+                            return (int) (((int)-1)*(((((int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(int) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) - 1 > 2 * PyLong_SHIFT) {
+                            return (int) ((((((int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(int) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) - 1 > 3 * PyLong_SHIFT) {
+                            return (int) (((int)-1)*(((((((int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(int) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) - 1 > 3 * PyLong_SHIFT) {
+                            return (int) ((((((((int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(int) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) - 1 > 4 * PyLong_SHIFT) {
+                            return (int) (((int)-1)*(((((((((int)digits[3]) << PyLong_SHIFT) | (int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(int) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(int, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(int) - 1 > 4 * PyLong_SHIFT) {
+                            return (int) ((((((((((int)digits[3]) << PyLong_SHIFT) | (int)digits[2]) << PyLong_SHIFT) | (int)digits[1]) << PyLong_SHIFT) | (int)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(int) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(int, long, PyLong_AsLong(x))
+#ifdef HAVE_LONG_LONG
+            } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(int, PY_LONG_LONG, PyLong_AsLongLong(x))
+#endif
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            int val;
+            PyObject *v = __Pyx_PyNumber_IntOrLong(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (int) -1;
+        }
+    } else {
+        int val;
+        PyObject *tmp = __Pyx_PyNumber_IntOrLong(x);
+        if (!tmp) return (int) -1;
+        val = __Pyx_PyInt_As_int(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to int");
+    return (int) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to int");
+    return (int) -1;
 }
 
 /* CIntFromPy */
