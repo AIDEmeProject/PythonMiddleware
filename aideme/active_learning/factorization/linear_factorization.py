@@ -16,22 +16,23 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, List, Union
+from typing import Optional, List, Union, TYPE_CHECKING
 
 import numpy as np
 
 import aideme.active_learning.factorization.utils as utils
-from aideme.utils import assert_positive_integer, assert_positive
-from .optimization import OptimizationAlgorithm
+from aideme.utils import assert_positive_integer
+from .penalty import *
+
+if TYPE_CHECKING:
+    from .optimization import OptimizationAlgorithm
 
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0, l2_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
+                 l2_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
         self._optimizer = optimizer
         self.add_bias = add_bias
-
-        self.l1_penalty = L1Penalty(l1_penalty, add_bias) if l1_penalty > 0 else None  # TODO: add to penalty terms?
 
         self.penalty_terms = []
         if l2_penalty > 0:
@@ -61,7 +62,6 @@ class LinearFactorizationLearner:
 
     def copy(self) -> LinearFactorizationLearner:
         learner = LinearFactorizationLearner(optimizer=self._optimizer, add_bias=self.add_bias)
-        learner.l1_penalty = self.l1_penalty
         learner.penalty_terms = self.penalty_terms
 
         learner._weights = self.weights
@@ -176,74 +176,3 @@ class LinearFactorizationLoss:
 
     def __remove_bias(self, x: np.ndarray):
         return x[:, :-1] if self.add_bias else x
-
-
-class PenaltyTerm:
-    def __init__(self, penalty: float):
-        assert_positive(penalty, 'penalty')
-        self._penalty = penalty
-
-    def loss(self, x: np.ndarray) -> float:
-        raise NotImplementedError
-
-    def grad(self, x: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
-
-
-class L1Penalty(PenaltyTerm):
-    def __init__(self, penalty: float, has_bias: bool = False):
-        super().__init__(penalty)
-        self.__has_bias = has_bias
-
-    def loss(self, x: np.ndarray) -> float:
-        return np.abs(x).sum()
-
-    def grad(self, x: np.ndarray) -> np.ndarray:
-        return np.sign(x)
-
-    def proximal(self, x: np.ndarray, t: float) -> np.ndarray:
-        p = np.sign(x) * np.maximum(np.abs(x) - self._penalty * t, 0)
-        if self.__has_bias:
-            p[:, -1] = x[:, -1]
-        return p
-
-
-class L2Penalty(PenaltyTerm):
-    def loss(self, x: np.ndarray) -> float:
-        return self._penalty * x.ravel().dot(x.ravel())
-
-    def grad(self, x: np.ndarray) -> np.ndarray:
-        return 2 * self._penalty * x
-
-
-class InteractionPenalty(PenaltyTerm):
-    def loss(self, x: np.ndarray) -> float:
-        if x.shape[0] == 1:
-            return 0
-
-        xsq = np.square(x)
-        M = xsq @ xsq.T
-        np.fill_diagonal(M, 0)
-        return 0.5 * self._penalty * M.sum()
-
-    def grad(self, x: np.ndarray) -> np.ndarray:
-        if x.shape[0] == 1:
-            return 0
-
-        xsq = np.square(x)
-        col_sq = np.sum(xsq, axis=0)
-        grad = (2 * self._penalty) * x * (col_sq - xsq)
-        return grad
-
-
-class HuberPenalty(PenaltyTerm):
-    def __init__(self, penalty: float, delta: float = 1e-3):
-        assert_positive(delta, 'delta')
-        super().__init__(penalty / delta)
-        self._delta = delta
-
-    def loss(self, x: np.ndarray) -> float:
-        return utils.compute_huber_penalty(x, self._penalty, self._delta)
-
-    def grad(self, x: np.ndarray) -> np.ndarray:
-        return self._penalty * np.clip(x, -self._delta, self._delta)
