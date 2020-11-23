@@ -30,11 +30,13 @@ if TYPE_CHECKING:
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l2_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
+                 l1_penalty: float = 0, l2_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
         self._optimizer = optimizer
         self.add_bias = add_bias
 
         self.penalty_terms = []
+        if l1_penalty > 0:
+            self.penalty_terms.append(L1Penalty(l1_penalty))
         if l2_penalty > 0:
             self.penalty_terms.append(L2Penalty(l2_penalty))
         if interaction_penalty > 0:
@@ -86,6 +88,9 @@ class LinearFactorizationLearner:
         if loss.factorization is not None:
             x0 = x0[loss.factorization]
 
+        if hasattr(self._optimizer, 'batch_size'):
+            loss.set_batch_size(self._optimizer.batch_size)
+
         opt_result = self._optimizer.minimize(x0, loss.compute_loss, loss.compute_grad)
 
         self._weights = self.__sort_matrix(loss.get_weights_matrix(opt_result.x))  # sort matrix in order to make weights more consistent
@@ -95,7 +100,7 @@ class LinearFactorizationLearner:
 
         return opt_result
 
-    def _get_loss(self, X: np.ndarray, y: np.ndarray, factorization: Optional[List[List[int]]]) -> LinearFactorizationLoss:
+    def _get_loss(self, X: np.ndarray, y: np.ndarray, factorization: Optional[List[List[int]]] = None) -> LinearFactorizationLoss:
         return LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias, penalty_terms=self.penalty_terms, factorization=factorization)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -137,6 +142,31 @@ class LinearFactorizationLoss:
         self.penalty_terms = penalty_terms if penalty_terms is not None else []
         self.factorization = factorization
 
+        self._batch_size = None
+        self._offsets = None
+        self._cur_pos = None
+
+    def set_batch_size(self, batch_size: Optional[int]):
+        if batch_size is None or batch_size >= len(self.X):
+            return
+
+        assert_positive_integer(batch_size, 'batch_size')
+        self._batch_size = batch_size
+        self._offsets = np.arange(len(self.X), dtype='int')
+        np.random.shuffle(self._offsets)
+        self._cur_pos = 0
+
+    def get_next_batch(self):
+        if self._cur_pos >= len(self.X):
+            self._cur_pos = 0
+            np.random.shuffle(self._offsets)
+
+        end_pos = self._cur_pos + self._batch_size
+        next_batch = self._offsets[self._cur_pos:end_pos]
+        self._cur_pos = end_pos
+
+        return next_batch
+
     def compute_loss(self, weights: np.ndarray):
         weights = self.get_weights_matrix(weights)
 
@@ -153,9 +183,14 @@ class LinearFactorizationLoss:
     def compute_grad(self, weights: np.ndarray):
         weights = self.get_weights_matrix(weights)
 
-        margins = self.X @ weights.T
-        grad_weights = utils.compute_grad_factors(margins, self.y)
-        grads = grad_weights.T @ self.X
+        X, y = self.X, self.y
+        if self._batch_size is not None:
+            idx = self.get_next_batch()
+            X, y = self.X[idx, :], self.y[idx]
+
+        margins = X @ weights.T
+        grad_weights = utils.compute_grad_factors(margins, y)
+        grads = grad_weights.T @ X
 
         # add penalty terms
         weights_wo_bias = self.__remove_bias(weights)

@@ -22,7 +22,7 @@ from typing import Callable, Optional, Union
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize, minimize_scalar
 
-from aideme.utils import assert_positive, assert_in_range, assert_positive_integer
+from aideme.utils import assert_positive, assert_in_range, assert_positive_integer, assert_non_negative
 
 
 class OptimizationAlgorithm:
@@ -40,7 +40,8 @@ class OptimizationAlgorithm:
     def minimize(self, x0: np.ndarray, func: Callable, grad: Union[bool, Callable]) -> OptimizeResult:
         self._reset()
 
-        result = self._build_initial_result_object(x0, grad)
+        result = self._build_initial_result_object(x0)
+        self.__update_result_object(result, grad)
         self.__run_callback(result)
 
         while not self._converged(result):
@@ -56,17 +57,16 @@ class OptimizationAlgorithm:
         return result
 
     @staticmethod
-    def _build_initial_result_object(x0: np.ndarray, grad: Callable) -> OptimizeResult:
+    def _build_initial_result_object(x0: np.ndarray) -> OptimizeResult:
         result = OptimizeResult()
         result.x = x0.copy()
-        result.grad = grad(result.x)
-        result.it = 1
+        result.it = 0
         result.success = False
         return result
 
     def __update_result_object(self, result: OptimizeResult, grad: Callable):
-        result.grad = grad(result.x)
         result.it += 1
+        result.grad = grad(result.x)
 
     def __run_callback(self, result: OptimizeResult) -> None:
         if self._callback is not None:
@@ -107,12 +107,15 @@ class SearchDirectionOptimizer(OptimizationAlgorithm):
 
 
 class Adam(SearchDirectionOptimizer):
-    def __init__(self, step_size: float = 1e-3, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None,
+    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None,
                  adapt_step_size: bool = False, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8):
         super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback)
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')
+
+        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
+        self.batch_size = batch_size
 
         self._beta1 = beta1
         self._beta2 = beta2
@@ -145,6 +148,12 @@ class Adam(SearchDirectionOptimizer):
 
 
 class GradientDescent(SearchDirectionOptimizer):
+    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, gtol: float = 1e-4,
+                 max_iter: Optional[int] = None, callback: Optional[Callable] = None):
+        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback)
+        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
+        self.batch_size = batch_size
+
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         return result.grad
 

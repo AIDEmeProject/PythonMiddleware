@@ -37,26 +37,14 @@ class PenaltyTerm:
 
 
 class L1Penalty(PenaltyTerm):
-    def __init__(self, penalty: float, has_bias: bool = False):
+    def __init__(self, penalty: float):
         super().__init__(penalty)
-        self.__has_bias = has_bias
 
     def loss(self, x: np.ndarray) -> float:
-        if self.__has_bias:
-            x = x[:, :-1]
         return self._penalty * np.abs(x).sum()
 
     def grad(self, x: np.ndarray) -> np.ndarray:
-        g = self._penalty * np.sign(x)
-        if self.__has_bias:
-            g[:, :-1] = 0
-        return g
-
-    def proximal(self, x: np.ndarray, t: float) -> np.ndarray:
-        p = np.sign(x) * np.maximum(np.abs(x) - self._penalty * t, 0)
-        if self.__has_bias:
-            p[:, -1] = x[:, -1]
-        return p
+        return self._penalty * np.sign(x)
 
 
 class L2Penalty(PenaltyTerm):
