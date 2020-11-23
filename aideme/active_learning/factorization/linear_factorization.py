@@ -78,7 +78,7 @@ class LinearFactorizationLearner:
         else:
             num_subspaces = len(factorization)
 
-        loss = LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias, penalty_terms=self.penalty_terms, factorization=factorization)
+        loss = self._get_loss(X, y, factorization)
 
         if x0 is None:
             x0 = np.random.uniform(-1, 1, size=(num_subspaces, loss.X.shape[1]))
@@ -94,6 +94,9 @@ class LinearFactorizationLearner:
             self._weights = self._weights[:, :-1]
 
         return opt_result
+
+    def _get_loss(self, X: np.ndarray, y: np.ndarray, factorization: Optional[List[List[int]]]) -> LinearFactorizationLoss:
+        return LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias, penalty_terms=self.penalty_terms, factorization=factorization)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))

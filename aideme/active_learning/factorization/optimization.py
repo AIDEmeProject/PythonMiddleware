@@ -16,16 +16,13 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Callable, Optional, Union, TYPE_CHECKING
 import warnings
+from typing import Callable, Optional, Union
 
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize, minimize_scalar
 
 from aideme.utils import assert_positive, assert_in_range, assert_positive_integer
-
-if TYPE_CHECKING:
-    from aideme.active_learning.factorization.linear_factorization import PenaltyTerm
 
 
 class OptimizationAlgorithm:
@@ -156,49 +153,6 @@ class GradientDescent(SearchDirectionOptimizer):
             return minimize_scalar(lambda step: func(result.x - step * result.search_dir), method='Brent').x
 
         return self._step_size
-
-
-class ProximalGradientDescent(OptimizationAlgorithm):
-    def __init__(self, penalty_term: PenaltyTerm, step_size: Optional[float] = None, gtol: float = 1e-4, max_iter: Optional[int] = None,
-                 callback: Optional[Callable] = None, backtracking_beta: float = 0.99, backtracking_max_iter: int = 100):
-        assert_positive(step_size, 'step_size', allow_none=True)
-        assert_positive(backtracking_beta, 'backtracking_beta')
-        assert_positive_integer(backtracking_max_iter, 'backtracking_max_iter')
-
-        super().__init__(gtol=gtol, max_iter=max_iter, callback=callback)
-        self._penalty_term = penalty_term
-        self._step_size = step_size
-        self._backtracking_beta = backtracking_beta
-        self._backtracking_max_iter = backtracking_max_iter
-
-    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
-        result.step = self._compute_step_size(result, func)
-        result.x = self._penalty_term.proximal(result.x - result.step * result.grad, result.step)
-
-    def _compute_step_size(self, result, func):
-        if self._step_size is not None:
-            return self._step_size
-
-        x, fx, gx = result.x, func(result.x), result.grad
-
-        it = 0
-        alpha = result.get('step', 1.0)
-        x_new = self._penalty_term.proximal(x - alpha * gx, alpha)
-        diff = x_new - x
-        while func(x_new) > fx + self.prod(gx, diff) + 0.5 * self.prod(diff, diff) / alpha and it < self._backtracking_max_iter:
-            it += 1
-            alpha *= self._backtracking_beta
-            x_new = self._penalty_term.proximal(x - alpha * gx, alpha)
-            diff = x_new - x
-
-        if it == self._backtracking_max_iter:
-            warnings.warn("Line-search did not converge: max iter reached.")
-
-        return alpha
-
-    @staticmethod
-    def prod(x, y):
-        return x.ravel().dot(y.ravel())
 
 
 class NoisyGradientDescent(GradientDescent):
