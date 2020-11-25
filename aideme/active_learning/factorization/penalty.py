@@ -19,7 +19,6 @@ import numpy as np
 import aideme.active_learning.factorization.utils as utils
 from aideme.utils import assert_positive
 
-__all__ = ['PenaltyTerm', 'InteractionPenalty', 'L2Penalty', 'L1Penalty', 'HuberPenalty']
 
 class PenaltyTerm:
     def __init__(self, penalty: float):
@@ -32,19 +31,22 @@ class PenaltyTerm:
     def grad(self, x: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
-    def proximal(self, x: np.ndarray, t: float) -> np.ndarray:
-        raise NotImplementedError
-
 
 class L1Penalty(PenaltyTerm):
-    def __init__(self, penalty: float):
-        super().__init__(penalty)
-
     def loss(self, x: np.ndarray) -> float:
         return self._penalty * np.abs(x).sum()
 
     def grad(self, x: np.ndarray) -> np.ndarray:
         return self._penalty * np.sign(x)
+
+
+class L2SqrtPenalty(PenaltyTerm):
+    def loss(self, x: np.ndarray) -> float:
+        return self._penalty * np.linalg.norm(x, axis=1).sum()
+
+    def grad(self, x: np.ndarray) -> np.ndarray:
+        norm = self._penalty / np.linalg.norm(x, axis=1)
+        return x * norm.reshape(-1, 1)
 
 
 class L2Penalty(PenaltyTerm):

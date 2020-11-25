@@ -22,17 +22,18 @@ from typing import Callable, Optional, Union
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize, minimize_scalar
 
-from aideme.utils import assert_positive, assert_in_range, assert_positive_integer, assert_non_negative
+from aideme.utils import assert_positive, assert_in_range, assert_positive_integer
 
 
 class OptimizationAlgorithm:
-    def __init__(self, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None):
+    def __init__(self, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive(gtol, 'gtol')
         assert_positive_integer(max_iter, 'max_iter', allow_none=True)
 
         self._gtol = gtol
         self._max_iter = max_iter if max_iter is not None else np.inf
         self._callback = callback
+        self._verbose = verbose
 
     def _reset(self) -> None:
         return
@@ -51,7 +52,7 @@ class OptimizationAlgorithm:
 
         result.fun = func(result.x)
 
-        if not result.success:
+        if self._verbose and not result.success:
             warnings.warn("Optimization routine did not converge: max iter reached.\n{}".format(result))
 
         return result
@@ -83,11 +84,18 @@ class OptimizationAlgorithm:
         raise NotImplementedError
 
 
+class BFGS(OptimizationAlgorithm):
+    def minimize(self, x0: np.ndarray, func: Callable, grad: Union[bool, Callable]) -> OptimizeResult:
+        jac = lambda x: grad(x).ravel()
+        return minimize(func, x0, jac=jac, callback=self._callback, options={'gtol': self._gtol, 'maxiter': self._max_iter})
+
+
 class SearchDirectionOptimizer(OptimizationAlgorithm):
-    def __init__(self, step_size: Optional[float] = 1e-3, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None):
+    def __init__(self, step_size: Optional[float] = 1e-3, gtol: float = 1e-4, max_iter: Optional[int] = None,
+                 callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive(step_size, 'step_size', allow_none=True)
 
-        super().__init__(gtol, max_iter, callback)
+        super().__init__(gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
         self._step_size = step_size
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
@@ -106,10 +114,40 @@ class SearchDirectionOptimizer(OptimizationAlgorithm):
         return self._step_size
 
 
+class GradientDescent(SearchDirectionOptimizer):
+    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, adapt_step_size: float = False,
+                 gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
+        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
+        self._adapt_step_size = adapt_step_size
+        self.batch_size = batch_size
+
+    def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
+        return result.grad
+
+    def _compute_step_size(self, result: OptimizeResult, func: Callable) -> float:
+        if self._step_size is None:
+            return minimize_scalar(lambda step: func(result.x - step * result.search_dir), method='Brent').x
+
+        if self._adapt_step_size:
+            return self._step_size / result.it
+
+        return self._step_size
+
+
+class NoisyGradientDescent(GradientDescent):
+    def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
+        search_dir = result.grad
+        noise = np.random.normal(size=search_dir.shape)
+        noise /= np.linalg.norm(noise)
+        return search_dir + noise
+
+
 class Adam(SearchDirectionOptimizer):
-    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None,
-                 adapt_step_size: bool = False, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8):
-        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback)
+    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, adapt_step_size: bool = False,
+                 gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False,
+                 beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8):
+        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')
@@ -145,34 +183,3 @@ class Adam(SearchDirectionOptimizer):
 
     def _compute_step_size(self, result: OptimizeResult, func: Callable):
         return self._step_size / np.sqrt(result.it) if self._adapt_step_size else self._step_size
-
-
-class GradientDescent(SearchDirectionOptimizer):
-    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, gtol: float = 1e-4,
-                 max_iter: Optional[int] = None, callback: Optional[Callable] = None):
-        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback)
-        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
-        self.batch_size = batch_size
-
-    def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
-        return result.grad
-
-    def _compute_step_size(self, result: OptimizeResult, func: Callable) -> float:
-        if self._step_size is None:
-            return minimize_scalar(lambda step: func(result.x - step * result.search_dir), method='Brent').x
-
-        return self._step_size
-
-
-class NoisyGradientDescent(GradientDescent):
-    def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
-        search_dir = result.grad
-        noise = np.random.normal(size=search_dir.shape)
-        noise /= np.linalg.norm(noise)
-        return search_dir + noise
-
-
-class BFGS(OptimizationAlgorithm):
-    def minimize(self, x0: np.ndarray, func: Callable, grad: Union[bool, Callable]) -> OptimizeResult:
-        jac = lambda x: grad(x).ravel()
-        return minimize(func, x0, jac=jac, callback=self._callback, options={'gtol': self._gtol, 'maxiter': self._max_iter})

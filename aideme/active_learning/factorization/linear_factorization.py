@@ -18,9 +18,6 @@ from __future__ import annotations
 
 from typing import Optional, List, Union, TYPE_CHECKING
 
-import numpy as np
-
-import aideme.active_learning.factorization.utils as utils
 from aideme.utils import assert_positive_integer
 from .penalty import *
 
@@ -30,13 +27,16 @@ if TYPE_CHECKING:
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0, l2_penalty: float = 0, huber_penalty: float = 0, huber_delta: float = 1e-3):
+                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0,
+                 huber_penalty: float = 0, huber_delta: float = 1e-3):
         self._optimizer = optimizer
         self.add_bias = add_bias
 
         self.penalty_terms = []
         if l1_penalty > 0:
             self.penalty_terms.append(L1Penalty(l1_penalty))
+        if l2_sqrt_penalty > 0:
+            self.penalty_terms.append(L2SqrtPenalty(l2_sqrt_penalty))
         if l2_penalty > 0:
             self.penalty_terms.append(L2Penalty(l2_penalty))
         if interaction_penalty > 0:
