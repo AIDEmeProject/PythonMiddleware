@@ -22,18 +22,20 @@ from typing import Callable, Optional, Union, TYPE_CHECKING
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize, minimize_scalar
 
-from aideme.utils import assert_positive, assert_in_range, assert_positive_integer
+from aideme.utils import assert_positive, assert_in_range, assert_positive_integer, assert_non_negative
 
 if TYPE_CHECKING:
     from .penalty import PenaltyTerm
 
 
 class OptimizationAlgorithm:
-    def __init__(self, gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        assert_positive(gtol, 'gtol')
+    def __init__(self, gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        assert_non_negative(gtol, 'gtol')
+        assert_non_negative(rel_tol, 'rel_tol')
         assert_positive_integer(max_iter, 'max_iter', allow_none=True)
 
         self._gtol = gtol
+        self._rel_tol = rel_tol
         self._max_iter = max_iter if max_iter is not None else np.inf
         self._callback = callback
         self._verbose = verbose
@@ -44,14 +46,13 @@ class OptimizationAlgorithm:
     def minimize(self, x0: np.ndarray, func: Callable, grad: Union[bool, Callable]) -> OptimizeResult:
         self._reset()
 
-        result = self._build_initial_result_object(x0)
-        self.__update_result_object(result, grad)
-        self.__run_callback(result)
+        result = self.__build_initial_result_object()
+        new_x = x0.copy()
+        self.__process_new_iter(grad, new_x, result)
 
-        while not self._converged(result):
-            self._advance(result, func, grad)
-            self.__update_result_object(result, grad)
-            self.__run_callback(result)
+        while not result.success and result.it <= self._max_iter:
+            new_x = self._advance(result, func, grad)
+            self.__process_new_iter(grad, new_x, result)
 
         result.fun = func(result.x)
 
@@ -61,29 +62,38 @@ class OptimizationAlgorithm:
         return result
 
     @staticmethod
-    def _build_initial_result_object(x0: np.ndarray) -> OptimizeResult:
+    def __build_initial_result_object() -> OptimizeResult:
         result = OptimizeResult()
-        result.x = x0.copy()
+        result.x = None
         result.it = 0
         result.success = False
         return result
 
-    def __update_result_object(self, result: OptimizeResult, grad: Callable):
+    def __process_new_iter(self, grad, new_x, result):
+        self.__update_result_object(result, new_x, grad)
+        result.success = self.__converged(result)
+        self.__run_callback(result)
+
+    @staticmethod
+    def __update_result_object(result: OptimizeResult, new_x: np.ndarray, grad: Callable):
         result.it += 1
-        result.grad = grad(result.x)
+        result.prev, result.x = result.x, new_x
+        result.grad = grad(new_x)
+
+    def __converged(self, result: OptimizeResult) -> bool:
+        if result.prev is not None and np.linalg.norm(result.x - result.prev) < self._rel_tol * np.linalg.norm(result.x):
+            return True
+
+        return self._gradient_converged(result, self._gtol)
 
     def __run_callback(self, result: OptimizeResult) -> None:
         if self._callback is not None:
             self._callback(result.x)
 
-    def _converged(self, result: OptimizeResult) -> bool:
-        if np.linalg.norm(result.grad) < self._gtol:
-            result.success = True
-            return True
+    def _gradient_converged(self, result: OptimizeResult, tol: float) -> bool:
+        return np.linalg.norm(result.grad) < tol
 
-        return result.it > self._max_iter
-
-    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
+    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
         raise NotImplementedError
 
 
@@ -94,17 +104,17 @@ class BFGS(OptimizationAlgorithm):
 
 
 class SearchDirectionOptimizer(OptimizationAlgorithm):
-    def __init__(self, step_size: Optional[float] = 1e-3, gtol: float = 1e-4, max_iter: Optional[int] = None,
+    def __init__(self, step_size: Optional[float] = 1e-3, gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None,
                  callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive(step_size, 'step_size', allow_none=True)
 
-        super().__init__(gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
+        super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         self._step_size = step_size
 
-    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
+    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
         result.search_dir = self._compute_search_dir(result)
-        result.step = self._compute_step_size(result, func)
-        result.x -= result.step * result.search_dir
+        step = self._compute_step_size(result, func)
+        return result.x - step * result.search_dir
 
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         """
@@ -119,8 +129,8 @@ class SearchDirectionOptimizer(OptimizationAlgorithm):
 
 class GradientDescent(SearchDirectionOptimizer):
     def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, adapt_step_size: float = False,
-                 gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
+                 gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        super().__init__(step_size=step_size, gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         assert_positive_integer(batch_size, 'batch_size', allow_none=True)
         self._adapt_step_size = adapt_step_size
         self.batch_size = batch_size
@@ -148,30 +158,24 @@ class NoisyGradientDescent(GradientDescent):
 
 class ProximalGradientDescent(OptimizationAlgorithm):
     def __init__(self, penalty_term: Optional[PenaltyTerm] = None, step_size: float = 1e-3, remove_bias_column: bool = False,
-                 gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+                 gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive(step_size, 'step_size')
 
-        super().__init__(gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
+        super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         self._step_size = step_size
         self.penalty_term = penalty_term
         self.remove_bias_column = remove_bias_column
 
-    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
+    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
         next_x = result.x - self._step_size * result.grad
-        if self.remove_bias_column:
-            next_x[:, :-1] = self.penalty_term.proximal(next_x[:, :-1], self._step_size)
-        else:
-            next_x = self.penalty_term.proximal(next_x, self._step_size)
-        result.x = next_x
+        _, next_weights = self.__separate_bias(next_x)
+        np.copyto(next_weights, self.penalty_term.proximal(next_weights, self._step_size))
+        return next_x
 
-    def _converged(self, result: OptimizeResult) -> bool:
+    def _gradient_converged(self, result: OptimizeResult, tol: float) -> bool:
         grad_b, grad_w = self.__separate_bias(result.grad)
         _, w = self.__separate_bias(result.x)
-        if np.linalg.norm(grad_b) <= self._gtol and self.penalty_term.is_subgradient(-grad_w, w, self._gtol):
-            result.success = True
-            return True
-
-        return result.it > self._max_iter
+        return np.linalg.norm(grad_b) <= tol and self.penalty_term.is_subgradient(-grad_w, w, tol)
 
     def __separate_bias(self, x: np.ndarray):
         bias = x[:, -1] if self.remove_bias_column else 0
@@ -181,9 +185,9 @@ class ProximalGradientDescent(OptimizationAlgorithm):
 
 class Adam(SearchDirectionOptimizer):
     def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, adapt_step_size: bool = False,
-                 gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False,
+                 gtol: float = 1e-4, max_iter: Optional[int] = None, rel_tol: float = 0, callback: Optional[Callable] = None, verbose: bool = False,
                  beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8):
-        super().__init__(step_size=step_size, gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
+        super().__init__(step_size=step_size, gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')

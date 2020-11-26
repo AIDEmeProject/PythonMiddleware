@@ -98,7 +98,7 @@ class LinearFactorizationLearner:
         loss = self._get_loss(X, y, factorization)
 
         if x0 is None:
-            x0 = np.random.uniform(-1, 1, size=(num_subspaces, loss.X.shape[1]))
+            x0 = np.random.normal(size=(num_subspaces, loss.X.shape[1]))
 
         if loss.factorization is not None:
             x0 = x0[loss.factorization]
