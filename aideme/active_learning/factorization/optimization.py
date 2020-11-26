@@ -53,7 +53,7 @@ class OptimizationAlgorithm:
             self.__update_result_object(result, grad)
             self.__run_callback(result)
 
-        result.fun = self._compute_opt_result(func, result.x)
+        result.fun = func(result.x)
 
         if self._verbose and not result.success:
             warnings.warn("Optimization routine did not converge: max iter reached.\n{}".format(result))
@@ -85,9 +85,6 @@ class OptimizationAlgorithm:
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
         raise NotImplementedError
-
-    def _compute_opt_result(self, func: Callable, x_opt: np.ndarray) -> float:
-        return func(x_opt)
 
 
 class BFGS(OptimizationAlgorithm):
@@ -167,8 +164,19 @@ class ProximalGradientDescent(OptimizationAlgorithm):
             next_x = self.penalty_term.proximal(next_x, self._step_size)
         result.x = next_x
 
-    def _compute_opt_result(self, func: Callable, x_opt: np.ndarray) -> float:
-        return func(x_opt) + self.penalty_term.loss(x_opt)
+    def _converged(self, result: OptimizeResult) -> bool:
+        grad_b, grad_w = self.__separate_bias(result.grad)
+        _, w = self.__separate_bias(result.x)
+        if np.linalg.norm(grad_b) <= self._gtol and self.penalty_term.is_subgradient(-grad_w, w, self._gtol):
+            result.success = True
+            return True
+
+        return result.it > self._max_iter
+
+    def __separate_bias(self, x: np.ndarray):
+        bias = x[:, -1] if self.remove_bias_column else 0
+        x_wo_bias = x[:, :-1] if self.remove_bias_column else x
+        return bias, x_wo_bias
 
 
 class Adam(SearchDirectionOptimizer):

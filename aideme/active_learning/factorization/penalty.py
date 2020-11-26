@@ -36,6 +36,9 @@ class PenaltyTerm:
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         return None
 
+    def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
+        return np.linalg.norm(v - self.grad(x)) < tol
+
 
 class L1Penalty(PenaltyTerm):
     def loss(self, x: np.ndarray) -> float:
@@ -46,6 +49,12 @@ class L1Penalty(PenaltyTerm):
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         return np.sign(x) * np.maximum(np.abs(x) - self._penalty * eta, 0)
+
+    def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
+        sign = self._penalty * np.sign(x)
+        u = np.abs(v - sign)
+        u[sign == 0] -= self._penalty
+        return np.all(u <= tol)
 
 
 class L2SqrtPenalty(PenaltyTerm):
@@ -62,6 +71,14 @@ class L2SqrtPenalty(PenaltyTerm):
         factor = np.maximum(0, 1 - factor)
         return x * factor.reshape(-1, 1)
 
+    def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
+        norm = np.linalg.norm(x, axis=1).reshape(-1, 1)
+        not_zero = (norm > 0)
+        n = np.true_divide(x, norm, where=not_zero)  # avoid dividing by zero
+        u = np.linalg.norm(v - self._penalty * n, axis=1)
+        u[~not_zero.ravel()] -= self._penalty
+        return np.all(u <= tol)
+
 
 class SparseGroupLassoPenalty(PenaltyTerm):
     def __init__(self, l1_penalty: float, l2_sqrt_penalty: float):
@@ -76,6 +93,17 @@ class SparseGroupLassoPenalty(PenaltyTerm):
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         return self._l2_sqrt_penalty.proximal(self._l1_penalty.proximal(x, eta), eta)
+
+    def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
+        lamb1, lamb2 = self._l1_penalty._penalty, self._l2_sqrt_penalty._penalty
+        norm = np.linalg.norm(x, axis=1)
+        not_zero = (norm > 0)
+        n = v - lamb2 * np.true_divide(x, norm.reshape(-1, 1), where=not_zero.reshape(-1, 1))  # avoid dividing by zero
+        if not self._l1_penalty.is_subgradient(n[not_zero], x[not_zero], tol):
+            return False
+
+        v = v[~not_zero]
+        return np.all(np.linalg.norm(v - np.clip(v, -lamb1, lamb1), axis=1) <= lamb2 + tol)
 
 
 class L2Penalty(PenaltyTerm):
