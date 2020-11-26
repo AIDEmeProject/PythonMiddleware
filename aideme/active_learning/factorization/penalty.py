@@ -58,8 +58,24 @@ class L2SqrtPenalty(PenaltyTerm):
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         norm = np.linalg.norm(x, axis=1)
-        factor = np.maximum(0, 1 - self._penalty * eta / norm)
+        factor = np.true_divide(self._penalty * eta, norm, where=norm>0)  # avoid dividing by zero
+        factor = np.maximum(0, 1 - factor)
         return x * factor.reshape(-1, 1)
+
+
+class SparseGroupLassoPenalty(PenaltyTerm):
+    def __init__(self, l1_penalty: float, l2_sqrt_penalty: float):
+        self._l1_penalty = L1Penalty(l1_penalty)
+        self._l2_sqrt_penalty = L2SqrtPenalty(l2_sqrt_penalty)
+
+    def loss(self, x: np.ndarray) -> float:
+        return self._l1_penalty.loss(x) + self._l2_sqrt_penalty.loss(x)
+
+    def grad(self, x: np.ndarray) -> np.ndarray:
+        return self._l1_penalty.grad(x) + self._l2_sqrt_penalty.grad(x)
+
+    def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
+        return self._l2_sqrt_penalty.proximal(self._l1_penalty.proximal(x, eta), eta)
 
 
 class L2Penalty(PenaltyTerm):

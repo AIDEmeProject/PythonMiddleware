@@ -34,10 +34,13 @@ class LinearFactorizationLearner:
         self.add_bias = add_bias
 
         self.penalty_terms = []
-        if l1_penalty > 0:
+        if l1_penalty > 0 and l2_sqrt_penalty > 0:
+            self.penalty_terms.append(self.__process_proximal_penalty(SparseGroupLassoPenalty(l1_penalty, l2_sqrt_penalty), optimizer))
+        elif l1_penalty > 0:
             self.penalty_terms.append(self.__process_proximal_penalty(L1Penalty(l1_penalty), optimizer))
-        if l2_sqrt_penalty > 0:
+        elif l2_sqrt_penalty > 0:
             self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty), optimizer))
+
         if l2_penalty > 0:
             self.penalty_terms.append(L2Penalty(l2_penalty))
         if interaction_penalty > 0:
