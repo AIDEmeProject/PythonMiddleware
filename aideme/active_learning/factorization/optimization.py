@@ -17,12 +17,15 @@
 from __future__ import annotations
 
 import warnings
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import OptimizeResult, minimize, minimize_scalar
 
 from aideme.utils import assert_positive, assert_in_range, assert_positive_integer
+
+if TYPE_CHECKING:
+    from .penalty import PenaltyTerm
 
 
 class OptimizationAlgorithm:
@@ -50,7 +53,7 @@ class OptimizationAlgorithm:
             self.__update_result_object(result, grad)
             self.__run_callback(result)
 
-        result.fun = func(result.x)
+        result.fun = self._compute_opt_result(func, result.x)
 
         if self._verbose and not result.success:
             warnings.warn("Optimization routine did not converge: max iter reached.\n{}".format(result))
@@ -82,6 +85,9 @@ class OptimizationAlgorithm:
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
         raise NotImplementedError
+
+    def _compute_opt_result(self, func: Callable, x_opt: np.ndarray) -> float:
+        return func(x_opt)
 
 
 class BFGS(OptimizationAlgorithm):
@@ -141,6 +147,28 @@ class NoisyGradientDescent(GradientDescent):
         noise = np.random.normal(size=search_dir.shape)
         noise /= np.linalg.norm(noise)
         return search_dir + noise
+
+
+class ProximalGradientDescent(OptimizationAlgorithm):
+    def __init__(self, penalty_term: Optional[PenaltyTerm] = None, step_size: float = 1e-3, remove_bias_column: bool = False,
+                 gtol: float = 1e-4, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        assert_positive(step_size, 'step_size')
+
+        super().__init__(gtol=gtol, max_iter=max_iter, callback=callback, verbose=verbose)
+        self._step_size = step_size
+        self.penalty_term = penalty_term
+        self.remove_bias_column = remove_bias_column
+
+    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> None:
+        next_x = result.x - self._step_size * result.grad
+        if self.remove_bias_column:
+            next_x[:, :-1] = self.penalty_term.proximal(next_x[:, :-1], self._step_size)
+        else:
+            next_x = self.penalty_term.proximal(next_x, self._step_size)
+        result.x = next_x
+
+    def _compute_opt_result(self, func: Callable, x_opt: np.ndarray) -> float:
+        return func(x_opt) + self.penalty_term.loss(x_opt)
 
 
 class Adam(SearchDirectionOptimizer):

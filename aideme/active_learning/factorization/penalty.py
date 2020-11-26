@@ -14,6 +14,8 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+from __future__ import annotations
+
 import numpy as np
 
 import aideme.active_learning.factorization.utils as utils
@@ -31,6 +33,9 @@ class PenaltyTerm:
     def grad(self, x: np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
+    def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
+        return None
+
 
 class L1Penalty(PenaltyTerm):
     def loss(self, x: np.ndarray) -> float:
@@ -38,6 +43,9 @@ class L1Penalty(PenaltyTerm):
 
     def grad(self, x: np.ndarray) -> np.ndarray:
         return self._penalty * np.sign(x)
+
+    def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
+        return np.sign(x) * np.maximum(np.abs(x) - self._penalty * eta, 0)
 
 
 class L2SqrtPenalty(PenaltyTerm):
@@ -47,6 +55,11 @@ class L2SqrtPenalty(PenaltyTerm):
     def grad(self, x: np.ndarray) -> np.ndarray:
         norm = self._penalty / np.linalg.norm(x, axis=1)
         return x * norm.reshape(-1, 1)
+
+    def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
+        norm = np.linalg.norm(x, axis=1)
+        factor = np.maximum(0, 1 - self._penalty * eta / norm)
+        return x * factor.reshape(-1, 1)
 
 
 class L2Penalty(PenaltyTerm):

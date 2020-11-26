@@ -20,6 +20,7 @@ from typing import Optional, List, Union, TYPE_CHECKING
 
 from aideme.utils import assert_positive_integer
 from .penalty import *
+from .optimization import ProximalGradientDescent
 
 if TYPE_CHECKING:
     from .optimization import OptimizationAlgorithm
@@ -34,9 +35,9 @@ class LinearFactorizationLearner:
 
         self.penalty_terms = []
         if l1_penalty > 0:
-            self.penalty_terms.append(L1Penalty(l1_penalty))
+            self.penalty_terms.append(self.__process_proximal_penalty(L1Penalty(l1_penalty), optimizer))
         if l2_sqrt_penalty > 0:
-            self.penalty_terms.append(L2SqrtPenalty(l2_sqrt_penalty))
+            self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty), optimizer))
         if l2_penalty > 0:
             self.penalty_terms.append(L2Penalty(l2_penalty))
         if interaction_penalty > 0:
@@ -46,6 +47,17 @@ class LinearFactorizationLearner:
 
         self._weights = None
         self._bias = None
+
+    def __process_proximal_penalty(self, penalty_term: PenaltyTerm, optimizer: OptimizationAlgorithm) -> PenaltyTerm:
+        if isinstance(optimizer, ProximalGradientDescent):
+            # In the special case of ProximalGradientDescent algorithm, we must be careful to not mistakenly add
+            # the penalty gradient to the loss function gradient. Additionally, we must be careful to exclude the bias
+            # column from proximal function computations
+            penalty_term.grad = lambda x: 0
+            optimizer.remove_bias_column = self.add_bias
+            optimizer.penalty_term = penalty_term
+
+        return penalty_term
 
     @property
     def bias(self):
