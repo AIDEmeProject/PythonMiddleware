@@ -63,18 +63,18 @@ class LinearFactorizationLearner:
         return penalty_term
 
     @property
-    def bias(self):
+    def bias(self) -> Optional[np.ndarray]:
         if self._bias is None:
             return None
 
         return self._bias.copy() if self.add_bias else np.zeros(self._weights.shape[0])
 
     @property
-    def weights(self):
+    def weights(self) -> Optional[np.ndarray]:
         return None if self._weights is None else self._weights.copy()
 
     @property
-    def num_subspaces(self):
+    def num_subspaces(self) -> int:
         return 0 if self._weights is None else self._weights.shape[0]
 
     def copy(self) -> LinearFactorizationLearner:
