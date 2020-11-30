@@ -105,12 +105,12 @@ class BFGS(OptimizationAlgorithm):
 
 
 class SearchDirectionOptimizer(OptimizationAlgorithm):
-    def __init__(self, step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
+    def __init__(self, batch_size: Optional[int] = None,
+                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        # Option 1: pass StepOptimizer as parameter. Pro = very general, versatile, extensible.
-        # Option 2: build step optimizer from parameters.
-        # Which parameters?
+        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
         super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
+        self.batch_size = batch_size
         self._step_size_scheduler = self.__get_step_size_scheduler(step_size, adapt_step_size, adapt_every, power)
 
     @staticmethod
@@ -137,19 +137,11 @@ class SearchDirectionOptimizer(OptimizationAlgorithm):
 
 
 class GradientDescent(SearchDirectionOptimizer):
-    def __init__(self, batch_size: Optional[int] = None,
-                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
-                 gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        super().__init__(step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
-                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
-        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
-        self.batch_size = batch_size
-
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         return result.grad
 
 
-class NoisyGradientDescent(GradientDescent):
+class NoisyGradientDescent(SearchDirectionOptimizer):
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         search_dir = result.grad
         noise = np.random.normal(size=search_dir.shape)
@@ -161,12 +153,10 @@ class ProximalGradientDescent(SearchDirectionOptimizer):
     def __init__(self, penalty_term: Optional[PenaltyTerm] = None, batch_size: Optional[int] = None,
                  step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
-        super().__init__(step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+        super().__init__(batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
                          gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
         self.penalty_term = penalty_term
-        self.batch_size = batch_size
         self.remove_bias_column = False
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
@@ -188,17 +178,14 @@ class ProximalGradientDescent(SearchDirectionOptimizer):
 
 
 class Adam(SearchDirectionOptimizer):
-    def __init__(self, batch_size: Optional[int] = None, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8,
+    def __init__(self, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8, batch_size: Optional[int] = None,
                  step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 0.5,
                  gtol: float = 1e-4, max_iter: Optional[int] = None, rel_tol: float = 0, callback: Optional[Callable] = None, verbose: bool = False):
-        super().__init__(step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
-                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')
-
-        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
-        self.batch_size = batch_size
+        super().__init__(batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
         self._beta1 = beta1
         self._beta2 = beta2
