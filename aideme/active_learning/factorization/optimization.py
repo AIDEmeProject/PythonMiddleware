@@ -65,7 +65,7 @@ class OptimizationAlgorithm:
     def __build_initial_result_object() -> OptimizeResult:
         result = OptimizeResult()
         result.x = None
-        result.it = 0
+        result.it = -1
         result.success = False
         return result
 
@@ -143,7 +143,7 @@ class GradientDescent(SearchDirectionOptimizer):
             return minimize_scalar(lambda step: func(result.x - step * result.search_dir), method='Brent').x
 
         if self._adapt_step_size:
-            return self._step_size / result.it
+            return self._step_size / (1 + result.it)
 
         return self._step_size
 
@@ -157,20 +157,32 @@ class NoisyGradientDescent(GradientDescent):
 
 
 class ProximalGradientDescent(OptimizationAlgorithm):
-    def __init__(self, penalty_term: Optional[PenaltyTerm] = None, step_size: float = 1e-3, remove_bias_column: bool = False,
+    def __init__(self, penalty_term: Optional[PenaltyTerm] = None, batch_size: Optional[int] = None,
+                 step_size: float = 1e-3,  adapt_step_size: float = False, adapt_every: int = 1,
+                 remove_bias_column: bool = False,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive(step_size, 'step_size')
+        assert_positive_integer(batch_size, 'batch_size', allow_none=True)
+        assert_positive_integer(adapt_every, 'adapt_every')
 
         super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
+
         self._step_size = step_size
+        self._adapt_step_size = adapt_step_size
         self.penalty_term = penalty_term
         self.remove_bias_column = remove_bias_column
+        self.batch_size = batch_size
+        self.adapt_every = adapt_every
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
-        next_x = result.x - self._step_size * result.grad
+        step = self._compute_step_size(result)
+        next_x = result.x - step * result.grad
         _, next_weights = self.__separate_bias(next_x)
-        np.copyto(next_weights, self.penalty_term.proximal(next_weights, self._step_size))
+        np.copyto(next_weights, self.penalty_term.proximal(next_weights, step))
         return next_x
+
+    def _compute_step_size(self, result: OptimizeResult) -> float:
+        return self._step_size / (1 + result.it // self.adapt_every) if self._adapt_step_size else self._step_size
 
     def _gradient_converged(self, result: OptimizeResult, tol: float) -> bool:
         grad_b, grad_w = self.__separate_bias(result.grad)
@@ -222,4 +234,4 @@ class Adam(SearchDirectionOptimizer):
         return m_hat / (np.sqrt(v_hat) + self._epsilon)
 
     def _compute_step_size(self, result: OptimizeResult, func: Callable):
-        return self._step_size / np.sqrt(result.it) if self._adapt_step_size else self._step_size
+        return self._step_size / np.sqrt(1 + result.it) if self._adapt_step_size else self._step_size
