@@ -20,9 +20,10 @@ import warnings
 from typing import Callable, Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from scipy.optimize import OptimizeResult, minimize, minimize_scalar
+from scipy.optimize import OptimizeResult, minimize
 
 from aideme.utils import assert_positive, assert_in_range, assert_positive_integer, assert_non_negative
+from .step_size_scheduler import *
 
 if TYPE_CHECKING:
     from .penalty import PenaltyTerm
@@ -104,16 +105,27 @@ class BFGS(OptimizationAlgorithm):
 
 
 class SearchDirectionOptimizer(OptimizationAlgorithm):
-    def __init__(self, step_size: Optional[float] = 1e-3, gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None,
-                 callback: Optional[Callable] = None, verbose: bool = False):
-        assert_positive(step_size, 'step_size', allow_none=True)
-
+    def __init__(self, step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
+                 gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        # Option 1: pass StepOptimizer as parameter. Pro = very general, versatile, extensible.
+        # Option 2: build step optimizer from parameters.
+        # Which parameters?
         super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
-        self._step_size = step_size
+        self._step_size_scheduler = self.__get_step_size_scheduler(step_size, adapt_step_size, adapt_every, power)
+
+    @staticmethod
+    def __get_step_size_scheduler(step_size: Optional[float], adapt_step_size: bool, adapt_every: int, power: float) -> StepSizeScheduler:
+        if step_size is None:
+            return LineSearchScheduler()
+
+        if adapt_step_size:
+            return PowerDecayScheduler(step_size=step_size, power=power, adapt_every=adapt_every)
+
+        return FixedScheduler(step_size)
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
         result.search_dir = self._compute_search_dir(result)
-        step = self._compute_step_size(result, func)
+        step = self._step_size_scheduler(result, func)
         return result.x - step * result.search_dir
 
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
@@ -123,29 +135,18 @@ class SearchDirectionOptimizer(OptimizationAlgorithm):
         """
         raise NotImplementedError
 
-    def _compute_step_size(self, result: OptimizeResult, func: Callable) -> float:
-        return self._step_size
-
 
 class GradientDescent(SearchDirectionOptimizer):
-    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, adapt_step_size: float = False,
+    def __init__(self, batch_size: Optional[int] = None,
+                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        super().__init__(step_size=step_size, gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
+        super().__init__(step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         assert_positive_integer(batch_size, 'batch_size', allow_none=True)
-        self._adapt_step_size = adapt_step_size
         self.batch_size = batch_size
 
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         return result.grad
-
-    def _compute_step_size(self, result: OptimizeResult, func: Callable) -> float:
-        if self._step_size is None:
-            return minimize_scalar(lambda step: func(result.x - step * result.search_dir), method='Brent').x
-
-        if self._adapt_step_size:
-            return self._step_size / (1 + result.it)
-
-        return self._step_size
 
 
 class NoisyGradientDescent(GradientDescent):
@@ -156,33 +157,24 @@ class NoisyGradientDescent(GradientDescent):
         return search_dir + noise
 
 
-class ProximalGradientDescent(OptimizationAlgorithm):
+class ProximalGradientDescent(SearchDirectionOptimizer):
     def __init__(self, penalty_term: Optional[PenaltyTerm] = None, batch_size: Optional[int] = None,
-                 step_size: float = 1e-3,  adapt_step_size: float = False, adapt_every: int = 1,
-                 remove_bias_column: bool = False,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        assert_positive(step_size, 'step_size')
         assert_positive_integer(batch_size, 'batch_size', allow_none=True)
-        assert_positive_integer(adapt_every, 'adapt_every')
+        super().__init__(step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
-        super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
-
-        self._step_size = step_size
-        self._adapt_step_size = adapt_step_size
         self.penalty_term = penalty_term
-        self.remove_bias_column = remove_bias_column
         self.batch_size = batch_size
-        self.adapt_every = adapt_every
+        self.remove_bias_column = False
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
-        step = self._compute_step_size(result)
+        step = self._step_size_scheduler(result, func)
         next_x = result.x - step * result.grad
         _, next_weights = self.__separate_bias(next_x)
         np.copyto(next_weights, self.penalty_term.proximal(next_weights, step))
         return next_x
-
-    def _compute_step_size(self, result: OptimizeResult) -> float:
-        return self._step_size / (1 + result.it // self.adapt_every) if self._adapt_step_size else self._step_size
 
     def _gradient_converged(self, result: OptimizeResult, tol: float) -> bool:
         grad_b, grad_w = self.__separate_bias(result.grad)
@@ -196,10 +188,11 @@ class ProximalGradientDescent(OptimizationAlgorithm):
 
 
 class Adam(SearchDirectionOptimizer):
-    def __init__(self, batch_size: Optional[int] = None, step_size: float = 1e-3, adapt_step_size: bool = False,
-                 gtol: float = 1e-4, max_iter: Optional[int] = None, rel_tol: float = 0, callback: Optional[Callable] = None, verbose: bool = False,
-                 beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8):
-        super().__init__(step_size=step_size, gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
+    def __init__(self, batch_size: Optional[int] = None, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 0.5,
+                 gtol: float = 1e-4, max_iter: Optional[int] = None, rel_tol: float = 0, callback: Optional[Callable] = None, verbose: bool = False):
+        super().__init__(step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')
@@ -210,7 +203,6 @@ class Adam(SearchDirectionOptimizer):
         self._beta1 = beta1
         self._beta2 = beta2
         self._epsilon = epsilon
-        self._adapt_step_size = adapt_step_size
 
         self._beta1_t = 1.0
         self._beta2_t = 1.0
@@ -232,6 +224,3 @@ class Adam(SearchDirectionOptimizer):
         v_hat = self._vt / (1 - self._beta2_t)
 
         return m_hat / (np.sqrt(v_hat) + self._epsilon)
-
-    def _compute_step_size(self, result: OptimizeResult, func: Callable):
-        return self._step_size / np.sqrt(1 + result.it) if self._adapt_step_size else self._step_size
