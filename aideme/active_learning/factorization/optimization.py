@@ -44,7 +44,7 @@ class OptimizationAlgorithm:
     def _reset(self) -> None:
         return
 
-    def minimize(self, x0: np.ndarray, func: Callable, grad: Union[bool, Callable]) -> OptimizeResult:
+    def minimize(self, x0: np.ndarray, func: Callable, grad: Callable) -> OptimizeResult:
         self._reset()
 
         result = self.__build_initial_result_object()
