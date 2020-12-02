@@ -16,6 +16,8 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
+from typing import Optional
+
 import numpy as np
 
 import aideme.active_learning.factorization.utils as utils
@@ -58,12 +60,22 @@ class L1Penalty(PenaltyTerm):
 
 
 class L2SqrtPenalty(PenaltyTerm):
+    def __init__(self, penalty: float, weights: Optional[np.ndarray] = None):
+        super().__init__(penalty)
+        self.weights = weights
+
     def loss(self, x: np.ndarray) -> float:
-        return self._penalty * np.linalg.norm(x, axis=1).sum()
+        norms = np.linalg.norm(x, axis=1)
+        if self.weights is not None:
+            norms *= self.weights
+        return self._penalty * norms.sum()
 
     def grad(self, x: np.ndarray) -> np.ndarray:
-        norm = self._penalty / np.linalg.norm(x, axis=1)
-        return x * norm.reshape(-1, 1)
+        norm = np.linalg.norm(x, axis=1)
+        factor = np.true_divide(self._penalty, norm, where=norm>0)
+        if self.weights is not None:
+            factor *= self.weights
+        return x * factor.reshape(-1, 1)
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         norm = np.linalg.norm(x, axis=1)

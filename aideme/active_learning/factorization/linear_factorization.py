@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0,
+                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_weights: Optional[np.ndarray] = None,
                  huber_penalty: float = 0, huber_delta: float = 1e-3):
         self._optimizer = optimizer
         self.add_bias = add_bias
@@ -39,7 +39,7 @@ class LinearFactorizationLearner:
         elif l1_penalty > 0:
             self.penalty_terms.append(self.__process_proximal_penalty(L1Penalty(l1_penalty), optimizer))
         elif l2_sqrt_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty), optimizer))
+            self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty, l2_sqrt_weights), optimizer))
 
         if l2_penalty > 0:
             self.penalty_terms.append(L2Penalty(l2_penalty))
@@ -108,7 +108,7 @@ class LinearFactorizationLearner:
 
         opt_result = self._optimizer.minimize(x0, loss.compute_loss, loss.compute_grad)
 
-        self._weights = self.__sort_matrix(loss.get_weights_matrix(opt_result.x))  # sort matrix in order to make weights more consistent
+        self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
         if self.add_bias:
             self._bias = self._weights[:, -1]
             self._weights = self._weights[:, :-1]
@@ -131,10 +131,6 @@ class LinearFactorizationLearner:
         if self.add_bias:
             margin += self._bias
         return margin
-
-    @staticmethod
-    def __sort_matrix(weights: np.ndarray) -> np.ndarray:
-        return np.array(sorted(list(x) for x in weights))
 
 
 class LinearFactorizationLoss:

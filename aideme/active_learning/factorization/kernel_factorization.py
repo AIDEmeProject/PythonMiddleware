@@ -28,18 +28,18 @@ from ..kernel import Kernel, IncrementedDiagonalKernel
 
 class KernelFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0,
+                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_weights: Optional[np.ndarray] = None,
                  huber_penalty: float = 0, huber_delta: float = 1e-3,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12):
 
         self.fact_linear = LinearFactorizationLearner(
             optimizer=optimizer, add_bias=add_bias, interaction_penalty=interaction_penalty,
-            l1_penalty=l1_penalty,  l2_penalty=l2_penalty, l2_sqrt_penalty=l2_sqrt_penalty,
+            l1_penalty=l1_penalty,  l2_penalty=l2_penalty, l2_sqrt_penalty=l2_sqrt_penalty, l2_sqrt_weights=l2_sqrt_weights,
             huber_penalty=huber_penalty, huber_delta=huber_delta
         )
         self.kernel = Kernel.get(kernel, gamma=gamma, degree=degree, coef0=coef0)
         self.kernel = IncrementedDiagonalKernel(self.kernel, jitter=jitter)
-        self._X_train = None
+        self.__X_train = None
 
     @property
     def bias(self) -> np.ndarray:
@@ -57,8 +57,7 @@ class KernelFactorizationLearner:
         learner_copy = KernelFactorizationLearner(self.fact_linear._optimizer)
         learner_copy.fact_linear = self.fact_linear.copy()
         learner_copy.kernel = self.kernel  # stateless
-        if self._X_train is not None:
-            learner_copy._X_train = self._X_train.copy()
+        learner_copy.__X_train = self.__X_train
         return learner_copy
 
     def _get_loss(self, X: np.ndarray, y: np.ndarray):
@@ -66,9 +65,12 @@ class KernelFactorizationLearner:
         return self.fact_linear._get_loss(K, y)
 
     def fit(self, X: np.ndarray, y: np.ndarray, factorization: int, x0: Optional[np.ndarray] = None):
-        self._X_train = X.copy()
+        self.__X_train = X
+        K = self._get_kernel_matrix(self.__X_train, cholesky=True)
 
-        K = self._get_kernel_matrix(self._X_train, cholesky=True)
+        if x0 is not None:
+            x0[:, :-1] = x0[:, :-1] @ K
+
         self.fact_linear.fit(K, y, factorization, x0)
         self.fact_linear._weights = scipy.linalg.solve_triangular(K, self.fact_linear._weights.T, lower=True, trans=1).T
 
@@ -82,7 +84,7 @@ class KernelFactorizationLearner:
         return self.fact_linear._margin(self._get_kernel_matrix(X))
 
     def _get_kernel_matrix(self, X: np.ndarray, cholesky: bool = False) -> np.ndarray:
-        K = self.kernel(X, self._X_train)
+        K = self.kernel(X, self.__X_train)
         if cholesky:
             scipy.linalg.cholesky(K.T, lower=False, overwrite_a=True)  # inplace Cholesky decomposition
         return K
