@@ -16,11 +16,13 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, List, Union, TYPE_CHECKING
+from typing import List, Union, TYPE_CHECKING
+
+from scipy.special import expit
 
 from aideme.utils import assert_positive_integer
-from .penalty import *
 from .optimization import ProximalGradientDescent
+from .penalty import *
 
 if TYPE_CHECKING:
     from .optimization import OptimizationAlgorithm
@@ -74,6 +76,13 @@ class LinearFactorizationLearner:
         return None if self._weights is None else self._weights.copy()
 
     @property
+    def weight_matrix(self) -> Optional[np.ndarray]:
+        if self._weights is None:
+            return None
+
+        return np.hstack([self._weights, self._bias.reshape(-1, 1)]) if self.add_bias else self.weights
+
+    @property
     def num_subspaces(self) -> int:
         return 0 if self._weights is None else self._weights.shape[0]
 
@@ -125,6 +134,9 @@ class LinearFactorizationLearner:
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))
         return np.exp(log_probas)
+
+    def partial_proba(self, X: np.ndarray) -> np.ndarray:
+        return expit(self._margin(X))
 
     def _margin(self, X: np.ndarray) -> np.ndarray:
         margin = X @ self._weights.T

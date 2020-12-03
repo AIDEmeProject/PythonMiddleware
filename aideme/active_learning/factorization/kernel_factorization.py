@@ -50,6 +50,10 @@ class KernelFactorizationLearner:
         return self.fact_linear.weights
 
     @property
+    def weight_matrix(self) -> Optional[np.ndarray]:
+        return self.fact_linear.weight_matrix
+
+    @property
     def num_subspaces(self) -> int:
         return self.fact_linear.num_subspaces
 
@@ -80,8 +84,8 @@ class KernelFactorizationLearner:
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         return self.fact_linear.predict_proba(self._get_kernel_matrix(X))
 
-    def _margin(self, X: np.ndarray) -> np.ndarray:
-        return self.fact_linear._margin(self._get_kernel_matrix(X))
+    def partial_proba(self, X: np.ndarray) -> np.ndarray:
+        return self.fact_linear.partial_proba(self._get_kernel_matrix(X))
 
     def _get_kernel_matrix(self, X: np.ndarray, cholesky: bool = False) -> np.ndarray:
         K = self.kernel(X, self.__X_train)
