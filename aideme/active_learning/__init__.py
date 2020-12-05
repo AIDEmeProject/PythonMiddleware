@@ -23,11 +23,12 @@ from .query_by_disagreement import QueryByDisagreement
 from .random import RandomSampler
 from .uncertainty import UncertaintySampler
 from .version_space import *
+from .entropy import EntropyReductionLearner
 
 __all__ = [
     'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
     'DualSpaceModel', 'FactorizedDualSpaceModel',
     'LinearVersionSpace', 'KernelVersionSpace', 'BayesianLinearVersionSpace', 'BayesianKernelVersionSpace',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner',
-    'QueryByDisagreement',
+    'QueryByDisagreement', 'EntropyReductionLearner'
 ]

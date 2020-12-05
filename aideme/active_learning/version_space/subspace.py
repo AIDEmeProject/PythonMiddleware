@@ -168,7 +168,7 @@ class SubspaceLearner(FactorizedActiveLearner):
 
 
 class SubspatialVersionSpace(SubspaceLearner):
-    def __init__(self, partition=None, mode='numerical', label_function='AND', loss='GREEDY',
+    def __init__(self, partition=None, mode='numerical', label_function='PROD', loss='GREEDY', numerical_only: bool = False,
                  single_chain=True, n_samples: int = 8, warmup: int = 100, thin: int = 10, cache_samples: bool = True,
                  rounding: bool = True, rounding_cache: bool = True, rounding_options: Optional[Dict] = None,
                  add_intercept: bool = True, decompose: bool = False,
@@ -195,6 +195,8 @@ class SubspatialVersionSpace(SubspaceLearner):
                 - 'SQUARED': sum_k (p_k - 0.5)^2
                 - 'PRODUCT': | (prod_k p_k) - 0.5 |. This assumes assumes either 'AND' label function or 'PROD' probability function
                 - Any callable computing the final ranks from a matrix of partial probabilities (n_partitions x n_points)
+
+        :param numerical_only: whether to treat all subspaces as numerical
         """
 
         base_learner = Cloneable(
@@ -210,6 +212,7 @@ class SubspatialVersionSpace(SubspaceLearner):
         super().__init__(base_learner=base_learner, label_function=label_function,
                          probability_function=probability_function, ranking_function=self.__get_loss_function(loss))
 
+        self.__numerical_only = numerical_only
         self.set_factorization_structure(partition=partition, mode=mode)
 
     def set_factorization_structure(self, **factorization_info):
@@ -235,10 +238,9 @@ class SubspatialVersionSpace(SubspaceLearner):
 
         self.learners = [self.__get_learner(m, learner) for m, learner in zip(mode, self.learners)]
 
-    @staticmethod
-    def __get_learner(mode, learner):
+    def __get_learner(self, mode, learner):
         mode = mode.upper()
-        if mode in ('NUMERICAL', 'POSITIVE', 'NEGATIVE', 'PERSIST'):  # TODO: remove this coupling with DSM options
+        if mode in ('NUMERICAL', 'POSITIVE', 'NEGATIVE', 'PERSIST') or self.__numerical_only:  # TODO: remove this coupling with DSM options
             return learner
         if mode == 'CATEGORICAL':
             return CategoricalActiveLearner()
