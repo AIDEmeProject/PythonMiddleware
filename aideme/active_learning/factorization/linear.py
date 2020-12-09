@@ -122,8 +122,7 @@ class LinearFactorizationLearner:
         for starting_point in x0:
             result = self._optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
             if result.fun < min_val:
-                min_val = result.fun
-                opt_result = result
+                opt_result, min_val = result, result.fun
 
         self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
         if self.add_bias:
