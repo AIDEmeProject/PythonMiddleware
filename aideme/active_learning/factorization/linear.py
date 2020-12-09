@@ -96,7 +96,9 @@ class LinearFactorizationLearner:
 
         return learner
 
-    def fit(self, X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], x0: Optional[np.ndarray] = None):
+    def fit(self, X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], retries: int = 1, x0: Optional[np.ndarray] = None):
+        assert_positive_integer(retries, 'retries')
+
         if isinstance(factorization, int):
             assert_positive_integer(factorization, 'factorization')
             num_subspaces = factorization
@@ -105,17 +107,23 @@ class LinearFactorizationLearner:
             num_subspaces = len(factorization)
 
         loss = self._get_loss(X, y, factorization)
-
-        if x0 is None:
-            x0 = np.random.normal(size=(num_subspaces, loss.X.shape[1]))
-
-        if loss.factorization is not None:
-            x0 = x0[loss.factorization]
-
         if hasattr(self._optimizer, 'batch_size'):
             loss.set_batch_size(self._optimizer.batch_size)
 
-        opt_result = self._optimizer.minimize(x0, loss.compute_loss, loss.compute_grad)
+        if x0 is None:
+            x0 = np.random.normal(size=(retries, num_subspaces, loss.X.shape[1]))
+        else:
+            x0 = x0.reshape((retries, num_subspaces, loss.X.shape[1]))
+
+        if factorization is not None:
+            x0 = x0[:, loss.factorization]
+
+        opt_result, min_val = None, np.inf
+        for starting_point in x0:
+            result = self._optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
+            if result.fun < min_val:
+                min_val = result.fun
+                opt_result = result
 
         self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
         if self.add_bias:
