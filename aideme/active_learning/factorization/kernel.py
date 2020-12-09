@@ -21,7 +21,7 @@ from typing import Optional
 import numpy as np
 import scipy.linalg
 
-from .linear_factorization import LinearFactorizationLearner
+from .linear import LinearFactorizationLearner
 from .optimization import OptimizationAlgorithm
 from ..kernel import Kernel, IncrementedDiagonalKernel
 
