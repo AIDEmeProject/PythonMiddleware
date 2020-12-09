@@ -15,5 +15,5 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
-from .linear_factorization import LinearFactorizationLearner
-from .kernel_factorization import KernelFactorizationLearner
+from .linear import FactorizedLinearLearner
+from .learn import BruteForceSelector, GreedySelector
