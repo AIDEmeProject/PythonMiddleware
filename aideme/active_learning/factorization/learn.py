@@ -16,31 +16,31 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union, List
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from aideme.utils import assert_in_range
-from .linear import LinearFactorizationLearner
 
 if TYPE_CHECKING:
-    from .optimization import OptimizationAlgorithm
+    from .linear import LinearFactorizationLearner
 
 
-def compute_factorization_structure(X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], optimizer: OptimizationAlgorithm, repeat: int = 1,
-                                    threshold: float = 0.9, l2_penalty: float = 0, l2_sqrt_penalty: float = 1e-4) -> np.ndarray:
+def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearner, threshold: float = 0.9) -> LinearFactorizationLearner:
     assert_in_range(threshold, 'threshold', low=0, high=1)
 
-    # fit factorized classifier
-    learner = LinearFactorizationLearner(optimizer, l2_penalty=l2_penalty, l2_sqrt_penalty=l2_sqrt_penalty)
-    learner.fit(X, y, factorization, repeat)
-
-    # prune irrelevant subspaces
     partial_probas = learner.partial_proba(X)
     relevant_rows = np.where(partial_probas.min(axis=0) < threshold)[0]
-    pruned_weights = learner._weights[relevant_rows]
 
+    pruned_learner = learner.copy()
+    pruned_learner._weights = learner._weights[relevant_rows]
+    pruned_learner._bias = learner._bias[relevant_rows]
+
+    return pruned_learner
+
+
+def compute_factorization_structure(X: np.ndarray, learner: LinearFactorizationLearner) -> np.ndarray:
     # remove irrelevant features
-    importance_weights = np.abs(pruned_weights)
+    importance_weights = np.abs(learner.weights)
     importance_weights /= importance_weights.sum(axis=1).reshape(-1, 1)
     return importance_weights > 1 / X.shape[1]
