@@ -66,7 +66,7 @@ def prediction_entropy(dataset: PartitionedDataset, active_learner: ActiveLearne
     return {'prediction_entropy': entropy.mean()}
 
 
-def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functions: Sequence[str]) -> Callback:
+def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functions: Sequence[str], prefix: str = '') -> Callback:
     """
     :param X_test: the test dataset
     :param y_test: true labels of test set
@@ -84,7 +84,7 @@ def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functio
         y_pred = active_learner.predict(X_test)
 
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])
-        return {score: __classification_metrics[score](cm) for score in score_functions}
+        return {prefix + score: __classification_metrics[score](cm) for score in score_functions}
 
     return compute
 
