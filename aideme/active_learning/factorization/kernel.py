@@ -73,7 +73,10 @@ class KernelFactorizationLearner:
         K = self._get_kernel_matrix(self.__X_train, cholesky=True)
 
         if x0 is not None:
-            x0[:, :-1] = x0[:, :-1] @ K
+            if self.fact_linear.add_bias:
+                x0[:, :-1] = x0[:, :-1] @ K
+            else:
+                x0 = x0 @ K
 
         self.fact_linear.fit(K, y, factorization, retries, x0)
         self.fact_linear._weights = scipy.linalg.solve_triangular(K, self.fact_linear._weights.T, lower=True, trans=1).T
