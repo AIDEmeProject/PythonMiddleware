@@ -27,6 +27,7 @@ from .penalty import *
 if TYPE_CHECKING:
     from .optimization import OptimizationAlgorithm
 
+import memory_profiler
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
@@ -96,6 +97,7 @@ class LinearFactorizationLearner:
 
         return learner
 
+    @memory_profiler.profile
     def fit(self, X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], retries: int = 1, x0: Optional[np.ndarray] = None):
         assert_positive_integer(retries, 'retries')
 
@@ -157,13 +159,11 @@ class LinearFactorizationLearner:
 
 
 class LinearFactorizationLoss:
+    @memory_profiler.profile
     def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True,
                  penalty_terms: List[PenaltyTerm] = None, factorization: Optional[List[List[int]]] = None):
         if add_bias:
-            if X.ndim == 2:
-                X = self.__add_bias_column(X)
-            else:
-                X = np.concatenate([self.__add_bias_column(X[:, :, k])[:, :, np.newaxis] for k in range(X.shape[2])], axis=2)
+            X = self.__add_bias_column(X)
 
         if factorization is not None:
             B = np.full((len(factorization), X.shape[1]), False)
@@ -183,8 +183,18 @@ class LinearFactorizationLoss:
         self._offsets = None
         self._cur_pos = None
 
+    @classmethod
+    def __add_bias_column(cls, X):
+        if X.ndim == 2:
+            return cls.__add_bias_column_helper(X)
+
+        X_with_bias = np.empty((X.shape[0], X.shape[1] + 1, X.shape[2]))
+        for k in range(X.shape[2]):
+            X_with_bias[:, :, k] = cls.__add_bias_column_helper(X[:, :, k])
+        return X_with_bias
+
     @staticmethod
-    def __add_bias_column(X):
+    def __add_bias_column_helper(X):
         return np.hstack([X, np.ones((X.shape[0], 1))])
 
     def set_batch_size(self, batch_size: Optional[int]):

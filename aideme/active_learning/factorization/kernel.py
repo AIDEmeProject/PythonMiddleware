@@ -26,6 +26,10 @@ from .optimization import OptimizationAlgorithm
 from ..kernel import Kernel, IncrementedDiagonalKernel
 
 
+import memory_profiler
+from time import perf_counter
+
+
 class KernelFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
                  l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_weights: Optional[np.ndarray] = None,
@@ -71,7 +75,11 @@ class KernelFactorizationLearner:
         K = self._get_kernel_matrix(X, cholesky=self._use_cholesky)
         return self.fact_linear._get_loss(K, y)
 
+    @memory_profiler.profile
     def fit(self, X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], retries: int = 1, x0: Optional[np.ndarray] = None):
+        t0 = perf_counter()
+        print('start: ', t0)
+
         self._X_train = X
 
         if isinstance(factorization, int):
@@ -80,7 +88,9 @@ class KernelFactorizationLearner:
             self._factorization = factorization
             factorization = len(factorization)
 
+        print('start K computation: ', perf_counter() - t0)
         K = self._get_kernel_matrix(self._X_train, cholesky=self._use_cholesky)
+        print('end K computation: ', perf_counter() - t0)
 
         if x0 is not None:
             if self.fact_linear.add_bias:
@@ -88,7 +98,9 @@ class KernelFactorizationLearner:
             else:
                 x0 = x0 @ K
 
+        print('start fit: ', perf_counter() - t0)
         self.fact_linear.fit(K, y, factorization, retries, x0)
+        print('end fit: ', perf_counter() - t0)
 
         if self._use_cholesky:
             if self._factorization is None:
@@ -106,12 +118,17 @@ class KernelFactorizationLearner:
     def partial_proba(self, X: np.ndarray) -> np.ndarray:
         return self.fact_linear.partial_proba(self._get_kernel_matrix(X))
 
+    @memory_profiler.profile
     def _get_kernel_matrix(self, X: np.ndarray, cholesky: bool = False) -> np.ndarray:
         if self._factorization is None:
             return self.__kernel_matrix_helper(X, cholesky)
 
-        return np.concatenate([self.__kernel_matrix_helper(X, cholesky, p)[:, :, np.newaxis] for p in self._factorization], axis=2)
+        K = np.empty((X.shape[0], X.shape[0], len(self._factorization)))
+        for k, p in enumerate(self._factorization):
+            K[:, :, k] = self.__kernel_matrix_helper(X, cholesky, p)
+        return K
 
+    @memory_profiler.profile
     def __kernel_matrix_helper(self, X: np.ndarray, cholesky: bool, subspace: Optional[List[int]] = None) -> np.ndarray:
         X1, X2 = X, self._X_train
         if subspace is not None:
