@@ -146,7 +146,11 @@ class LinearFactorizationLearner:
         return expit(self._margin(X))
 
     def _margin(self, X: np.ndarray) -> np.ndarray:
-        margin = X @ self._weights.T
+        if X.ndim == 3:
+            margin = np.einsum('ijk, kj -> ik', X, self._weights)
+        else:
+            margin = X @ self._weights.T
+
         if self.add_bias:
             margin += self._bias
         return margin
@@ -156,7 +160,10 @@ class LinearFactorizationLoss:
     def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True,
                  penalty_terms: List[PenaltyTerm] = None, factorization: Optional[List[List[int]]] = None):
         if add_bias:
-            X = np.hstack([X, np.ones((X.shape[0], 1))])
+            if X.ndim == 2:
+                X = self.__add_bias_column(X)
+            else:
+                X = np.concatenate([self.__add_bias_column(X[:, :, k])[:, :, np.newaxis] for k in range(X.shape[2])], axis=2)
 
         if factorization is not None:
             B = np.full((len(factorization), X.shape[1]), False)
@@ -175,6 +182,10 @@ class LinearFactorizationLoss:
         self._batch_size = None
         self._offsets = None
         self._cur_pos = None
+
+    @staticmethod
+    def __add_bias_column(X):
+        return np.hstack([X, np.ones((X.shape[0], 1))])
 
     def set_batch_size(self, batch_size: Optional[int]):
         if batch_size is None or batch_size >= len(self.X):
@@ -200,7 +211,7 @@ class LinearFactorizationLoss:
     def compute_loss(self, weights: np.ndarray):
         weights = self.get_weights_matrix(weights)
 
-        margins = self.X @ weights.T
+        margins = self.__compute_margin(self.X, weights)
         loss = utils.compute_loss(margins, self.y)
 
         # add penalty terms
@@ -216,11 +227,11 @@ class LinearFactorizationLoss:
         X, y = self.X, self.y
         if self._batch_size is not None:
             idx = self.get_next_batch()
-            X, y = self.X[idx, :], self.y[idx]
+            X, y = self.X[idx], self.y[idx]
 
-        margins = X @ weights.T
+        margins = self.__compute_margin(X, weights)
         grad_weights = utils.compute_grad_factors(margins, y)
-        grads = grad_weights.T @ X
+        grads = self.__compute_grad(X, grad_weights)
 
         # add penalty terms
         weights_wo_bias = self.__remove_bias(weights)
@@ -233,6 +244,20 @@ class LinearFactorizationLoss:
             grads = grads[self.factorization]
 
         return grads
+
+    @staticmethod
+    def __compute_margin(X: np.ndarray, weights: np.ndarray) -> np.ndarray:
+        if X.ndim == 3:
+            return np.einsum('ijk, kj -> ik', X, weights)
+
+        return X @ weights.T
+
+    @staticmethod
+    def __compute_grad(X: np.ndarray, grad_weights: np.ndarray) -> np.ndarray:
+        if X.ndim == 3:
+            return np.einsum('ijk, ik -> kj', X, grad_weights)
+
+        return grad_weights.T @ X
 
     def get_weights_matrix(self, weights):
         if self.factorization is None:
