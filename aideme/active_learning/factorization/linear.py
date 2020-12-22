@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Union, TYPE_CHECKING, Tuple
 
 from scipy.special import expit
 
@@ -27,7 +27,6 @@ from .penalty import *
 if TYPE_CHECKING:
     from .optimization import OptimizationAlgorithm
 
-import memory_profiler
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
@@ -97,7 +96,6 @@ class LinearFactorizationLearner:
 
         return learner
 
-    @memory_profiler.profile
     def fit(self, X: np.ndarray, y: np.ndarray, factorization: Union[int, List[List[int]]], retries: int = 1, x0: Optional[np.ndarray] = None):
         assert_positive_integer(retries, 'retries')
 
@@ -113,9 +111,9 @@ class LinearFactorizationLearner:
             loss.set_batch_size(self._optimizer.batch_size)
 
         if x0 is None:
-            x0 = np.random.normal(size=(retries, num_subspaces, loss.X.shape[1]))
+            x0 = np.random.normal(size=(retries, num_subspaces, loss.dim))
         else:
-            x0 = x0.reshape((retries, num_subspaces, loss.X.shape[1]))
+            x0 = x0.reshape((retries, num_subspaces, loss.dim))
 
         if factorization is not None:
             x0 = x0[:, loss.factorization]
@@ -126,10 +124,7 @@ class LinearFactorizationLearner:
             if result.fun < min_val:
                 opt_result, min_val = result, result.fun
 
-        self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
-        if self.add_bias:
-            self._bias = self._weights[:, -1]
-            self._weights = self._weights[:, :-1]
+        self._bias, self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
 
         return opt_result
 
@@ -159,43 +154,33 @@ class LinearFactorizationLearner:
 
 
 class LinearFactorizationLoss:
-    @memory_profiler.profile
     def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True,
                  penalty_terms: List[PenaltyTerm] = None, factorization: Optional[List[List[int]]] = None):
-        if add_bias:
-            X = self.__add_bias_column(X)
-
-        if factorization is not None:
-            B = np.full((len(factorization), X.shape[1]), False)
-            for i, p in enumerate(factorization):
-                B[i, p] = True
-            if add_bias:
-                B[:, -1] = True
-            factorization = B
-
         self.X = X
         self.y = y
         self.add_bias = add_bias
         self.penalty_terms = penalty_terms if penalty_terms is not None else []
-        self.factorization = factorization
-
+        self.factorization = self.__compute_factorization_matrix(factorization)
         self._batch_size = None
         self._offsets = None
         self._cur_pos = None
 
-    @classmethod
-    def __add_bias_column(cls, X):
-        if X.ndim == 2:
-            return cls.__add_bias_column_helper(X)
+    def __compute_factorization_matrix(self, factorization: Optional[List[List[int]]]) -> Optional[np.ndarray]:
+        if factorization is None:
+            return factorization
 
-        X_with_bias = np.empty((X.shape[0], X.shape[1] + 1, X.shape[2]))
-        for k in range(X.shape[2]):
-            X_with_bias[:, :, k] = cls.__add_bias_column_helper(X[:, :, k])
-        return X_with_bias
+        B = np.full((len(factorization), self.dim), False)
+        for i, p in enumerate(factorization):
+            B[i, p] = True
 
-    @staticmethod
-    def __add_bias_column_helper(X):
-        return np.hstack([X, np.ones((X.shape[0], 1))])
+        if self.add_bias:
+            B[:, -1] = True
+
+        return B
+
+    @property
+    def dim(self) -> int:
+        return self.X.shape[1] + self.add_bias
 
     def set_batch_size(self, batch_size: Optional[int]):
         if batch_size is None or batch_size >= len(self.X):
@@ -219,63 +204,73 @@ class LinearFactorizationLoss:
         return next_batch
 
     def compute_loss(self, weights: np.ndarray):
-        weights = self.get_weights_matrix(weights)
+        bias, weights = self.get_weights_matrix(weights)
 
-        margins = self.__compute_margin(self.X, weights)
+        margins = self.__compute_margin(self.X, bias, weights)
         loss = utils.compute_loss(margins, self.y)
 
         # add penalty terms
-        weights_wo_bias = self.__remove_bias(weights)
         for penalty in self.penalty_terms:
-            loss += penalty.loss(weights_wo_bias)
+            loss += penalty.loss(weights)
 
         return loss
 
     def compute_grad(self, weights: np.ndarray):
-        weights = self.get_weights_matrix(weights)
+        bias, weights = self.get_weights_matrix(weights)
 
         X, y = self.X, self.y
         if self._batch_size is not None:
             idx = self.get_next_batch()
             X, y = self.X[idx], self.y[idx]
 
-        margins = self.__compute_margin(X, weights)
+        margins = self.__compute_margin(X, bias, weights)
         grad_weights = utils.compute_grad_factors(margins, y)
-        grads = self.__compute_grad(X, grad_weights)
+        grad_b, grad_w = self.__compute_grad(X, grad_weights)
 
         # add penalty terms
-        weights_wo_bias = self.__remove_bias(weights)
-        grads_wo_bias = self.__remove_bias(grads)
         for penalty in self.penalty_terms:
-            grads_wo_bias += penalty.grad(weights_wo_bias)
+            grad_w += penalty.grad(weights)
 
         # restrict weights to factorization selection
+        grads = np.hstack([grad_w, grad_b.reshape(-1, 1)]) if self.add_bias else grad_w
+
         if self.factorization is not None:
             grads = grads[self.factorization]
 
         return grads
 
-    @staticmethod
-    def __compute_margin(X: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    def __compute_margin(self, X: np.ndarray, bias: np.ndarray, weights: np.ndarray) -> np.ndarray:
         if X.ndim == 3:
-            return np.einsum('ijk, kj -> ik', X, weights)
+            margin = np.einsum('ijk, kj -> ik', X, weights)
+        else:
+            margin = X @ weights.T
 
-        return X @ weights.T
+        if self.add_bias:
+            margin += bias
 
-    @staticmethod
-    def __compute_grad(X: np.ndarray, grad_weights: np.ndarray) -> np.ndarray:
+        return margin
+
+    def __compute_grad(self, X: np.ndarray, grad_weights: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if X.ndim == 3:
-            return np.einsum('ijk, ik -> kj', X, grad_weights)
+            grad_w = np.einsum('ijk, ik -> kj', X, grad_weights)
+        else:
+            grad_w = grad_weights.T @ X
 
-        return grad_weights.T @ X
+        grad_b = None
+        if self.add_bias:
+            grad_b = grad_weights.sum(axis=0)
 
-    def get_weights_matrix(self, weights):
+        return grad_b, grad_w
+
+    def get_weights_matrix(self, weights: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if self.factorization is None:
-            return weights.reshape(-1, self.X.shape[1])
+            w = weights.reshape(-1, self.dim)
+        else:
+            w = np.zeros((len(self.factorization), self.dim))
+            w[self.factorization] = weights
 
-        w = np.zeros((len(self.factorization), self.X.shape[1]))
-        w[self.factorization] = weights
-        return w
+        b = None
+        if self.add_bias:
+            b, w = w[:, -1], w[:, :-1]
 
-    def __remove_bias(self, x: np.ndarray):
-        return x[:, :-1] if self.add_bias else x
+        return b, w
