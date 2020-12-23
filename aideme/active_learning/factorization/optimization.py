@@ -51,7 +51,7 @@ class OptimizationAlgorithm:
         new_x = x0.copy()
         self.__process_new_iter(grad, new_x, result)
 
-        while not result.success and result.it <= self._max_iter:
+        while not result.success and result.it < self._max_iter:
             new_x = self._advance(result, func, grad)
             self.__process_new_iter(grad, new_x, result)
 
@@ -75,17 +75,16 @@ class OptimizationAlgorithm:
         result.success = self.__converged(result)
         self.__run_callback(result)
 
-    @staticmethod
-    def __update_result_object(result: OptimizeResult, new_x: np.ndarray, grad: Callable):
+    def __update_result_object(self, result: OptimizeResult, new_x: np.ndarray, grad: Callable):
         result.it += 1
         result.prev, result.x = result.x, new_x
-        result.grad = grad(new_x)
+        result.grad = grad(new_x) if result.it < self._max_iter else None
 
     def __converged(self, result: OptimizeResult) -> bool:
         if result.prev is not None and np.linalg.norm(result.x - result.prev) < self._rel_tol * np.linalg.norm(result.x):
             return True
 
-        return self._gradient_converged(result, self._gtol)
+        return self._gradient_converged(result, self._gtol) if result.grad is not None else False
 
     def __run_callback(self, result: OptimizeResult) -> None:
         if self._callback is not None:

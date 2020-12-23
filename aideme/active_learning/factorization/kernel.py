@@ -88,7 +88,7 @@ class KernelFactorizationLearner:
             else:
                 x0 = x0 @ K
 
-        self.fact_linear.fit(K, y, factorization, retries, x0)
+        res = self.fact_linear.fit(K, y, factorization, retries, x0)
 
         if self._use_cholesky:
             if self._factorization is None:
@@ -96,6 +96,8 @@ class KernelFactorizationLearner:
             else:
                 for k in range(K.shape[2]):
                     self.fact_linear._weights[k] = scipy.linalg.solve_triangular(K[:, :, k], self.fact_linear._weights[k], lower=True, trans=1)
+
+        return res
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return self.fact_linear.predict(self._get_kernel_matrix(X))
@@ -110,7 +112,7 @@ class KernelFactorizationLearner:
         if self._factorization is None:
             return self.__kernel_matrix_helper(X, cholesky)
 
-        K = np.empty((X.shape[0], X.shape[0], len(self._factorization)))
+        K = np.empty((X.shape[0], self._X_train.shape[0], len(self._factorization)))
         for k, p in enumerate(self._factorization):
             K[:, :, k] = self.__kernel_matrix_helper(X, cholesky, p)
         return K
