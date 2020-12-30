@@ -16,9 +16,11 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
+from sklearn.base import clone
+from sklearn.kernel_approximation import Nystroem
 from sklearn.metrics.pairwise import linear_kernel, rbf_kernel, polynomial_kernel
 
 from aideme.utils.validation import assert_positive, assert_positive_integer
@@ -126,7 +128,7 @@ class GaussianKernel(Kernel):
 
 
 class PolynomialKernel(Kernel):
-    def __init__(self, degree: int = 3, gamma: Optional[int] = None, coef0: float = 1):
+    def __init__(self, degree: int = 3, gamma: Optional[float] = None, coef0: float = 1):
         """
         (gamma <X, Y> + coef0)^degree
         :param gamma: gaussian kernel parameter. If None, we use 1 / n_features
@@ -205,3 +207,106 @@ class IncrementedDiagonalKernel(Kernel):
         diag = self._kernel.diagonal(X)
         diag += self._jitter
         return diag
+
+
+class KernelTransformer:
+    @staticmethod
+    def get(kernel: str = 'rbf', degree: int = 3, gamma: Optional[float] = None, coef0: float = 1, jitter: float = 0,
+            nystroem_components: Optional[int] = None) -> KernelTransformer:
+        if nystroem_components is not None:
+            return NystroemTransformer(n_components=nystroem_components, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0)
+
+        kernel = Kernel.get(kernel, degree=degree, gamma=gamma, coef0=coef0)
+        if jitter > 0:
+            kernel = IncrementedDiagonalKernel(kernel, jitter)
+
+        return KernelTransformerWrapper(kernel)
+
+    @property
+    def n_components(self) -> int:
+        raise NotImplementedError
+
+    def clone(self) -> KernelTransformer:
+        raise NotImplementedError
+
+    def fit(self, X: np.ndarray) -> None:
+        raise NotImplementedError
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        raise NotImplementedError
+
+    def fit_transform(self, X: np.ndarray) -> np.ndarray:
+        self.fit(X)
+        return self.transform(X)
+
+
+class KernelTransformerWrapper(KernelTransformer):
+    def __init__(self, kernel: Kernel):
+        self._kernel = kernel
+        self._X_train = None
+
+    @property
+    def n_components(self) -> int:
+        return self._X_train.shape[0]
+
+    def clone(self) -> KernelTransformer:
+        return KernelTransformerWrapper(self._kernel)
+
+    def fit(self, X: np.ndarray) -> None:
+        self._X_train = X
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        return self._kernel(X, self._X_train)
+
+
+class NystroemTransformer(KernelTransformer):
+    def __init__(self, n_components: int = 100, kernel: str = 'rbf', degree: int = 3, gamma: Optional[float] = None, coef0: float = 1):
+        self.nystroem = Nystroem(n_components=n_components, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0)
+
+    @property
+    def n_components(self) -> int:
+        return self.nystroem.n_components
+
+    def clone(self) -> KernelTransformer:
+        kt = NystroemTransformer()
+        kt.nystroem = clone(self.nystroem)
+        return kt
+
+    def fit(self, X: np.ndarray) -> None:
+        self.nystroem.fit(X)
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        return self.nystroem.transform(X)
+
+    def fit_transform(self, X: np.ndarray) -> np.ndarray:
+        return self.nystroem.fit_transform(X)
+
+
+class FactorizedKernelTransform(KernelTransformer):
+    def __init__(self, base_transformer: KernelTransformer, factorization: List[List[int]]):
+        self._base = base_transformer
+        self._factorization = factorization
+        self._transformers = [base_transformer.clone() for _ in factorization]
+
+    @property
+    def n_components(self) -> int:
+        return self._transformers[0].n_components
+
+    def clone(self) -> KernelTransformer:
+        return FactorizedKernelTransform(self._base, self._factorization)
+
+    def fit(self, X: np.ndarray) -> None:
+        for transformer, subspace in zip(self._transformers, self._factorization):
+            transformer.fit(X[:, subspace])
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        K = np.empty((X.shape[0], self.n_components, len(self._factorization)))
+        for k, (transformer, subspace) in enumerate(zip(self._transformers, self._factorization)):
+            K[:, :, k] = transformer.transform(X[:, subspace])
+        return K
+
+    def fit_transform(self, X: np.ndarray) -> np.ndarray:
+        K = np.empty((X.shape[0], self.n_components, len(self._factorization)))
+        for k, (transformer, subspace) in enumerate(zip(self._transformers, self._factorization)):
+            K[:, :, k] = transformer.fit_transform(X[:, subspace])
+        return K
