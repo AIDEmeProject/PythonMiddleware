@@ -19,7 +19,6 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-from sklearn.metrics import f1_score
 
 from aideme.utils import assert_positive_integer, assert_in_range
 from .learn import prune_irrelevant_subspaces
@@ -98,7 +97,6 @@ class SwapLearner(ActiveLearner):
             X, y = data.training_set()
 
         self._swap_model.fit(X, y, self._num_subspaces, retries=self._retries, x0=None)
-        print('pred acc:', f1_score(y, self._swap_model.predict(X)))
 
     def __fit_refining_model(self, data: PartitionedDataset, prev_model: LinearFactorizationLearner) -> None:
         X, y = data.training_set()
