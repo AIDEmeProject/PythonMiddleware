@@ -28,14 +28,41 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
 
+import numpy as np
 from scipy.special import xlogy
 import sklearn
 
+from aideme.active_learning.factorization import compute_factorization_structure, prune_irrelevant_subspaces
+from aideme.active_learning.factorization.active_learning import SwapLearner
+
 if TYPE_CHECKING:
-    import numpy as np
     from .types import Metrics, Callback
     from aideme.active_learning import ActiveLearner
     from aideme.explore import PartitionedDataset
+
+
+def compute_factorization(dataset: PartitionedDataset, active_learner: ActiveLearner):
+    if not isinstance(active_learner, SwapLearner):
+        return {}
+
+    linear_model = active_learner.linear_model
+
+    if linear_model is None:
+        return {}
+
+    pruned = prune_irrelevant_subspaces(dataset.data, linear_model, threshold=0.9)
+    factorization = compute_factorization_structure(dataset.data, pruned)
+
+    subspaces = [list(np.where(s)[0]) for s in factorization]
+    unique_subspaces = sorted([list(np.where(s)[0]) for s in np.unique(factorization, axis=0)])
+    merged_subspaces = []
+    for i, s in enumerate(unique_subspaces):
+        s = set(s)
+        if not any((s.issubset(r) for j, r in enumerate(unique_subspaces) if i != j)):
+            merged_subspaces.append(s)
+    merged_subspaces = sorted(list(s) for s in merged_subspaces)
+
+    return {'num_subspaces': len(subspaces), 'subspaces': subspaces, 'merged_subspaces': merged_subspaces}
 
 
 def three_set_metric(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:

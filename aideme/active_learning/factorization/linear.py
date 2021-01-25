@@ -64,6 +64,10 @@ class LinearFactorizationLearner:
 
         return penalty_term
 
+    def clear(self) -> None:
+        self._weights = None
+        self._bias = None
+
     @property
     def bias(self) -> Optional[np.ndarray]:
         if self._bias is None:

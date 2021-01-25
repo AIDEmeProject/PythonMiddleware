@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 from .validation import assert_positive, assert_positive_integer, assert_non_negative_integer, assert_non_negative, assert_in_range, process_callback
 from .convergence import max_iter_reached, metric_reached_threshold
-from .metrics import classification_metrics, three_set_metric, prediction_entropy
+from .metrics import classification_metrics, three_set_metric, prediction_entropy, compute_factorization
 from .noise import random_noise_injector, gaussian_noise
 
 if TYPE_CHECKING:
