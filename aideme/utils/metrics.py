@@ -50,7 +50,7 @@ def compute_factorization(dataset: PartitionedDataset, active_learner: ActiveLea
     if linear_model is None:
         return {}
 
-    pruned = prune_irrelevant_subspaces(dataset.data, linear_model, threshold=0.9)
+    pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
     factorization = compute_factorization_structure(dataset.data, pruned)
 
     subspaces = [list(np.where(s)[0]) for s in factorization]

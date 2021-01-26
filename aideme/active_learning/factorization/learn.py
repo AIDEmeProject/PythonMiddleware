@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from .linear import LinearFactorizationLearner
 
 
-def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearner, threshold: float = 0.9) -> LinearFactorizationLearner:
+def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearner, threshold: float = 0.99) -> LinearFactorizationLearner:
     assert_in_range(threshold, 'threshold', low=0, high=1)
 
     partial_probas = learner.partial_proba(X)
