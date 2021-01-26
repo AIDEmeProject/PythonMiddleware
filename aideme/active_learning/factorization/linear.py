@@ -128,6 +128,9 @@ class LinearFactorizationLearner:
             if result.fun < min_val:
                 opt_result, min_val = result, result.fun
 
+        if opt_result.fun == np.inf:
+            raise RuntimeError("Optimization failed:\n{}".format(opt_result))
+
         self._bias, self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
 
         return opt_result
