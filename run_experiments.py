@@ -22,6 +22,7 @@ from aideme.experiments.folder import RootFolder
 from aideme.initial_sampling import stratified_sampler
 from aideme.utils import *
 
+
 def get_aluma(sizes, dims, original=True):
     suffix = 'original' if original else 'preprocessed'
 
@@ -90,6 +91,18 @@ ProdFactVSNoCat =   Tag(SubspatialVersionSpace, loss='PRODUCT', numerical_only=T
 entropy_global_params = {'decompose': True, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
 Entropy = Tag(EntropyReductionLearner, data_sample_size=256, n_samples=32, **entropy_global_params)
 
+# SwapLearner
+swap_global_params = {'num_subspaces': 10, 'prune_threshold': 0.99}
+def Swap(swap_iter, penalty, train_on_prediction=True, train_sample_size=None, retries=1, prune=True) -> Tag:
+    if not train_on_prediction:
+        return Tag(SimplifiedSwapLearner, swap_iter=swap_iter, penalty=penalty,
+                   train_on_prediction=train_on_prediction,
+                   retries=retries, prune=prune)
+
+    return Tag(SimplifiedSwapLearner, swap_iter=swap_iter, penalty=penalty,
+               train_on_prediction=train_on_prediction, train_sample_size=train_sample_size,
+               retries=retries, prune=prune)
+
 active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
     #SM,
@@ -121,7 +134,26 @@ active_learners_list = [
     #ProdFactVSNoCat,    # FactVS + PRODUCT loss + No categorical optimization
 
     # Entropy
-    Entropy,
+    #Entropy,
+
+    # SwapLearner
+    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=False, retries=25, prune=False),
+    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=False, retries=25, prune=True),
+    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
+    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
+    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=False, retries=25, prune=False),
+    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=False, retries=25, prune=True),
+    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
+    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
+
+    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=False, retries=25, prune=False),
+    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=False, retries=25, prune=True),
+    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
+    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
+    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=False, retries=25, prune=False),
+    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=False, retries=25, prune=True),
+    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
+    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
 ]
 
 # RUN PARAMS
@@ -135,6 +167,7 @@ CALLBACK_SKIP = 5
 CALLBACKS = [
     Tag(classification_metrics, score_functions=['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']),
     #Tag(three_set_metric),
+    #Tag(compute_factorization),
 ]
 
 INITIAL_SAMPLER = Tag(stratified_sampler, pos=1, neg=1, neg_in_all_subspaces=False)

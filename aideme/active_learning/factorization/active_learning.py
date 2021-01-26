@@ -122,3 +122,44 @@ class SwapLearner(ActiveLearner):
             return self._active_learner.rank(X)
         else:
             return np.abs(self._refining_model.predict_proba(X) - 0.5)
+
+
+class SimplifiedSwapLearner(SwapLearner):
+    SWAP_DEFAULT_PARAMS = {'step_size': 0.05, 'max_iter': 100, 'batch_size': 100, 'adapt_step_size': True, 'adapt_every': 1}
+    REFINE_DEFAULT_PARAMS = {'step_size': 0.05, 'max_iter': 10000, 'batch_size': None, 'adapt_step_size': False}
+
+    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_on_prediction: bool = True, train_sample_size: Optional[int] = None,
+                 num_subspaces: int = 10, retries: int = 10, prune: bool = True, prune_threshold: float = 0.99):
+        from ...active_learning import SimpleMargin
+        active_learner = SimpleMargin(C=1e6)
+
+        if train_on_prediction:
+            swap_optimizer_params = self.SWAP_DEFAULT_PARAMS.copy()
+            swap_optimizer_params['N'] = train_sample_size
+        else:
+            swap_optimizer_params = self.REFINE_DEFAULT_PARAMS.copy()
+        swap_model_optimizer = self.get_optimizer(**swap_optimizer_params)
+        swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
+
+        refined_model_optimizer = self.get_optimizer(**self.REFINE_DEFAULT_PARAMS)
+        refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
+        super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
+                         swap_iter=swap_iter, train_on_prediction=train_on_prediction, train_sample_size=train_sample_size,
+                         prune=prune, prune_threshold=prune_threshold)
+
+    @staticmethod
+    def get_optimizer(step_size, max_iter, batch_size=None, adapt_step_size=False, adapt_every=1, N=None):
+        from .optimization import Adam
+        options = {
+            'step_size': step_size, 'max_iter': max_iter,
+            'batch_size': batch_size, 'adapt_step_size': adapt_step_size,  'adapt_every': adapt_every,
+            'gtol': 0, 'rel_tol': 0, 'verbose': False  # assert only max_iter is taken into account for convergence
+        }
+
+        if batch_size:
+            from math import ceil
+            iters_per_epoch = ceil(N / batch_size)
+            options['adapt_every'] *= iters_per_epoch
+            options['max_iter'] *= iters_per_epoch
+
+        return Adam(**options)
