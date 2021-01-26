@@ -164,8 +164,10 @@ SEEDS = [i for i in range(REPEAT)]
 SUBSAMPLING = 50000  # None
 
 CALLBACK_SKIP = 5
+score_functions = ['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']
 CALLBACKS = [
-    Tag(classification_metrics, score_functions=['true_positive', 'true_negative', 'false_positive', 'false_negative', 'precision', 'recall', 'fscore']),
+    Tag(training_classification_metrics, score_functions=score_functions, prefix='train_'),
+    Tag(classification_metrics, score_functions=score_functions),
     #Tag(three_set_metric),
     #Tag(compute_factorization),
 ]
