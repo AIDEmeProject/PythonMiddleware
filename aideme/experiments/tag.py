@@ -20,20 +20,33 @@ from typing import Callable, Union, Any
 
 
 class Tag:
-    def __init__(self, obj: Union[type, Callable], **params: Any):
+    def __init__(self, obj: Union[type, Callable], compress: bool = False, **params: Any):
         self.name = obj.__name__
         # self.module = obj.__module__  # TODO: we can also add the module if objects start getting too complex
         self.params = self.check_parameters(obj, params)
 
+        self.compressed_name = self.name
+        self.compressed_params = self.params
+        if compress:
+            self.compress()
+
+    def compress(self):
+        self.compressed_name = self.__compress_name(self.name)
+        self.compressed_params = {}
+        for k, v in self.params.items():
+            if isinstance(v, Tag):
+                v.compress()
+            self.compressed_params[self.__compress_var(k)] = v
+
     def __repr__(self):
         pairs = {}
-        for k, v in self.params.items():
+        for k, v in self.compressed_params.items():
             if isinstance(v, dict):
                 pairs.update(v)
             else:
                 pairs[k] = v
 
-        terms = [self.name]
+        terms = [self.compressed_name]
         for k, v in pairs.items():
             terms.append("{}={}".format(k, v))
         return ' '.join(terms)
@@ -62,3 +75,15 @@ class Tag:
     @staticmethod
     def __check_values(val):
         return val.to_json() if isinstance(val, Tag) else val
+
+    @staticmethod
+    def __compress_name(name):
+        return ''.join((ch for ch in name if ch.isupper()))
+        #upper = [ch for ch in name if ch.isupper()]
+        #return ''.join(upper) if len(upper) > 1 else name
+
+    @staticmethod
+    def __compress_var(var):
+        return ''.join((w[0] for w in var.split('_')))
+        #words = [w[0] for w in var.split('_')]
+        #return ''.join(words) if len(words) > 1 else var
