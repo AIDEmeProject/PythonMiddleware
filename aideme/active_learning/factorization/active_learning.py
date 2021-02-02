@@ -126,25 +126,20 @@ class SwapLearner(ActiveLearner):
 
 class SimplifiedSwapLearner(SwapLearner):
     SWAP_DEFAULT_PARAMS = {'step_size': 0.05, 'max_iter': 100, 'batch_size': 100, 'adapt_step_size': True, 'adapt_every': 1}
-    REFINE_DEFAULT_PARAMS = {'step_size': 0.05, 'max_iter': 10000, 'batch_size': None, 'adapt_step_size': False}
+    REFINE_DEFAULT_PARAMS = {'step_size': 0.05, 'batch_size': None, 'adapt_step_size': False}
 
-    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_on_prediction: bool = True, train_sample_size: Optional[int] = None,
-                 num_subspaces: int = 10, retries: int = 10, prune: bool = True, prune_threshold: float = 0.99):
+    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = None,
+                 num_subspaces: int = 10, retries: int = 10, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 10000):
         from ...active_learning import SimpleMargin
         active_learner = SimpleMargin(C=1e6)
 
-        if train_on_prediction:
-            swap_optimizer_params = self.SWAP_DEFAULT_PARAMS.copy()
-            swap_optimizer_params['N'] = train_sample_size
-        else:
-            swap_optimizer_params = self.REFINE_DEFAULT_PARAMS.copy()
-        swap_model_optimizer = self.get_optimizer(**swap_optimizer_params)
+        swap_model_optimizer = self.get_optimizer(N=train_sample_size, **self.SWAP_DEFAULT_PARAMS)
         swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
 
-        refined_model_optimizer = self.get_optimizer(**self.REFINE_DEFAULT_PARAMS)
+        refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **self.REFINE_DEFAULT_PARAMS)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
-                         swap_iter=swap_iter, train_on_prediction=train_on_prediction, train_sample_size=train_sample_size,
+                         swap_iter=swap_iter, train_sample_size=train_sample_size,
                          prune=prune, prune_threshold=prune_threshold)
 
     @staticmethod

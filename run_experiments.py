@@ -92,16 +92,10 @@ entropy_global_params = {'decompose': True, 'warmup': 100, 'thin': 100, 'roundin
 Entropy = Tag(EntropyReductionLearner, data_sample_size=256, n_samples=32, **entropy_global_params)
 
 # SwapLearner
-swap_global_params = {'num_subspaces': 10, 'prune_threshold': 0.99}
-def Swap(swap_iter, penalty, train_on_prediction=True, train_sample_size=None, retries=1, prune=True) -> Tag:
-    if not train_on_prediction:
-        return Tag(SimplifiedSwapLearner, swap_iter=swap_iter, penalty=penalty,
-                   train_on_prediction=train_on_prediction,
-                   retries=retries, prune=prune)
-
+swap_global_params = {'num_subspaces': 10, 'prune_threshold': 0.99, 'prune': True}
+def Swap(swap_iter, penalty=1e-4, train_sample_size=None, retries=1, prune=True, refine_max_iter=10000) -> Tag:
     return Tag(SimplifiedSwapLearner, swap_iter=swap_iter, penalty=penalty,
-               train_on_prediction=train_on_prediction, train_sample_size=train_sample_size,
-               retries=retries, prune=prune)
+               train_sample_size=train_sample_size, retries=retries, prune=prune, refine_max_iter=refine_max_iter)
 
 active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
@@ -137,23 +131,15 @@ active_learners_list = [
     #Entropy,
 
     # SwapLearner
-    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=False, retries=25, prune=False),
-    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=False, retries=25, prune=True),
-    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
-    #Swap(swap_iter=50, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
-    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=False, retries=25, prune=False),
-    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=False, retries=25, prune=True),
-    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
-    #Swap(swap_iter=50,  penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
+    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=10),
+    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=25),
+    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=50),
+    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=100),
 
-    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=False, retries=25, prune=False),
-    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=False, retries=25, prune=True),
-    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
-    #Swap(swap_iter=100, penalty=1e-4, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
-    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=False, retries=25, prune=False),
-    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=False, retries=25, prune=True),
-    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=False),
-    #Swap(swap_iter=100, penalty=1e-5, train_on_prediction=True, train_sample_size=1000000, retries=5, prune=True),
+    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=10),
+    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=25),
+    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=50),
+    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=100),
 ]
 
 # RUN PARAMS
