@@ -98,7 +98,7 @@ class SwapLearner(ActiveLearner):
 
         self._swap_model.fit(X, y, self._num_subspaces, retries=self._retries, x0=None)
 
-    def __fit_refining_model(self, data: PartitionedDataset, prev_model: LinearFactorizationLearner) -> None:
+    def __fit_refining_model(self, data: PartitionedDataset) -> None:
         X, y = data.training_set()
         self._refining_model.fit(X, y, self._refining_model.num_subspaces, x0=self._refining_model.weight_matrix)
 
