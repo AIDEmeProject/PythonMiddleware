@@ -140,7 +140,7 @@ class LinearFactorizationLearner:
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))
-        return np.where(log_probas > np.log(0.5), 1, 0)
+        return np.where(log_probas > np.log(0.5), 1., 0.)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))

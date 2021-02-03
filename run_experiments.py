@@ -131,10 +131,8 @@ active_learners_list = [
     #Entropy,
 
     # SwapLearner
-    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=10),
-    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=25),
-    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=50),
-    Swap(swap_iter=50, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=100),
+    Tag(SimplifiedSwapLearner, swap_iter=50, penalty=1e-4, train_sample_size=200000, retries=1, refine_max_iter=10),
+    Tag(SimplifiedSwapLearner, swap_iter=50, penalty=0, train_sample_size=200000, retries=1, refine_max_iter=10),
 
     Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=10),
     Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=25),
@@ -155,7 +153,7 @@ CALLBACKS = [
     Tag(training_classification_metrics, score_functions=score_functions, prefix='train_'),
     Tag(classification_metrics, score_functions=score_functions),
     #Tag(three_set_metric),
-    #Tag(compute_factorization),
+    Tag(compute_factorization),
 ]
 
 INITIAL_SAMPLER = Tag(stratified_sampler, pos=1, neg=1, neg_in_all_subspaces=False)

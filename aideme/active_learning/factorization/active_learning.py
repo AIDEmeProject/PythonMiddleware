@@ -84,10 +84,10 @@ class SwapLearner(ActiveLearner):
 
         elif self.is_swap_iter:
             self.__fit_swap_model(data)
-            self.__fit_refining_model(data, self._swap_model)
-
+            self._refining_model._weights = self._swap_model.weights
+            self._refining_model._bias = self._swap_model.bias
         else:
-            self.__fit_refining_model(data, self._refining_model)
+            self.__fit_refining_model(data)
 
     def __fit_swap_model(self, data: PartitionedDataset) -> None:
         if self._train_on_prediction:
@@ -100,7 +100,7 @@ class SwapLearner(ActiveLearner):
 
     def __fit_refining_model(self, data: PartitionedDataset, prev_model: LinearFactorizationLearner) -> None:
         X, y = data.training_set()
-        self._refining_model.fit(X, y, prev_model.num_subspaces, x0=prev_model.weight_matrix)
+        self._refining_model.fit(X, y, self._refining_model.num_subspaces, x0=self._refining_model.weight_matrix)
 
         if self._prune:
             self._refining_model = prune_irrelevant_subspaces(data.data, self._refining_model, threshold=self._prune_threshold)
@@ -128,8 +128,8 @@ class SimplifiedSwapLearner(SwapLearner):
     SWAP_DEFAULT_PARAMS = {'step_size': 0.05, 'max_iter': 100, 'batch_size': 100, 'adapt_step_size': True, 'adapt_every': 1}
     REFINE_DEFAULT_PARAMS = {'step_size': 0.05, 'batch_size': None, 'adapt_step_size': False}
 
-    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = None,
-                 num_subspaces: int = 10, retries: int = 10, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 10000):
+    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
+                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 10):
         from ...active_learning import SimpleMargin
         active_learner = SimpleMargin(C=1e6)
 
