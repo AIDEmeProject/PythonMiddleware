@@ -127,11 +127,15 @@ class SwapLearner(ActiveLearner):
 class SimplifiedSwapLearner(SwapLearner):
     SWAP_DEFAULT_PARAMS = {'step_size': 0.05, 'max_iter': 100, 'batch_size': 100, 'adapt_step_size': True, 'adapt_every': 1}
     REFINE_DEFAULT_PARAMS = {'step_size': 0.05, 'batch_size': None, 'adapt_step_size': False}
+    VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
 
-    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
+    def __init__(self, use_vs: bool = True, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25):
-        from ...active_learning import SimpleMargin
-        active_learner = SimpleMargin(C=1e6)
+        from ...active_learning import SimpleMargin, KernelVersionSpace
+        if use_vs:
+            active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
+        else:
+            active_learner = SimpleMargin(C=1e6)
 
         swap_model_optimizer = self.get_optimizer(N=train_sample_size, **self.SWAP_DEFAULT_PARAMS)
         swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer, max_optimization_attempts=3)
