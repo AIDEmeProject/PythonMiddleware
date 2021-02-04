@@ -129,12 +129,12 @@ class SimplifiedSwapLearner(SwapLearner):
     REFINE_DEFAULT_PARAMS = {'step_size': 0.05, 'batch_size': None, 'adapt_step_size': False}
 
     def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
-                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 10):
+                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25):
         from ...active_learning import SimpleMargin
         active_learner = SimpleMargin(C=1e6)
 
         swap_model_optimizer = self.get_optimizer(N=train_sample_size, **self.SWAP_DEFAULT_PARAMS)
-        swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
+        swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer, max_optimization_attempts=3)
 
         refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **self.REFINE_DEFAULT_PARAMS)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)

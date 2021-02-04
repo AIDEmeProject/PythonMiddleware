@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 from typing import List, Union, TYPE_CHECKING, Tuple
+import warnings
 
 from scipy.special import expit
 
@@ -29,11 +30,14 @@ if TYPE_CHECKING:
 
 
 class LinearFactorizationLearner:
-    def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
+    def __init__(self, optimizer: OptimizationAlgorithm, max_optimization_attempts: int = 2, add_bias: bool = True, interaction_penalty: float = 0,
                  l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_weights: Optional[np.ndarray] = None,
                  huber_penalty: float = 0, huber_delta: float = 1e-3):
+        assert_positive_integer(max_optimization_attempts, 'max_optimization_attempts')
+
         self._optimizer = optimizer
         self.add_bias = add_bias
+        self.max_optimization_attempts = max_optimization_attempts
 
         self.penalty_terms = []
         if l1_penalty > 0 and l2_sqrt_penalty > 0:
@@ -122,18 +126,30 @@ class LinearFactorizationLearner:
         if factorization is not None:
             x0 = x0[:, loss.factorization]
 
+        opt_result, min_val, optimization_attempts = None, np.inf, 0
+
+        while min_val == np.inf and optimization_attempts < self.max_optimization_attempts:
+            min_val, opt_result = self.__run_optimizer(loss, x0)
+            optimization_attempts += 1
+            if min_val == np.inf:
+                warnings.warn("Optimization failed. Retrying with random x0... ({} / {})".format(optimization_attempts, self.max_optimization_attempts))
+                x0 = np.random.normal(size=(retries, num_subspaces, loss.dim))
+
+        if min_val == np.inf:
+            raise RuntimeError("Optimization failed:\n{}".format(opt_result))
+
+        self._bias, self._weights = loss.get_weights_matrix(opt_result.x)
+
+        return opt_result
+
+    def __run_optimizer(self, loss, x0):
         opt_result, min_val = None, np.inf
+
         for starting_point in x0:
             result = self._optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
             if result.fun < min_val:
                 opt_result, min_val = result, result.fun
-
-        if opt_result.fun == np.inf:
-            raise RuntimeError("Optimization failed:\n{}".format(opt_result))
-
-        self._bias, self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
-
-        return opt_result
+        return min_val, opt_result
 
     def _get_loss(self, X: np.ndarray, y: np.ndarray, factorization: Optional[List[List[int]]] = None) -> LinearFactorizationLoss:
         return LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias, penalty_terms=self.penalty_terms, factorization=factorization)

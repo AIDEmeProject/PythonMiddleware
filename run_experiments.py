@@ -91,12 +91,6 @@ ProdFactVSNoCat =   Tag(SubspatialVersionSpace, loss='PRODUCT', numerical_only=T
 entropy_global_params = {'decompose': True, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
 Entropy = Tag(EntropyReductionLearner, data_sample_size=256, n_samples=32, **entropy_global_params)
 
-# SwapLearner
-swap_global_params = {'num_subspaces': 10, 'prune_threshold': 0.99, 'prune': True}
-def Swap(swap_iter, penalty=1e-4, train_sample_size=None, retries=1, prune=True, refine_max_iter=10000) -> Tag:
-    return Tag(SimplifiedSwapLearner, swap_iter=swap_iter, penalty=penalty,
-               train_sample_size=train_sample_size, retries=retries, prune=prune, refine_max_iter=refine_max_iter)
-
 active_learners_list = [
     # STATE-OF-THE-ART VS ALGORITHMS
     #SM,
@@ -131,13 +125,9 @@ active_learners_list = [
     #Entropy,
 
     # SwapLearner
-    Tag(SimplifiedSwapLearner, swap_iter=50, penalty=1e-4, train_sample_size=200000, retries=1, refine_max_iter=10),
-    Tag(SimplifiedSwapLearner, swap_iter=50, penalty=0, train_sample_size=200000, retries=1, refine_max_iter=10),
+    Tag(SimplifiedSwapLearner, swap_iter=50 , penalty=1e-4, train_sample_size=200000, retries=1, refine_max_iter=25),
+    Tag(SimplifiedSwapLearner, swap_iter=100, penalty=1e-4, train_sample_size=200000, retries=1, refine_max_iter=25),
 
-    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=10),
-    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=25),
-    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=50),
-    Swap(swap_iter=100, penalty=1e-4, train_sample_size=1000000, retries=5, refine_max_iter=100),
 ]
 
 # RUN PARAMS
