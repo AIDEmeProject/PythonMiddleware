@@ -42,32 +42,6 @@ cpdef double[::1] compute_log_probas(double[:, ::1] margin):
 @boundscheck(False)
 @wraparound(False)
 @cdivision(True)
-def compute_grad_factors(double[:, ::1] margin, double[::1] y):
-    cdef:
-        Py_ssize_t i, j
-        Py_ssize_t N = margin.shape[0], K = margin.shape[1]
-        double[::1] log_probas = compute_log_probas(margin)
-
-    grad_factors = np.empty((N, K), dtype=np.float64)
-    cdef:
-        double weight
-        double[:, ::1] grad_factors_view = grad_factors
-
-    for i in range(N):
-        if y[i] > 0:
-            weight = -1. / N
-        else:
-            weight = 1. / (N * expm1(-log_probas[i]))
-
-        for j in range(K):
-            grad_factors_view[i, j] = weight * msigmoid(margin[i, j])
-
-    return grad_factors
-
-
-@boundscheck(False)
-@wraparound(False)
-@cdivision(True)
 def compute_loss(double[:, ::1] margin, double[::1] y):
     cdef:
         Py_ssize_t i, N = margin.shape[0]
@@ -78,7 +52,7 @@ def compute_loss(double[:, ::1] margin, double[::1] y):
         lp = log_probas[i]
 
         if y[i] > 0:
-            loss -= lp
+            loss -= y[i] * lp
         else:
             loss -= log1mexp(lp)
 
@@ -122,7 +96,7 @@ def compute_classification_loss(double[::1] log_probas, double[::1] y):
 
     for i in range(N):
         if y[i] > 0:
-            loss -= log_probas[i]
+            loss -= y[i] * log_probas[i]
         else:
             loss -= log1mexp(log_probas[i])
 
@@ -139,7 +113,7 @@ def grad_weights(double[::1] x, double[::1] y):
         double[::1] res = np.empty(N)
 
     for i in range(N):
-        res[i] = -1 if y[i] > 0 else 1. / expm1(-x[i])
+        res[i] = -y[i] if y[i] > 0 else 1. / expm1(-x[i])
 
     return res
 

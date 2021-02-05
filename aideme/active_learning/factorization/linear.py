@@ -247,7 +247,7 @@ class LinearFactorizationLoss:
             X, y = self.X[idx], self.y[idx]
 
         margins = self.__compute_margin(X, bias, weights)
-        grad_weights = utils.compute_grad_factors(margins, y)
+        grad_weights = self.__compute_grad_weights(margins, y)
         grad_b, grad_w = self.__compute_grad(X, grad_weights)
 
         # add penalty terms
@@ -284,6 +284,16 @@ class LinearFactorizationLoss:
             grad_b = grad_weights.sum(axis=0)
 
         return grad_b, grad_w
+
+    def __compute_grad_weights(self, margins: np.ndarray, y: np.ndarray):
+        probas = expit(margins)
+
+        weights = probas.prod(axis=1)
+        np.true_divide(weights, 1 - weights, out=weights, where=weights < 1)
+        weights[y > 0] = -1
+        weights /= margins.shape[0]
+
+        return (1 - probas) * weights.reshape(-1, 1)
 
     def get_weights_matrix(self, weights: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if self.factorization is None:

@@ -190,23 +190,20 @@ class Adam(SearchDirectionOptimizer):
         self._beta2 = beta2
         self._epsilon = epsilon
 
-        self._beta1_t = 1.0
-        self._beta2_t = 1.0
         self._mt = self._vt = 0
 
     def _reset(self):
-        self._beta1_t = 1.0
-        self._beta2_t = 1.0
         self._mt = self._vt = 0
 
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         self._mt = self._beta1 * self._mt + (1 - self._beta1) * result.grad
         self._vt = self._beta2 * self._vt + (1 - self._beta2) * np.square(result.grad)
 
-        self._beta1_t *= self._beta1
-        self._beta2_t *= self._beta2
+        it = result.it + 1
+        beta1_t = self._beta1 ** it
+        beta2_t = self._beta2 ** it
 
-        m_hat = self._mt / (1 - self._beta1_t)
-        v_hat = self._vt / (1 - self._beta2_t)
+        m_hat = self._mt / (1 - beta1_t)
+        v_hat = self._vt / (1 - beta2_t)
 
         return m_hat / (np.sqrt(v_hat) + self._epsilon)
