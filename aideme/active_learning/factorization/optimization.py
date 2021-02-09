@@ -105,20 +105,20 @@ class BFGS(OptimizationAlgorithm):
 
 class SearchDirectionOptimizer(OptimizationAlgorithm):
     def __init__(self, batch_size: Optional[int] = None,
-                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
+                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1, exp_decay: float = 0,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive_integer(batch_size, 'batch_size', allow_none=True)
         super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         self.batch_size = batch_size
-        self._step_size_scheduler = self.__get_step_size_scheduler(step_size, adapt_step_size, adapt_every, power)
+        self._step_size_scheduler = self.__get_step_size_scheduler(step_size, adapt_step_size, adapt_every, power, exp_decay)
 
     @staticmethod
-    def __get_step_size_scheduler(step_size: Optional[float], adapt_step_size: bool, adapt_every: int, power: float) -> StepSizeScheduler:
+    def __get_step_size_scheduler(step_size: Optional[float], adapt_step_size: bool, adapt_every: int, power: float, exp_decay: float) -> StepSizeScheduler:
         if step_size is None:
             return LineSearchScheduler()
 
         if adapt_step_size:
-            return PowerDecayScheduler(step_size=step_size, power=power, adapt_every=adapt_every)
+            return ExponentialDecayScheduler(step_size=step_size, decay=exp_decay, adapt_every=adapt_every) if exp_decay > 0 else PowerDecayScheduler(step_size=step_size, power=power, adapt_every=adapt_every)
 
         return FixedScheduler(step_size)
 
@@ -150,9 +150,10 @@ class NoisyGradientDescent(SearchDirectionOptimizer):
 
 class ProximalGradientDescent(SearchDirectionOptimizer):
     def __init__(self, penalty_term: Optional[PenaltyTerm] = None, batch_size: Optional[int] = None,
-                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1, exp_decay: float = 0,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        super().__init__(batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+        super().__init__(batch_size=batch_size, step_size=step_size,
+                         adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power, exp_decay=exp_decay,
                          gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
         self.penalty_term = penalty_term
@@ -178,12 +179,13 @@ class ProximalGradientDescent(SearchDirectionOptimizer):
 
 class Adam(SearchDirectionOptimizer):
     def __init__(self, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8, batch_size: Optional[int] = None,
-                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 0.5,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 0.5, exp_decay: float = 0,
                  gtol: float = 1e-4, max_iter: Optional[int] = None, rel_tol: float = 0, callback: Optional[Callable] = None, verbose: bool = False):
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')
-        super().__init__(batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+        super().__init__(batch_size=batch_size, step_size=step_size,
+                         adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power, exp_decay=exp_decay,
                          gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
         self._beta1 = beta1
