@@ -130,27 +130,30 @@ class SimplifiedSwapLearner(SwapLearner):
     VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
 
     def __init__(self, use_vs: bool = True, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
-                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25):
+                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25,
+                 exp_decay: float = 0):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
         else:
             active_learner = SimpleMargin(C=1e6)
 
-        swap_model_optimizer = self.get_optimizer(N=train_sample_size, **self.SWAP_DEFAULT_PARAMS)
+        swap_model_optimizer = self.get_optimizer(N=train_sample_size, exp_decay=exp_decay, **self.SWAP_DEFAULT_PARAMS)
         swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
 
         refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **self.REFINE_DEFAULT_PARAMS)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
+
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
                          prune=prune, prune_threshold=prune_threshold)
 
     @staticmethod
-    def get_optimizer(step_size, max_iter, batch_size=None, adapt_step_size=False, adapt_every=1, N=None):
+    def get_optimizer(step_size: float, max_iter: int, batch_size: Optional[int] = None, adapt_step_size: bool = False,
+                      adapt_every: int = 1, exp_decay: float = 0, N: Optional[int] = None):
         from .optimization import Adam
         options = {
-            'step_size': step_size, 'max_iter': max_iter,
+            'step_size': step_size, 'max_iter': max_iter, 'exp_decay': exp_decay,
             'batch_size': batch_size, 'adapt_step_size': adapt_step_size,  'adapt_every': adapt_every,
             'gtol': 0, 'rel_tol': 0, 'verbose': False  # assert only max_iter is taken into account for convergence
         }
