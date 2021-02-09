@@ -131,14 +131,21 @@ class SimplifiedSwapLearner(SwapLearner):
 
     def __init__(self, use_vs: bool = True, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25,
-                 exp_decay: float = 0):
+                 use_exp_decay: float = False):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
         else:
             active_learner = SimpleMargin(C=1e6)
 
-        swap_model_optimizer = self.get_optimizer(N=train_sample_size, exp_decay=exp_decay, **self.SWAP_DEFAULT_PARAMS)
+        params = self.SWAP_DEFAULT_PARAMS.copy()
+        if use_exp_decay:
+            params['exp_decay'] = 0.9
+            params['max_iter'] = 250
+            params['batch_size'] = 250
+            params['adapt_every'] = 20
+
+        swap_model_optimizer = self.get_optimizer(N=train_sample_size, **self.SWAP_DEFAULT_PARAMS)
         swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
 
         refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **self.REFINE_DEFAULT_PARAMS)
