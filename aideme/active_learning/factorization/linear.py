@@ -45,7 +45,7 @@ class LinearFactorizationLearner:
             self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty, l2_sqrt_weights), optimizer))
 
         if l2_penalty > 0:
-            self.penalty_terms.append(L2Penalty(l2_penalty))
+            self.penalty_terms.append(self.__process_proximal_penalty(L2Penalty(l2_penalty), optimizer))
         if interaction_penalty > 0:
             self.penalty_terms.append(InteractionPenalty(interaction_penalty))
         if huber_penalty > 0:
