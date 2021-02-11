@@ -36,6 +36,9 @@ class PenaltyTerm:
         raise NotImplementedError
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
+        """
+        :return: argmin_y pen(y) + || x - y ||^2 / 2 * eta
+        """
         return None
 
     def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
@@ -125,6 +128,11 @@ class L2Penalty(PenaltyTerm):
     def grad(self, x: np.ndarray) -> np.ndarray:
         return 2 * self._penalty * x
 
+    def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
+        return x / (2 * eta * self._penalty + 1)
+
+    def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
+        return np.linalg.norm(self.grad(x) - v) <= tol
 
 class InteractionPenalty(PenaltyTerm):
     def loss(self, x: np.ndarray) -> float:
