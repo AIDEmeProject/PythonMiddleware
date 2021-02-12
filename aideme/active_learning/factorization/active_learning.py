@@ -23,6 +23,7 @@ import numpy as np
 from aideme.utils import assert_positive_integer, assert_in_range
 from .learn import prune_irrelevant_subspaces
 from .linear import LinearFactorizationLearner
+from .optimization import FISTA
 from ..active_learner import ActiveLearner
 
 if TYPE_CHECKING:
@@ -126,29 +127,29 @@ class SwapLearner(ActiveLearner):
 
 class SimplifiedSwapLearner(SwapLearner):
     SWAP_DEFAULT_PARAMS = {'step_size': 0.1, 'max_iter': 200, 'batch_size': 200, 'adapt_step_size': True, 'adapt_every': 5}
+    SWAP_EXP_DECAY = {'step_size': 0.1, 'max_iter': 250, 'batch_size': 250, 'adapt_step_size': True, 'adapt_every': 20, 'exp_decay': 0.9}
     REFINE_DEFAULT_PARAMS = {'step_size': 0.1, 'batch_size': None, 'adapt_step_size': False}
+    FISTA_DEFAULT_PARAMS = {'step_size': 5, 'batch_size': None, 'adapt_step_size': False}
     VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
 
-    def __init__(self, use_vs: bool = True, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 200000,
+    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25,
-                 use_exp_decay: float = False):
+                 use_vs: bool = True, use_exp_decay: float = False, use_fista: bool = False):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
         else:
             active_learner = SimpleMargin(C=1e6)
 
-        params = self.SWAP_DEFAULT_PARAMS.copy()
-        if use_exp_decay:
-            params['exp_decay'] = 0.9
-            params['max_iter'] = 250
-            params['batch_size'] = 250
-            params['adapt_every'] = 20
-
-        swap_model_optimizer = self.get_optimizer(N=train_sample_size, **self.SWAP_DEFAULT_PARAMS)
+        params = self.SWAP_EXP_DECAY if use_exp_decay else self.SWAP_DEFAULT_PARAMS
+        swap_model_optimizer = self.get_optimizer(N=train_sample_size, **params)
         swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
 
-        refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **self.REFINE_DEFAULT_PARAMS)
+        if use_fista:
+            refined_model_optimizer = FISTA(max_iter=refine_max_iter, **self.FISTA_DEFAULT_PARAMS)
+        else:
+            refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **self.REFINE_DEFAULT_PARAMS)
+
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,

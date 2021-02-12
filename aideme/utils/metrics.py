@@ -26,14 +26,15 @@ Here, 'dataset' is an PartitionedDataset instance and 'active_learner' is a Acti
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, Optional
 
 import numpy as np
-from scipy.special import xlogy
 import sklearn
+from scipy.special import xlogy
 
-from aideme.active_learning.factorization import compute_factorization_structure, prune_irrelevant_subspaces
+from aideme.active_learning.factorization import compute_factorization_structure, prune_irrelevant_subspaces, LinearFactorizationLearner
 from aideme.active_learning.factorization.active_learning import SwapLearner
+from ..active_learning.factorization.optimization import FISTA
 
 if TYPE_CHECKING:
     from .types import Metrics, Callback
@@ -41,29 +42,41 @@ if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
 
 
-def compute_factorization(dataset: PartitionedDataset, active_learner: ActiveLearner):
-    if not isinstance(active_learner, SwapLearner):
-        return {}
+def compute_factorization(max_iter: Optional[int] = 1000, step_size: float = 5, penalty: float = 1e-4):
+    refining_model = None
+    if max_iter is not None:
+        optimizer = FISTA(step_size=step_size, max_iter=max_iter, gtol=0)
+        refining_model = LinearFactorizationLearner(optimizer=optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
-    linear_model = active_learner.linear_model
+    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner):
+        if not isinstance(active_learner, SwapLearner):
+            return {}
 
-    if linear_model is None:
-        return {}
+        if active_learner.is_active_learning_phase:
+            return {}
 
-    pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
-    factorization = compute_factorization_structure(dataset.data, pruned)
+        linear_model = active_learner.linear_model
 
-    subspaces = [list(np.where(s)[0]) for s in factorization]
-    unique_subspaces = sorted([list(np.where(s)[0]) for s in np.unique(factorization, axis=0)])
-    merged_subspaces = []
-    for i, s in enumerate(unique_subspaces):
-        s = set(s)
-        if not any((s.issubset(r) for j, r in enumerate(unique_subspaces) if i != j)):
-            merged_subspaces.append(s)
-    merged_subspaces = sorted(list(s) for s in merged_subspaces)
+        if refining_model is not None:
+            X, y = dataset.training_set()
+            refining_model.fit(X, y, linear_model.num_subspaces, x0=linear_model.weight_matrix)
+            linear_model = refining_model.copy()
 
-    return {'num_subspaces': len(subspaces), 'subspaces': subspaces, 'merged_subspaces': merged_subspaces}
+        pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
+        factorization = compute_factorization_structure(dataset.data, pruned)
 
+        subspaces = [list(np.where(s)[0]) for s in factorization]
+        unique_subspaces = sorted([list(np.where(s)[0]) for s in np.unique(factorization, axis=0)])
+        merged_subspaces = []
+        for i, s in enumerate(unique_subspaces):
+            s = set(s)
+            if not any((s.issubset(r) for j, r in enumerate(unique_subspaces) if i != j)):
+                merged_subspaces.append(s)
+        merged_subspaces = sorted(list(s) for s in merged_subspaces)
+
+        return {'num_subspaces': len(subspaces), 'subspaces': subspaces, 'merged_subspaces': merged_subspaces}
+
+    return compute
 
 def three_set_metric(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
     """
