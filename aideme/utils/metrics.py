@@ -65,7 +65,6 @@ def compute_factorization(max_iter: Optional[int] = 1000, step_size: float = 5, 
         pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
         factorization = compute_factorization_structure(dataset.data, pruned)
 
-        subspaces = [list(np.where(s)[0]) for s in factorization]
         unique_subspaces = sorted([list(np.where(s)[0]) for s in np.unique(factorization, axis=0)])
         merged_subspaces = []
         for i, s in enumerate(unique_subspaces):
@@ -74,7 +73,7 @@ def compute_factorization(max_iter: Optional[int] = 1000, step_size: float = 5, 
                 merged_subspaces.append(s)
         merged_subspaces = sorted(list(s) for s in merged_subspaces)
 
-        return {'num_subspaces': len(subspaces), 'subspaces': subspaces, 'merged_subspaces': merged_subspaces}
+        return {'factorization_{}_{}_{}'.format(max_iter, step_size, penalty): merged_subspaces}
 
     return compute
 

@@ -20,17 +20,22 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from aideme.utils import assert_in_range
+from aideme.utils import assert_in_range, assert_positive
 
 if TYPE_CHECKING:
     from .linear import LinearFactorizationLearner
 
 
-def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearner, threshold: float = 0.99) -> LinearFactorizationLearner:
+def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearner,
+                               threshold: float = 0.99, tol: float = 1e-8) -> LinearFactorizationLearner:
     assert_in_range(threshold, 'threshold', low=0, high=1)
+    assert_positive(tol, 'tol')
 
-    partial_probas = learner.partial_proba(X)
-    relevant_rows = np.where(partial_probas.min(axis=0) < threshold)[0]
+    is_relevant = np.logical_and(
+        learner.partial_proba(X).min(axis=0) < threshold,
+        np.linalg.norm(learner._weights, axis=1) > tol
+    )
+    relevant_rows = np.where(is_relevant)[0]
 
     pruned_learner = learner.copy()
     pruned_learner._weights = learner._weights[relevant_rows]
