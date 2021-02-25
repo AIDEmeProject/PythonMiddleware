@@ -229,7 +229,7 @@ class SimplifiedSwapLearner(SwapLearner):
     REFINE_DEFAULT_PARAMS = {'step_size': 0.1, 'batch_size': None, 'adapt_step_size': False}
     FISTA_DEFAULT_PARAMS = {'step_size': 5, 'batch_size': None, 'adapt_step_size': False}
     VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
-    FACT_VS_PARAMS = {'loss': 'PROD', 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False}
+    FACT_VS_PARAMS = {'loss': 'PRODUCT', 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False}
 
     def __init__(self, swap_iter: int = 50, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 100,
