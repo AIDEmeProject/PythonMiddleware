@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING, Tuple
 
-from .. import PoolBasedExploration, LabeledSet, ActiveLearner, FactorizedActiveLearner
+from .. import PoolBasedExploration, LabeledSet, ActiveLearner, FactorizedActiveLearner, SwapLearner
 from ..io import read_task
 
 if TYPE_CHECKING:
@@ -69,6 +69,9 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
 
     if isinstance(active_learner, FactorizedActiveLearner):
         active_learner.set_factorization_structure(**factorization_info)
+
+    if isinstance(active_learner, SwapLearner):
+        active_learner.set_user_factorization(factorization_info.get('partition', None))
 
     return active_learner
 

@@ -75,6 +75,10 @@ class SwapLearner(ActiveLearner):
         self.__is_full_fact_phase = False
         self.__it = 0
 
+    def set_user_factorization(self, user_factorization):
+        if self._fact_manager is not None:
+            self._fact_manager.set_user_fact(user_factorization)
+
     @property
     def is_active_learning_phase(self) -> bool:
         return self.__it <= self._swap_iter
@@ -181,12 +185,18 @@ class FactorizationManager:
 
         self.update_every = compute_every
         self._stable_count = stable_count
-        self._user_fact = sorted([sorted(s) for s in user_fact])
+        self.set_user_fact(user_fact)
         self.l1_penalty = l1_penalty
         self.l2_sqrt_penalty = l2_sqrt_penalty
 
         self.__fact_count = 0
         self.__fact_prev = None
+
+    def set_user_fact(self, user_fact):
+        if user_fact is not None:
+            user_fact = sorted([sorted(s) for s in user_fact])
+        print(user_fact)
+        self._user_fact = user_fact
 
     def clear(self) -> None:
         self.__fact_count = 0
