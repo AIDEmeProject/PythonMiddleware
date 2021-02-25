@@ -221,9 +221,9 @@ class SimplifiedSwapLearner(SwapLearner):
     VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
     FACT_VS_PARAMS = {'loss': 'PROD', 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False}
 
-    def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
-                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25,
-                 use_vs: bool = True, use_exp_decay: float = False, use_fista: bool = False, fact_penalty: float = 1e-4):
+    def __init__(self, swap_iter: int = 50, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
+                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 100,
+                 use_vs: bool = True, use_exp_decay: float = True, use_fista: bool = True, fact_penalty: float = 5e-4):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
