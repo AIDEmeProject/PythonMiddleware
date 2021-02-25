@@ -17,4 +17,3 @@
 
 from .linear import LinearFactorizationLearner
 from .kernel import KernelFactorizationLearner
-from .learn import prune_irrelevant_subspaces, compute_factorization_structure

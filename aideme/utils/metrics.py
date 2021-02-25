@@ -32,7 +32,8 @@ import numpy as np
 import sklearn
 from scipy.special import xlogy
 
-from aideme.active_learning.factorization import compute_factorization_structure, prune_irrelevant_subspaces, LinearFactorizationLearner
+from aideme.active_learning.factorization import LinearFactorizationLearner
+from aideme.active_learning.factorization.learn import compute_relevant_attributes, prune_irrelevant_subspaces, compute_factorization as comp_fact
 from aideme.active_learning.factorization.active_learning import SwapLearner
 from ..active_learning.factorization.optimization import FISTA
 
@@ -63,17 +64,9 @@ def compute_factorization(max_iter: Optional[int] = 1000, step_size: float = 5, 
             linear_model = refining_model.copy()
 
         pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
-        factorization = compute_factorization_structure(dataset.data, pruned)
+        relevant_attributes = compute_relevant_attributes(dataset.data, pruned)
 
-        unique_subspaces = sorted([list(np.where(s)[0]) for s in np.unique(factorization, axis=0)])
-        merged_subspaces = []
-        for i, s in enumerate(unique_subspaces):
-            s = set(s)
-            if not any((s.issubset(r) for j, r in enumerate(unique_subspaces) if i != j)):
-                merged_subspaces.append(s)
-        merged_subspaces = sorted(list(s) for s in merged_subspaces)
-
-        return {'factorization_{}_{}_{}'.format(max_iter, step_size, penalty): merged_subspaces}
+        return {'factorization_{}_{}_{}'.format(max_iter, step_size, penalty): comp_fact(relevant_attributes)}
 
     return compute
 

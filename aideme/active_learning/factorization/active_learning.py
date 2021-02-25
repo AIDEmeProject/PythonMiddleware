@@ -16,25 +16,28 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 
 import numpy as np
 
-from aideme.utils import assert_positive_integer, assert_in_range
-from .learn import prune_irrelevant_subspaces
+from aideme.active_learning import ActiveLearner, SubspatialVersionSpace
+from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
+from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels
 from .linear import LinearFactorizationLearner
 from .optimization import FISTA
-from ..active_learner import ActiveLearner
 
 if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
+    from aideme.active_learning import FactorizedActiveLearner
 
 
 class SwapLearner(ActiveLearner):
     def __init__(self, active_learner: ActiveLearner,
-                 swap_model: LinearFactorizationLearner, refining_model: Optional[LinearFactorizationLearner] = None, num_subspaces: int = 10, retries: int = 10,
+                 swap_model: LinearFactorizationLearner, refining_model: Optional[LinearFactorizationLearner] = None, num_subspaces: int = 10, retries: int = 1,
                  swap_iter: int = 100, train_on_prediction: bool = True, train_sample_size: Optional[int] = None,
-                 prune: bool = True, prune_threshold: float = 0.99):
+                 prune: bool = True, prune_threshold: float = 0.99,
+                 fact_model: Optional[FactorizedActiveLearner] = None,  user_fact: List[List[int]] = None, compute_fact_every: int = 5, fact_repeat: int = 2,
+                 fact_l1_penalty: float = 1e-4, fact_l2_sqrt_penalty: float = 1e-4):
         assert_positive_integer(swap_iter, 'swap_iter')
         assert_positive_integer(num_subspaces, 'num_subspaces')
         assert_positive_integer(retries, 'retries')
@@ -53,12 +56,23 @@ class SwapLearner(ActiveLearner):
         self._prune = prune
         self._prune_threshold = prune_threshold
 
+        self._fact_model = fact_model
+        if fact_model is None:
+            self._fact_manager = None
+        else:
+            self._fact_manager = FactorizationManager(user_fact=user_fact, compute_every=compute_fact_every, stable_count=fact_repeat,
+                                                      l1_penalty=fact_l1_penalty, l2_sqrt_penalty=fact_l2_sqrt_penalty)
+
+        self.__is_full_fact_phase = False
         self.__it = 0
 
     def clear(self) -> None:
         self._active_learner.clear()
         self._swap_model.clear()
         self._refining_model.clear()
+        self._fact_manager.clear()
+        self._fact_model.clear()
+        self.__is_full_fact_phase = False
         self.__it = 0
 
     @property
@@ -87,8 +101,34 @@ class SwapLearner(ActiveLearner):
             self.__fit_swap_model(data)
             self._refining_model._weights = self._swap_model.weights
             self._refining_model._bias = self._swap_model.bias
+            self.__update_factorization(data)
+
+        elif self.__is_full_fact_phase:
+            # TODO: retrain linear factorization? Pro: possibly more accurate partial labels, Con: retraining from scratch can be slow
+            self._fact_model.fit_data(data)
+
         else:
             self.__fit_refining_model(data)
+            self.__update_factorization(data)
+
+    def __update_factorization(self, data: PartitionedDataset) -> None:
+        if not self.__is_fact_update_iter():
+            return
+
+        factorization, y_partial = self._fact_manager.compute_factorization(data, self.linear_model)
+        self._fact_manager.update(factorization)
+
+        if self._fact_manager.can_switch_to_full_factorization(factorization):
+            data.set_partial_labels(y_partial)
+
+            self._fact_model.set_factorization_structure(partition=factorization, mode='numerical')
+            self._fact_model.fit_data(data)
+            self.__is_full_fact_phase = True
+
+        metric_logger.log_metric('factorization', factorization)
+
+    def __is_fact_update_iter(self) -> bool:
+        return self._fact_manager is not None and (self.__it - self._swap_iter - 1) % self._fact_manager.update_every == 0
 
     def __fit_swap_model(self, data: PartitionedDataset) -> None:
         if self._train_on_prediction:
@@ -109,20 +149,68 @@ class SwapLearner(ActiveLearner):
     def predict(self, X: np.ndarray) -> np.ndarray:
         if self.is_active_learning_phase:
             return self._active_learner.predict(X)
+        elif self.__is_full_fact_phase:
+            return self._fact_model.predict(X)
         else:
             return self._refining_model.predict(X)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         if self.is_active_learning_phase:
             return self._active_learner.predict_proba(X)
+        elif self.__is_full_fact_phase:
+            return self._fact_model.predict_proba(X)
         else:
             return self._refining_model.predict_proba(X)
 
     def rank(self, X: np.ndarray) -> np.ndarray:
         if self.is_active_learning_phase:
             return self._active_learner.rank(X)
+        elif self.__is_full_fact_phase:
+            return self._fact_model.rank(X)
         else:
             return np.abs(self._refining_model.predict_proba(X) - 0.5)
+
+
+class FactorizationManager:
+    def __init__(self, user_fact: List[List[int]], compute_every: int = 5, stable_count: int = 3,
+                 l1_penalty: float = 1e-4, l2_sqrt_penalty: float = 1e-4):
+        assert_positive_integer(compute_every, 'compute_every')
+        assert_positive_integer(stable_count, 'stable_count')
+        assert_positive(l1_penalty, 'l1_penalty')
+        assert_positive(l2_sqrt_penalty, 'l2_sqrt_penalty')
+
+        self.update_every = compute_every
+        self._stable_count = stable_count
+        self._user_fact = sorted([sorted(s) for s in user_fact])
+        self.l1_penalty = l1_penalty
+        self.l2_sqrt_penalty = l2_sqrt_penalty
+
+        self.__fact_count = 0
+        self.__fact_prev = None
+
+    def clear(self) -> None:
+        self.__fact_count = 0
+        self.__fact_prev = None
+
+    def compute_factorization(self, data, linear_model):
+        return compute_factorization_and_partial_labels(data, linear_model, l1_penalty=self.l1_penalty, l2_sqrt_penalty=self.l2_sqrt_penalty)
+
+    def update(self, factorization: List[List[int]]) -> None:
+        if self.__fact_prev is None or factorization != self.__fact_prev:
+            self.__fact_prev = factorization
+            self.__fact_count = 0
+        else:
+            self.__fact_count += 1
+
+    def can_switch_to_full_factorization(self, factorization: List[List[int]]) -> bool:
+        return self.__is_fact_stable() and self.__is_fact_compatible(factorization)
+
+    def __is_fact_stable(self) -> bool:
+        return self.__fact_count >= self._stable_count
+
+    def __is_fact_compatible(self, factorization: List[List[int]]) -> bool:
+        # TODO: what does it mean to be compatible?
+        return self._user_fact == factorization
 
 
 class SimplifiedSwapLearner(SwapLearner):
@@ -131,10 +219,11 @@ class SimplifiedSwapLearner(SwapLearner):
     REFINE_DEFAULT_PARAMS = {'step_size': 0.1, 'batch_size': None, 'adapt_step_size': False}
     FISTA_DEFAULT_PARAMS = {'step_size': 5, 'batch_size': None, 'adapt_step_size': False}
     VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
+    FACT_VS_PARAMS = {'loss': 'PROD', 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False}
 
     def __init__(self, swap_iter: int = 100, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 25,
-                 use_vs: bool = True, use_exp_decay: float = False, use_fista: bool = False):
+                 use_vs: bool = True, use_exp_decay: float = False, use_fista: bool = False, fact_penalty: float = 1e-4):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
@@ -154,7 +243,9 @@ class SimplifiedSwapLearner(SwapLearner):
 
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
-                         prune=prune, prune_threshold=prune_threshold)
+                         prune=prune, prune_threshold=prune_threshold,
+                         fact_model=SubspatialVersionSpace(**self.FACT_VS_PARAMS),
+                         compute_fact_every=5, fact_repeat=2, fact_l1_penalty=fact_penalty, fact_l2_sqrt_penalty=fact_penalty)
 
     @staticmethod
     def get_optimizer(step_size: float, max_iter: int, batch_size: Optional[int] = None, adapt_step_size: bool = False,
