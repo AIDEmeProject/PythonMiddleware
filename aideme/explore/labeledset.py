@@ -39,7 +39,7 @@ class LabeledSet:
         :param index: indexes corresponding to each label. If None, a range index will be assumed.
         """
         self.labels = np.ravel(labels)
-        self.partial = self.set_partial_labels(partial)
+        self.set_partial_labels(partial)
         self.index = self.__get_index(index)
         self.__index_to_row = Index(self.index)
 
@@ -55,8 +55,7 @@ class LabeledSet:
         if partial_labels.shape[0] != len(self):
             raise ValueError("Wrong size of partial_labels: expected {}, but got {}".format(partial_labels.shape[0], len(self)))
 
-        self.partial = partial
-        return partial
+        self.partial = partial_labels
 
     def __get_index(self, index) -> np.ndarray:
         if index is None:
