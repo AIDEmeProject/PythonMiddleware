@@ -20,7 +20,8 @@ from typing import Optional, TYPE_CHECKING, List
 
 import numpy as np
 
-from aideme.active_learning import ActiveLearner, SubspatialVersionSpace
+from aideme.active_learning import ActiveLearner
+from aideme.active_learning.version_space.subspace import SubspatialVersionSpace
 from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
 from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels
 from .linear import LinearFactorizationLearner

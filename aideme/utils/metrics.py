@@ -26,49 +26,17 @@ Here, 'dataset' is an PartitionedDataset instance and 'active_learner' is a Acti
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence, Optional
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 import sklearn
 from scipy.special import xlogy
-
-from aideme.active_learning.factorization import LinearFactorizationLearner
-from aideme.active_learning.factorization.learn import compute_relevant_attributes, prune_irrelevant_subspaces, compute_factorization as comp_fact
-from aideme.active_learning.factorization.active_learning import SwapLearner
-from ..active_learning.factorization.optimization import FISTA
 
 if TYPE_CHECKING:
     from .types import Metrics, Callback
     from aideme.active_learning import ActiveLearner
     from aideme.explore import PartitionedDataset
 
-
-def compute_factorization(max_iter: Optional[int] = 1000, step_size: float = 5, penalty: float = 1e-4):
-    refining_model = None
-    if max_iter is not None:
-        optimizer = FISTA(step_size=step_size, max_iter=max_iter, gtol=0)
-        refining_model = LinearFactorizationLearner(optimizer=optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
-
-    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner):
-        if not isinstance(active_learner, SwapLearner):
-            return {}
-
-        if active_learner.is_active_learning_phase:
-            return {}
-
-        linear_model = active_learner.linear_model
-
-        if refining_model is not None:
-            X, y = dataset.training_set()
-            refining_model.fit(X, y, linear_model.num_subspaces, x0=linear_model.weight_matrix)
-            linear_model = refining_model.copy()
-
-        pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
-        relevant_attributes = compute_relevant_attributes(dataset.data, pruned)
-
-        return {'factorization_{}_{}_{}'.format(max_iter, step_size, penalty): comp_fact(relevant_attributes)}
-
-    return compute
 
 def three_set_metric(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
     """
