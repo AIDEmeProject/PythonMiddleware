@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Iterable, Tuple, Optional
+from typing import Iterable, Tuple, Optional, Sequence
 
 import numpy as np
 import sklearn.utils
@@ -223,6 +223,13 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         :return: all unlabeled points (INFERRED + UNKNOWN)
         """
         return self.__dataset[self.__inferred_start:]
+
+    def from_index(self, idx: Sequence) -> IndexedDataset:
+        """
+        :param idx: list of indexes
+        :return: data points at the specified indexes
+        """
+        return self.__dataset[self.__index_to_row.get_rows(idx)]
 
     def sample(self, size: Optional[int] = None) -> np.ndarray:
         """
