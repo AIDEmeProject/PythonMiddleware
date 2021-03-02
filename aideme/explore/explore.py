@@ -109,9 +109,9 @@ class PoolBasedExploration:
 
     @metric_logger.log_execution_time('iter_time')
     def __run_single_iter(self, labeled_set: LabeledSet, manager: ExplorationManager) -> None:
-        idx = manager.get_next_to_label()
+        data = manager.get_next_to_label()
 
-        user_labels = labeled_set.get_index(idx)  # 'User labeling'
+        user_labels = labeled_set.get_index(data.index)  # 'User labeling'
         metric_logger.log_metrics(user_labels.asdict())
 
         if self.noise_injector and manager.is_exploration_phase:

@@ -63,8 +63,8 @@ class CommandLineExploration:
         print('Welcome to the manual exploration process. \n')
 
         while not manager.converged() and self._is_willing:
-            idx = manager.get_next_to_label()
-            new_labeled_set = self._label(idx, X[idx])
+            data_to_label = manager.get_next_to_label()
+            new_labeled_set = self._label(data_to_label.index, data_to_label.data)
             manager.update(new_labeled_set)
 
     @property

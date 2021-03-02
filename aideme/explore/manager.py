@@ -17,13 +17,14 @@
 from __future__ import annotations
 
 import enum
-from typing import Optional, TYPE_CHECKING, Sequence
+from typing import Optional, TYPE_CHECKING
 
 from ..utils import assert_positive_integer, process_callback, metric_logger
 from ..utils.convergence import all_points_are_labeled
 
 if TYPE_CHECKING:
     from . import LabeledSet, PartitionedDataset
+    from .partitioned import IndexedDataset
     from ..active_learning import ActiveLearner
     from ..utils import InitialSampler, FunctionList, Callback, Convergence, Metrics
 
@@ -118,17 +119,17 @@ class ExplorationManager:
         self.__iters += 1
 
     @metric_logger.log_execution_time('get_next_time')
-    def get_next_to_label(self) -> Sequence:
+    def get_next_to_label(self) -> Optional[IndexedDataset]:
         """
-        :return: the index of the next points to be labeled
+        :return: the next data points to be labeled
         """
         if self.data.unlabeled_size == 0:
-            return []
+            return None
 
         if self.is_initial_sampling_phase:
-            return self.initial_sampler(self.data)
+            return self.data.from_index(self.initial_sampler(self.data))
 
-        return self.active_learner.next_points_to_label(self.data, self.subsampling).index
+        return self.active_learner.next_points_to_label(self.data, self.subsampling)
 
     def converged(self) -> bool:
         """
