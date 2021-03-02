@@ -105,20 +105,20 @@ class BFGS(OptimizationAlgorithm):
 
 class SearchDirectionOptimizer(OptimizationAlgorithm):
     def __init__(self, batch_size: Optional[int] = None,
-                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
+                 step_size: Optional[float] = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1, exp_decay: float = 0,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
         assert_positive_integer(batch_size, 'batch_size', allow_none=True)
         super().__init__(gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
         self.batch_size = batch_size
-        self._step_size_scheduler = self.__get_step_size_scheduler(step_size, adapt_step_size, adapt_every, power)
+        self._step_size_scheduler = self.__get_step_size_scheduler(step_size, adapt_step_size, adapt_every, power, exp_decay)
 
     @staticmethod
-    def __get_step_size_scheduler(step_size: Optional[float], adapt_step_size: bool, adapt_every: int, power: float) -> StepSizeScheduler:
+    def __get_step_size_scheduler(step_size: Optional[float], adapt_step_size: bool, adapt_every: int, power: float, exp_decay: float) -> StepSizeScheduler:
         if step_size is None:
             return LineSearchScheduler()
 
         if adapt_step_size:
-            return PowerDecayScheduler(step_size=step_size, power=power, adapt_every=adapt_every)
+            return ExponentialDecayScheduler(step_size=step_size, decay=exp_decay, adapt_every=adapt_every) if exp_decay > 0 else PowerDecayScheduler(step_size=step_size, power=power, adapt_every=adapt_every)
 
         return FixedScheduler(step_size)
 
@@ -136,8 +136,22 @@ class SearchDirectionOptimizer(OptimizationAlgorithm):
 
 
 class GradientDescent(SearchDirectionOptimizer):
+    def __init__(self, batch_size: Optional[int] = None, momentum: float = 0.9,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1, exp_decay: float = 0,
+                 gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        assert_in_range(momentum, 'momentum', 0, 1)
+        super().__init__(batch_size=batch_size, step_size=step_size,
+                         adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power, exp_decay=exp_decay,
+                         gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
+        self.momentum = momentum
+        self.v = 0
+
+    def _reset(self) -> None:
+        self.v = 0
+
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
-        return result.grad
+        self.v = self.momentum * self.v + (1 - self.momentum) * result.grad
+        return self.v
 
 
 class NoisyGradientDescent(SearchDirectionOptimizer):
@@ -150,9 +164,10 @@ class NoisyGradientDescent(SearchDirectionOptimizer):
 
 class ProximalGradientDescent(SearchDirectionOptimizer):
     def __init__(self, penalty_term: Optional[PenaltyTerm] = None, batch_size: Optional[int] = None,
-                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1, exp_decay: float = 0,
                  gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
-        super().__init__(batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+        super().__init__(batch_size=batch_size, step_size=step_size,
+                         adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power, exp_decay=exp_decay,
                          gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
         self.penalty_term = penalty_term
@@ -160,7 +175,10 @@ class ProximalGradientDescent(SearchDirectionOptimizer):
 
     def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
         step = self._step_size_scheduler(result, func)
-        next_x = result.x - step * result.grad
+        return self._proximal_step(result.x, result.grad, step)
+
+    def _proximal_step(self, x: np.ndarray, grad: np.ndarray, step: float) -> np.ndarray:
+        next_x = x - step * grad
         _, next_weights = self.__separate_bias(next_x)
         np.copyto(next_weights, self.penalty_term.proximal(next_weights, step))
         return next_x
@@ -176,37 +194,65 @@ class ProximalGradientDescent(SearchDirectionOptimizer):
         return bias, x_wo_bias
 
 
+class FISTA(ProximalGradientDescent):
+    def __init__(self, penalty_term: Optional[PenaltyTerm] = None, batch_size: Optional[int] = None,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 1, exp_decay: float = 0,
+                 gtol: float = 1e-4, rel_tol: float = 0, max_iter: Optional[int] = None, callback: Optional[Callable] = None, verbose: bool = False):
+        super().__init__(penalty_term=penalty_term, batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size,
+                         adapt_every=adapt_every, power=power, exp_decay=exp_decay, gtol=gtol, rel_tol=rel_tol, max_iter=max_iter,
+                         callback=callback, verbose=verbose)
+        self.y = None
+        self.theta = 1.
+
+    def _reset(self) -> None:
+        self.y = None
+        self.theta = 1.
+
+    def _advance(self, result: OptimizeResult, func: Callable, grad: Callable) -> np.ndarray:
+        if self.y is None:
+            self.y = result.x
+
+        # update x
+        step = self._step_size_scheduler(result, func)
+        next_x = self._proximal_step(self.y, grad(self.y), step)
+
+        # Update momentum terms y and theta
+        next_th = (1 + np.sqrt(1 + 4 * self.theta * self.theta)) / 2
+        self.y = next_x + ((self.theta - 1) / next_th) * (next_x - result.x)
+        self.theta = next_th
+
+        return next_x
+
+
 class Adam(SearchDirectionOptimizer):
     def __init__(self, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8, batch_size: Optional[int] = None,
-                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 0.5,
+                 step_size: float = 1e-3, adapt_step_size: bool = False, adapt_every: int = 1, power: float = 0.5, exp_decay: float = 0,
                  gtol: float = 1e-4, max_iter: Optional[int] = None, rel_tol: float = 0, callback: Optional[Callable] = None, verbose: bool = False):
         assert_in_range(beta1, 'beta1', 0, 1)
         assert_in_range(beta2, 'beta2', 0, 1)
         assert_positive(epsilon, 'epsilon')
-        super().__init__(batch_size=batch_size, step_size=step_size, adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power,
+        super().__init__(batch_size=batch_size, step_size=step_size,
+                         adapt_step_size=adapt_step_size, adapt_every=adapt_every, power=power, exp_decay=exp_decay,
                          gtol=gtol, rel_tol=rel_tol, max_iter=max_iter, callback=callback, verbose=verbose)
 
         self._beta1 = beta1
         self._beta2 = beta2
         self._epsilon = epsilon
 
-        self._beta1_t = 1.0
-        self._beta2_t = 1.0
         self._mt = self._vt = 0
 
     def _reset(self):
-        self._beta1_t = 1.0
-        self._beta2_t = 1.0
         self._mt = self._vt = 0
 
     def _compute_search_dir(self, result: OptimizeResult) -> np.ndarray:
         self._mt = self._beta1 * self._mt + (1 - self._beta1) * result.grad
         self._vt = self._beta2 * self._vt + (1 - self._beta2) * np.square(result.grad)
 
-        self._beta1_t *= self._beta1
-        self._beta2_t *= self._beta2
+        it = result.it + 1
+        beta1_t = self._beta1 ** it
+        beta2_t = self._beta2 ** it
 
-        m_hat = self._mt / (1 - self._beta1_t)
-        v_hat = self._vt / (1 - self._beta2_t)
+        m_hat = self._mt / (1 - beta1_t)
+        v_hat = self._vt / (1 - beta2_t)
 
         return m_hat / (np.sqrt(v_hat) + self._epsilon)

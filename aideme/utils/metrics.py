@@ -26,14 +26,16 @@ Here, 'dataset' is an PartitionedDataset instance and 'active_learner' is a Acti
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, Optional
 
 import numpy as np
-from scipy.special import xlogy
 import sklearn
+from scipy.special import xlogy
 
-from aideme.active_learning.factorization import compute_factorization_structure, prune_irrelevant_subspaces
+from aideme.active_learning.factorization import LinearFactorizationLearner
+from aideme.active_learning.factorization.learn import compute_relevant_attributes, prune_irrelevant_subspaces, compute_factorization as comp_fact
 from aideme.active_learning.factorization.active_learning import SwapLearner
+from ..active_learning.factorization.optimization import FISTA
 
 if TYPE_CHECKING:
     from .types import Metrics, Callback
@@ -41,29 +43,32 @@ if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
 
 
-def compute_factorization(dataset: PartitionedDataset, active_learner: ActiveLearner):
-    if not isinstance(active_learner, SwapLearner):
-        return {}
+def compute_factorization(max_iter: Optional[int] = 1000, step_size: float = 5, penalty: float = 1e-4):
+    refining_model = None
+    if max_iter is not None:
+        optimizer = FISTA(step_size=step_size, max_iter=max_iter, gtol=0)
+        refining_model = LinearFactorizationLearner(optimizer=optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
-    linear_model = active_learner.linear_model
+    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner):
+        if not isinstance(active_learner, SwapLearner):
+            return {}
 
-    if linear_model is None:
-        return {}
+        if active_learner.is_active_learning_phase:
+            return {}
 
-    pruned = prune_irrelevant_subspaces(dataset.data, linear_model, threshold=0.9)
-    factorization = compute_factorization_structure(dataset.data, pruned)
+        linear_model = active_learner.linear_model
 
-    subspaces = [list(np.where(s)[0]) for s in factorization]
-    unique_subspaces = sorted([list(np.where(s)[0]) for s in np.unique(factorization, axis=0)])
-    merged_subspaces = []
-    for i, s in enumerate(unique_subspaces):
-        s = set(s)
-        if not any((s.issubset(r) for j, r in enumerate(unique_subspaces) if i != j)):
-            merged_subspaces.append(s)
-    merged_subspaces = sorted(list(s) for s in merged_subspaces)
+        if refining_model is not None:
+            X, y = dataset.training_set()
+            refining_model.fit(X, y, linear_model.num_subspaces, x0=linear_model.weight_matrix)
+            linear_model = refining_model.copy()
 
-    return {'num_subspaces': len(subspaces), 'subspaces': subspaces, 'merged_subspaces': merged_subspaces}
+        pruned = prune_irrelevant_subspaces(dataset.data, linear_model)
+        relevant_attributes = compute_relevant_attributes(dataset.data, pruned)
 
+        return {'factorization_{}_{}_{}'.format(max_iter, step_size, penalty): comp_fact(relevant_attributes)}
+
+    return compute
 
 def three_set_metric(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
     """
@@ -100,14 +105,29 @@ def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functio
     :param score_functions: list of metrics to be computed. Available metrics are: 'true_positive', 'false_positive',
     'true_negative', 'false_negative', 'accuracy', 'precision', 'recall', 'fscore'
     :return: all classification scores
+    :param prefix: optional prefix to be added to each score function name
     """
     X_test, y_test = sklearn.utils.check_X_y(X_test, y_test)
+    calculator = __classification_metrics_calculator(score_functions, prefix)
+    return lambda dataset, active_learner: calculator(X_test, y_test, active_learner)
 
+
+def training_classification_metrics(score_functions: Sequence[str], prefix: str = '') -> Callback:
+    calculator = __classification_metrics_calculator(score_functions, prefix)
+
+    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner):
+        X_train, y_train = dataset.training_set()
+        return calculator(X_train, y_train, active_learner)
+
+    return compute
+
+
+def __classification_metrics_calculator(score_functions, prefix: str = ''):
     diff = set(score_functions) - __classification_metrics.keys()
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
+    def compute(X_test: np.ndarray, y_test: np.ndarray, active_learner: ActiveLearner) -> Metrics:
         y_pred = active_learner.predict(X_test)
 
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])

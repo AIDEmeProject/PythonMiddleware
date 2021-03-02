@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 from typing import List, Union, TYPE_CHECKING, Tuple
+import warnings
 
 from scipy.special import expit
 
@@ -44,7 +45,7 @@ class LinearFactorizationLearner:
             self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty, l2_sqrt_weights), optimizer))
 
         if l2_penalty > 0:
-            self.penalty_terms.append(L2Penalty(l2_penalty))
+            self.penalty_terms.append(self.__process_proximal_penalty(L2Penalty(l2_penalty), optimizer))
         if interaction_penalty > 0:
             self.penalty_terms.append(InteractionPenalty(interaction_penalty))
         if huber_penalty > 0:
@@ -122,13 +123,21 @@ class LinearFactorizationLearner:
         if factorization is not None:
             x0 = x0[:, loss.factorization]
 
+        opt_result = self.__run_optimizer(loss, x0)
+        self._bias, self._weights = loss.get_weights_matrix(opt_result.x)
+
+        return opt_result
+
+    def __run_optimizer(self, loss, x0):
         opt_result, min_val = None, np.inf
+
         for starting_point in x0:
             result = self._optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
             if result.fun < min_val:
                 opt_result, min_val = result, result.fun
 
-        self._bias, self._weights = loss.get_weights_matrix(opt_result.x)  # sort matrix in order to make weights more consistent
+        if min_val == np.inf:
+            raise RuntimeError("Optimization failed:\n{}".format(opt_result))
 
         return opt_result
 
@@ -137,7 +146,10 @@ class LinearFactorizationLearner:
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))
-        return np.where(log_probas > np.log(0.5), 1, 0)
+        return np.where(log_probas > np.log(0.5), 1., 0.)
+
+    def partial_predict(self, X: np.ndarray) -> np.ndarray:
+        return np.where(self.partial_proba(X) > 0.5, 1., 0.)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))
@@ -228,7 +240,7 @@ class LinearFactorizationLoss:
             X, y = self.X[idx], self.y[idx]
 
         margins = self.__compute_margin(X, bias, weights)
-        grad_weights = utils.compute_grad_factors(margins, y)
+        grad_weights = self.__compute_grad_weights(margins, y)
         grad_b, grad_w = self.__compute_grad(X, grad_weights)
 
         # add penalty terms
@@ -265,6 +277,16 @@ class LinearFactorizationLoss:
             grad_b = grad_weights.sum(axis=0)
 
         return grad_b, grad_w
+
+    def __compute_grad_weights(self, margins: np.ndarray, y: np.ndarray):
+        probas = expit(margins)
+
+        weights = probas.prod(axis=1)
+        np.true_divide(weights, 1 - weights, out=weights, where=weights < 1)
+        weights[y > 0] = -1
+        weights /= margins.shape[0]
+
+        return (1 - probas) * weights.reshape(-1, 1)
 
     def get_weights_matrix(self, weights: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if self.factorization is None:

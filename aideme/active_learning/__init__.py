@@ -24,11 +24,12 @@ from .random import RandomSampler
 from .uncertainty import UncertaintySampler
 from .version_space import *
 from .entropy import EntropyReductionLearner
+from .factorization.active_learning import SwapLearner, SimplifiedSwapLearner
 
 __all__ = [
     'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
     'DualSpaceModel', 'FactorizedDualSpaceModel',
     'LinearVersionSpace', 'KernelVersionSpace', 'BayesianLinearVersionSpace', 'BayesianKernelVersionSpace',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner',
-    'QueryByDisagreement', 'EntropyReductionLearner'
+    'QueryByDisagreement', 'EntropyReductionLearner', 'SwapLearner', 'SimplifiedSwapLearner'
 ]

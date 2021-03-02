@@ -21,7 +21,7 @@ from scipy.optimize import OptimizeResult, minimize_scalar
 from aideme.utils import assert_positive, assert_positive_integer
 
 
-__all__ = ['StepSizeScheduler', 'FixedScheduler', 'LineSearchScheduler', 'PowerDecayScheduler']
+__all__ = ['StepSizeScheduler', 'FixedScheduler', 'LineSearchScheduler', 'PowerDecayScheduler', 'ExponentialDecayScheduler']
 
 
 class StepSizeScheduler:
@@ -57,3 +57,16 @@ class PowerDecayScheduler(StepSizeScheduler):
 
     def compute_step_size(self, result: OptimizeResult, func: Callable) -> float:
         return self.step_size / (1 + result.it // self.adapt_every) ** self.power
+
+
+class ExponentialDecayScheduler(StepSizeScheduler):
+    def __init__(self, step_size: float, decay: float, adapt_every: int = 1):
+        assert_positive(step_size, 'step_size')
+        assert_positive(decay, 'decay')
+        assert_positive_integer(adapt_every, 'adapt_every')
+        self.step_size = step_size
+        self.decay = decay
+        self.adapt_every = adapt_every
+
+    def compute_step_size(self, result: OptimizeResult, func: Callable) -> float:
+        return self.step_size * self.decay ** (result.it // self.adapt_every)

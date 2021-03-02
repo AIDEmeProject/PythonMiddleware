@@ -262,6 +262,9 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         """
         return self.__labeled_set
 
+    def set_partial_labels(self, y_partial: np.ndarray) -> None:
+        self.__labeled_set.set_partial_labels(y_partial)
+
 
 class IndexedDataset:
     def __init__(self, data: np.ndarray, index: Optional[np.ndarray] = None, copy: bool = False, check_data: bool = True):
