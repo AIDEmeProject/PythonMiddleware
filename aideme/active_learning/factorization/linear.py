@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 from typing import List, Union, TYPE_CHECKING, Tuple
-import warnings
 
 from scipy.special import expit
 

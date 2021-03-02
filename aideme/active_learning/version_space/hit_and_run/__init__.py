@@ -16,4 +16,3 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
 from .hit_and_run import HitAndRunSampler
-from .stan import StanLogisticRegressionSampler
