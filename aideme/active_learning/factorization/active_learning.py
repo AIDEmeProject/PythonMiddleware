@@ -21,7 +21,7 @@ from typing import Optional, TYPE_CHECKING, List
 import numpy as np
 
 from aideme.active_learning import ActiveLearner
-from aideme.active_learning.version_space.subspace import SubspatialVersionSpace
+from aideme.active_learning.version_space.subspace import SubspatialVersionSpace, SubspatialSimpleMargin
 from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
 from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels
 from .linear import LinearFactorizationLearner
@@ -124,9 +124,12 @@ class SwapLearner(ActiveLearner):
         self._fact_manager.update(factorization)
 
         if self._fact_manager.can_switch_to_full_factorization(factorization):
-            data.set_partial_labels(y_partial)
+            idx = self._fact_manager.fact_reindexing
+            factorization, y_partial = [factorization[i] for i in idx], y_partial[:, idx]
 
+            data.set_partial_labels(y_partial)
             self._fact_model.set_factorization_structure(partition=factorization, mode='numerical')
+
             self._fact_model.fit_data(data)
             self.__is_full_fact_phase = True
 
@@ -192,16 +195,17 @@ class FactorizationManager:
 
         self.__fact_count = 0
         self.__fact_prev = None
+        self.fact_reindexing = None
 
     def set_user_fact(self, user_fact):
         if user_fact is not None:
             user_fact = sorted([sorted(s) for s in user_fact])
-        print(user_fact)
         self._user_fact = user_fact
 
     def clear(self) -> None:
         self.__fact_count = 0
         self.__fact_prev = None
+        self.fact_reindexing = None
 
     def compute_factorization(self, data, linear_model):
         return compute_factorization_and_partial_labels(data, linear_model, l1_penalty=self.l1_penalty, l2_sqrt_penalty=self.l2_sqrt_penalty)
@@ -220,8 +224,25 @@ class FactorizationManager:
         return self.__fact_count >= self._stable_count
 
     def __is_fact_compatible(self, factorization: List[List[int]]) -> bool:
-        # TODO: what does it mean to be compatible?
-        return self._user_fact == factorization
+        if len(factorization) != len(self._user_fact):
+            return False
+
+        mapping, inv_mapping = {}, {}
+        for i, subspace in enumerate(factorization):
+            for j, user_subspace in enumerate(self._user_fact):
+                if set(subspace).issubset(user_subspace):
+                    # assert each subspace is compatible with a single user subspace
+                    if i in mapping or j in inv_mapping:
+                        return False
+                    mapping[i] = j
+                    inv_mapping[j] = i
+
+            if i not in mapping:  # subspace is not compatible with any user subspace
+                return False
+
+        self.fact_reindexing = [mapping[i] for i in range(len(mapping))]
+
+        return True
 
 
 class SimplifiedSwapLearner(SwapLearner):
@@ -230,11 +251,12 @@ class SimplifiedSwapLearner(SwapLearner):
     REFINE_DEFAULT_PARAMS = {'step_size': 0.1, 'batch_size': None, 'adapt_step_size': False}
     FISTA_DEFAULT_PARAMS = {'step_size': 5, 'batch_size': None, 'adapt_step_size': False}
     VS_DEFAULT_PARAMS = {'decompose': True, 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': True, 'rounding_options': {'strategy': 'opt', 'z_cut': True, 'sphere_cuts': True}}
+    FACT_SM_PARAMS = {'C': 1e5}
     FACT_VS_PARAMS = {'loss': 'PRODUCT', 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False}
 
     def __init__(self, swap_iter: int = 50, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 100,
-                 use_vs: bool = True, use_exp_decay: float = True, use_fista: bool = True, fact_penalty: float = 5e-4):
+                 use_vs: bool = True, use_fact_vs: bool = False, use_exp_decay: float = True, use_fista: bool = True, fact_penalty: float = 5e-4):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
@@ -252,10 +274,12 @@ class SimplifiedSwapLearner(SwapLearner):
 
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
+        fact_model = SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(**self.FACT_SM_PARAMS)
+
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
                          prune=prune, prune_threshold=prune_threshold,
-                         fact_model=SubspatialVersionSpace(**self.FACT_VS_PARAMS),
+                         fact_model=fact_model,
                          compute_fact_every=5, fact_repeat=2, fact_l1_penalty=fact_penalty, fact_l2_sqrt_penalty=fact_penalty)
 
     @staticmethod
