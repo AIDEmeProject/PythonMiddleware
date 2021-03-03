@@ -43,17 +43,18 @@ class LabeledSet:
         self.index = self.__get_index(index)
         self.__index_to_row = Index(self.index)
 
-    def set_partial_labels(self, partial) -> np.ndarray:
+    def set_partial_labels(self, partial) -> None:
         if partial is None:
-            return self.labels.reshape(-1, 1)
+            partial_labels = self.labels.reshape(-1, 1)
 
-        partial_labels = np.asarray(partial)
+        else:
+            partial_labels = np.asarray(partial)
 
-        if partial_labels.ndim != 2:
-            raise ValueError("Expected two-dimensional array of partial labels, but ndim = {}".format(partial_labels.ndim))
+            if partial_labels.ndim != 2:
+                raise ValueError("Expected two-dimensional array of partial labels, but ndim = {}".format(partial_labels.ndim))
 
-        if partial_labels.shape[0] != len(self):
-            raise ValueError("Wrong size of partial_labels: expected {}, but got {}".format(partial_labels.shape[0], len(self)))
+            if partial_labels.shape[0] != len(self):
+                raise ValueError("Wrong size of partial_labels: expected {}, but got {}".format(partial_labels.shape[0], len(self)))
 
         self.partial = partial_labels
 
