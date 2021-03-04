@@ -77,7 +77,7 @@ def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functio
     """
     X_test, y_test = sklearn.utils.check_X_y(X_test, y_test)
     calculator = __classification_metrics_calculator(score_functions, prefix)
-    return lambda dataset, active_learner: calculator(X_test, y_test, active_learner)
+    return lambda dataset, active_learner: calculator(y_test, active_learner.predict(X_test))
 
 
 def training_classification_metrics(score_functions: Sequence[str], prefix: str = '') -> Callback:
@@ -85,7 +85,7 @@ def training_classification_metrics(score_functions: Sequence[str], prefix: str 
 
     def compute(dataset: PartitionedDataset, active_learner: ActiveLearner):
         X_train, y_train = dataset.training_set()
-        return calculator(X_train, y_train, active_learner)
+        return calculator(y_train, active_learner.predict(X_train))
 
     return compute
 
@@ -95,9 +95,7 @@ def __classification_metrics_calculator(score_functions, prefix: str = ''):
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(X_test: np.ndarray, y_test: np.ndarray, active_learner: ActiveLearner) -> Metrics:
-        y_pred = active_learner.predict(X_test)
-
+    def compute(y_test: np.ndarray, y_pred: np.ndarray) -> Metrics:
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])
         return {prefix + score: __classification_metrics[score](cm) for score in score_functions}
 

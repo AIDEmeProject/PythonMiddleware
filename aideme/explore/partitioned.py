@@ -263,6 +263,10 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         return self.__labeled_set
 
     def set_partial_labels(self, y_partial: np.ndarray) -> None:
+        """
+        Sets the partial labels for the current user labeled set of points
+        :param y_partial: array of partial labels
+        """
         self.__labeled_set.set_partial_labels(y_partial)
 
 
