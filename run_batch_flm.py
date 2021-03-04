@@ -18,6 +18,8 @@ import sys
 from time import perf_counter
 from typing import Optional
 
+import numpy as np
+
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 
@@ -71,13 +73,25 @@ def print_results(learner, X_train, y_train, X_test, y_test, dt, prefix: str = '
 
 
 # EXPERIMENT CONFIGS
-TASK_LIST = ['sdss_q5', 'sdss_q7', 'sdss_q8', 'sdss_q9', 'sdss_q10', 'sdss_q11']
-SUBSAMPLE = 40000
+TASK_LIST = ['sdss_q5', 'sdss_q9']
+SUBSAMPLE = 500000
 TEST_OVER_ALL = True
+DO_REFINING = True
 NUM_SUBSPACES = 10
 RETRIES = 1
 KERNEL_RETRIES = 1
 SEED = 10
+
+# print
+print("""TASK_LIST = {}
+SUBSAMPLE = {}
+TEST_OVER_ALL = {}
+DO_REFINING = {}
+NUM_SUBSPACES = {}
+RETRIES = {}
+KERNEL_RETRIES = {}
+SEED = {}
+""".format(TASK_LIST, SUBSAMPLE, TEST_OVER_ALL, DO_REFINING, NUM_SUBSPACES, RETRIES, KERNEL_RETRIES, SEED))
 
 for TASK in TASK_LIST:
     fres = open('./batch_experiments/{}.res'.format(TASK), mode='w')
@@ -95,15 +109,20 @@ for TASK in TASK_LIST:
         X_train, X_test, y_train, y_test = build_train_test_sets(X, y, train_size=SUBSAMPLE, test_over_all_points=TEST_OVER_ALL)
 
         # train un-penalized model
-        optimizer = get_optimizer(step_size=0.1, max_iter=250, batch_size=250, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
+        optimizer = get_optimizer(step_size=0.05, max_iter=200, batch_size=200, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
         learner_wo_penalty = LinearFactorizationLearner(optimizer)
         dt = train_model_and_measure_time(learner_wo_penalty, X_train, y_train, factorization=NUM_SUBSPACES, retries=RETRIES)
         print_results(learner_wo_penalty, X_train, y_train, X_test, y_test, dt, prefix='LFM w/o penalty: ', file=fres)
 
         # train penalized model
-        optimizer = get_optimizer(step_size=0.05, max_iter=250, batch_size=250, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
+        optimizer = get_optimizer(step_size=0.05, max_iter=200, batch_size=200, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
         learner_w_penalty = LinearFactorizationLearner(optimizer, l1_penalty=L1_PENALTY, l2_sqrt_penalty=L2_SQRT_PENALTY)
-        dt = train_model_and_measure_time(learner_w_penalty, X_train, y_train, factorization=learner_wo_penalty.num_subspaces, x0=learner_wo_penalty.weight_matrix)
+        dt = train_model_and_measure_time(
+            learner_w_penalty, X_train, y_train,
+            factorization=NUM_SUBSPACES if DO_REFINING else learner_wo_penalty.num_subspaces,
+            retries=RETRIES if DO_REFINING else 1,
+            x0=None if DO_REFINING else learner_wo_penalty.weight_matrix
+        )
         print_results(learner_w_penalty, X_train, y_train, X_test, y_test, dt, prefix='FLM w/ penalty: ', file=fres)
 
         # compute factorization
@@ -112,8 +131,20 @@ for TASK in TASK_LIST:
         factorization = compute_factorization(relevant_attrs)
         print('Factorization:', factorization, file=fres)
 
+        # refine pruned learner
+        if DO_REFINING:
+            optimizer = get_optimizer(step_size=0.05, max_iter=200, batch_size=200, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
+            refining_learner = LinearFactorizationLearner(optimizer)
+            dt = train_model_and_measure_time(
+                refining_learner, X_train, y_train,
+                factorization=[list(np.where(s)[0]) for s in relevant_attrs],
+                retries=RETRIES,
+                x0=pruned_learner.weight_matrix
+            )
+            print_results(refining_learner, X_train, y_train, X_test, y_test, dt, prefix='Refined FLM: ', file=fres)
+
         # kernel model
-        optimizer = get_optimizer(step_size=0.05, max_iter=250, batch_size=250, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
+        optimizer = get_optimizer(step_size=0.05, max_iter=200, batch_size=200, adapt_step_size=True, adapt_every=20, exp_decay=0.9, N=SUBSAMPLE)
         kernel_learner = KernelFactorizationLearner(optimizer, nystroem_components=100)
         dt = train_model_and_measure_time(kernel_learner, X_train, y_train, factorization=factorization, retries=KERNEL_RETRIES)
         print_results(kernel_learner, X_train, y_train, X_test, y_test, dt, prefix='FKM: ', file=fres)
