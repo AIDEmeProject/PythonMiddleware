@@ -284,7 +284,7 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
 
         labels = np.empty(len(self.__dataset.data))
         labels[:self.labeled_size] = self.__labeled_set.labels
-        labels[self.labeled_size:] = active_learner.predict(self.unknown.data)
+        labels[self.labeled_size:] = active_learner.predict(self.unlabeled.data)
         return LabeledSet(labels, index=self.__dataset.index)
 
 
