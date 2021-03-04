@@ -16,13 +16,16 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Iterable, Tuple, Optional, Sequence
+from typing import Iterable, Tuple, Optional, Sequence, TYPE_CHECKING
 
 import numpy as np
 import sklearn.utils
 
 from . import LabeledSet
 from .index import Index
+
+if TYPE_CHECKING:
+    from aideme.active_learning import ActiveLearner
 
 
 class PartitionedDataset:  # TODO: how can we add partition information? (factorization)
@@ -263,7 +266,26 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         return self.__labeled_set
 
     def set_partial_labels(self, y_partial: np.ndarray) -> None:
+        """
+        Sets the partial labels for the current user labeled set of points
+        :param y_partial: array of partial labels
+        """
         self.__labeled_set.set_partial_labels(y_partial)
+
+    def predict_user_labels(self, active_learner: ActiveLearner) -> LabeledSet:
+        """
+        Predicts the users labeling across the entire dataset by using the active learning algorithm. Data points already
+        labeled by the user do not have their label modified.
+        :param active_learner: an ActiveLearner for computing predictions
+        :return: a labeled set of containing the predicted user labels
+        """
+        if self.unknown_size == 0:
+            return self.__labeled_set
+
+        labels = np.empty(len(self.__dataset.data))
+        labels[:self.labeled_size] = self.__labeled_set.labels
+        labels[self.labeled_size:] = active_learner.predict(self.unknown.data)
+        return LabeledSet(labels, index=self.__dataset.index)
 
 
 class IndexedDataset:

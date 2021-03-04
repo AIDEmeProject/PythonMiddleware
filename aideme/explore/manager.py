@@ -157,3 +157,10 @@ class ExplorationManager:
                 metrics.update(callback_metrics)
 
         return metrics
+
+    def compute_user_labels_prediction(self) -> LabeledSet:
+        """
+        :return: a LabeledSet instance containing the predicted user labels for all data points. In particular, data points
+        already labeled by the user are guaranteed to have the true user labels.
+        """
+        return self.data.predict_user_labels(self.active_learner)
