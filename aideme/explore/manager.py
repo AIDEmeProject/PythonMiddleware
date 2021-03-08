@@ -39,7 +39,7 @@ class ExplorationManager:
     Class for managing all aspects of the data exploration loop: initial sampling, model update, partition updates,
     callback computation, convergence detection, etc.
     """
-    def __init__(self, data: PartitionedDataset, active_learner: ActiveLearner, subsampling: Optional[int],
+    def __init__(self, data: PartitionedDataset, active_learner: ActiveLearner, subsampling: Optional[int] = None,
                  initial_sampler: Optional[InitialSampler] = None,
                  callback: FunctionList[Callback] = None, callback_skip: int = 1,
                  convergence_criteria: FunctionList[Convergence] = None):

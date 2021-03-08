@@ -132,7 +132,7 @@ class LinearFactorizationLearner:
 
         for starting_point in x0:
             result = self._optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
-            if result.fun < min_val:
+            if result.fun < min_val or min_val == np.inf:
                 opt_result, min_val = result, result.fun
 
         if min_val == np.inf:
