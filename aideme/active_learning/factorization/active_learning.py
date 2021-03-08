@@ -58,11 +58,10 @@ class SwapLearner(ActiveLearner):
         self._prune_threshold = prune_threshold
 
         self._fact_model = fact_model
-        if fact_model is None:
-            self._fact_manager = None
-        else:
-            self._fact_manager = FactorizationManager(user_fact=user_fact, compute_every=compute_fact_every, stable_count=fact_repeat,
-                                                      l1_penalty=fact_l1_penalty, l2_sqrt_penalty=fact_l2_sqrt_penalty)
+        self._fact_manager = FactorizationManager(
+            user_fact=user_fact, compute_every=compute_fact_every, stable_count=fact_repeat,
+            l1_penalty=fact_l1_penalty, l2_sqrt_penalty=fact_l2_sqrt_penalty
+        ) if self._fact_model is not None else None
 
         self.__is_full_fact_phase = False
         self.__it = 0
@@ -71,8 +70,9 @@ class SwapLearner(ActiveLearner):
         self._active_learner.clear()
         self._swap_model.clear()
         self._refining_model.clear()
-        self._fact_manager.clear()
-        self._fact_model.clear()
+        if self._fact_model:
+            self._fact_model.clear()
+            self._fact_manager.clear()
         self.__is_full_fact_phase = False
         self.__it = 0
 
