@@ -40,6 +40,7 @@ class OptimizationAlgorithm:
         self._max_iter = max_iter if max_iter is not None else np.inf
         self._callback = callback
         self._verbose = verbose
+        self._add_grad_to_result = True
 
     def _reset(self) -> None:
         return
@@ -78,13 +79,14 @@ class OptimizationAlgorithm:
     def __update_result_object(self, result: OptimizeResult, new_x: np.ndarray, grad: Callable):
         result.it += 1
         result.prev, result.x = result.x, new_x
-        result.grad = grad(new_x) if result.it < self._max_iter else None
+        if self._add_grad_to_result:
+            result.grad = grad(new_x) if result.it < self._max_iter else None
 
     def __converged(self, result: OptimizeResult) -> bool:
         if result.prev is not None and np.linalg.norm(result.x - result.prev) < self._rel_tol * np.linalg.norm(result.x):
             return True
 
-        return self._gradient_converged(result, self._gtol) if result.grad is not None else False
+        return self._gradient_converged(result, self._gtol) if result.get('grad', None) is not None else False
 
     def __run_callback(self, result: OptimizeResult) -> None:
         if self._callback is not None:
@@ -203,6 +205,7 @@ class FISTA(ProximalGradientDescent):
                          callback=callback, verbose=verbose)
         self.y = None
         self.theta = 1.
+        self._add_grad_to_result = False
 
     def _reset(self) -> None:
         self.y = None
