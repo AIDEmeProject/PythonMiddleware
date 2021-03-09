@@ -275,7 +275,7 @@ class SimplifiedSwapLearner(SwapLearner):
     def __init__(self, swap_iter: int = 50, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 100,
                  use_vs: bool = True, use_fact_vs: bool = False, use_exp_decay: float = True, use_fista: bool = False,
-                 fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
+                 full_fact: bool = False, fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
                  cars: bool = False):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
@@ -294,7 +294,7 @@ class SimplifiedSwapLearner(SwapLearner):
         refined_model_optimizer = self.get_optimizer(use_fista=use_fista, max_iter=refine_max_iter, **params)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
-        fact_model = SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(**self.FACT_SM_PARAMS)
+        fact_model = None if not full_fact else SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(**self.FACT_SM_PARAMS)
 
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
