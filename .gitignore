@@ -18,6 +18,7 @@
 
 # experiments result folder
 /experiments/
+/batch_experiments/
 
 # datasets folder
 /data/

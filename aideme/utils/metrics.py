@@ -28,11 +28,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Sequence
 
-from scipy.special import xlogy
+import numpy as np
 import sklearn
+from scipy.special import xlogy
 
 if TYPE_CHECKING:
-    import numpy as np
     from .types import Metrics, Callback
     from aideme.active_learning import ActiveLearner
     from aideme.explore import PartitionedDataset
@@ -66,27 +66,44 @@ def prediction_entropy(dataset: PartitionedDataset, active_learner: ActiveLearne
     return {'prediction_entropy': entropy.mean()}
 
 
-def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functions: Sequence[str]) -> Callback:
+def classification_metrics(X_test: np.ndarray, y_test: np.ndarray, score_functions: Sequence[str], prefix: str = '') -> Callback:
     """
     :param X_test: the test dataset
     :param y_test: true labels of test set
     :param score_functions: list of metrics to be computed. Available metrics are: 'true_positive', 'false_positive',
     'true_negative', 'false_negative', 'accuracy', 'precision', 'recall', 'fscore'
     :return: all classification scores
+    :param prefix: optional prefix to be added to each score function name
     """
     X_test, y_test = sklearn.utils.check_X_y(X_test, y_test)
+    calculator = __classification_metrics_calculator(score_functions, prefix)
+    return lambda dataset, active_learner: calculator(y_test, active_learner.predict(X_test))
 
+
+def training_classification_metrics(score_functions: Sequence[str], prefix: str = '') -> Callback:
+    calculator = __classification_metrics_calculator(score_functions, prefix)
+
+    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner):
+        X_train, y_train = dataset.training_set()
+        return calculator(y_train, active_learner.predict(X_train))
+
+    return compute
+
+
+def __classification_metrics_calculator(score_functions, prefix: str = ''):
     diff = set(score_functions) - __classification_metrics.keys()
     if len(diff) > 0:
         raise ValueError("Unknown classification metrics: {0}. Supported values are: {1}".format(sorted(diff), sorted(__classification_metrics.keys())))
 
-    def compute(dataset: PartitionedDataset, active_learner: ActiveLearner) -> Metrics:
-        y_pred = active_learner.predict(X_test)
-
+    def compute(y_test: np.ndarray, y_pred: np.ndarray) -> Metrics:
         cm = sklearn.metrics.confusion_matrix(y_test, y_pred, labels=[0, 1])
-        return {score: __classification_metrics[score](cm) for score in score_functions}
+        return {prefix + score: __classification_metrics[score](cm) for score in score_functions}
 
     return compute
+
+
+def __true_divide(x: float, y: float) -> float:
+    return 0. if y == 0 else x / y
 
 
 __classification_metrics = {
@@ -94,12 +111,8 @@ __classification_metrics = {
     'false_positive': lambda cm: cm[0, 1],
     'false_negative': lambda cm: cm[1, 0],
     'true_negative': lambda cm: cm[0, 0],
-    'accuracy': lambda cm: true_divide(cm[0, 0] + cm[1, 1], cm.sum()),
-    'precision': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[0, 1]),
-    'recall': lambda cm: true_divide(cm[1, 1], cm[1, 1] + cm[1, 0]),
-    'fscore': lambda cm: true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
+    'accuracy': lambda cm: __true_divide(cm[0, 0] + cm[1, 1], cm.sum()),
+    'precision': lambda cm: __true_divide(cm[1, 1], cm[1, 1] + cm[0, 1]),
+    'recall': lambda cm: __true_divide(cm[1, 1], cm[1, 1] + cm[1, 0]),
+    'fscore': lambda cm: __true_divide(2 * cm[1, 1], 2 * cm[1, 1] + cm[0, 1] + cm[1, 0]),
 }
-
-
-def true_divide(x: float, y: float) -> float:
-    return 0. if y == 0 else x / y

@@ -14,21 +14,6 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-from .active_learner import ActiveLearner, FactorizedActiveLearner
-from .dsm import DualSpaceModel, FactorizedDualSpaceModel
-from .entropy import EntropyReductionLearner
-from .factorization.active_learning import SwapLearner, SimplifiedSwapLearner
-from .margin import *
-from .nlp import TwoStepsLearner
-from .query_by_disagreement import QueryByDisagreement
-from .random import RandomSampler
-from .uncertainty import UncertaintySampler
-from .version_space import *
 
-__all__ = [
-    'ActiveLearner', 'FactorizedActiveLearner', 'UncertaintySampler', 'RandomSampler', 'SimpleMargin', 'RatioMargin',
-    'DualSpaceModel', 'FactorizedDualSpaceModel',
-    'LinearVersionSpace', 'KernelVersionSpace',
-    'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner',
-    'QueryByDisagreement', 'EntropyReductionLearner', 'SwapLearner', 'SimplifiedSwapLearner'
-]
+from .linear import FactorizedLinearLearner
+from .learn import BruteForceSelector, GreedySelector

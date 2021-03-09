@@ -39,23 +39,24 @@ class LabeledSet:
         :param index: indexes corresponding to each label. If None, a range index will be assumed.
         """
         self.labels = np.ravel(labels)
-        self.partial = self.__get_partial_labels(partial)
+        self.set_partial_labels(partial)
         self.index = self.__get_index(index)
         self.__index_to_row = Index(self.index)
 
-    def __get_partial_labels(self, partial) -> np.ndarray:
+    def set_partial_labels(self, partial) -> None:
         if partial is None:
-            return self.labels.reshape(-1, 1)
+            partial_labels = self.labels.reshape(-1, 1)
 
-        partial_labels = np.asarray(partial)
+        else:
+            partial_labels = np.asarray(partial)
 
-        if partial_labels.ndim != 2:
-            raise ValueError("Expected two-dimensional array of partial labels, but ndim = {}".format(partial_labels.ndim))
+            if partial_labels.ndim != 2:
+                raise ValueError("Expected two-dimensional array of partial labels, but ndim = {}".format(partial_labels.ndim))
 
-        if partial_labels.shape[0] != len(self):
-            raise ValueError("Wrong size of partial_labels: expected {}, but got {}".format(partial_labels.shape[0], len(self)))
+            if partial_labels.shape[0] != len(self):
+                raise ValueError("Wrong size of partial_labels: expected {}, but got {}".format(partial_labels.shape[0], len(self)))
 
-        return partial_labels
+        self.partial = partial_labels
 
     def __get_index(self, index) -> np.ndarray:
         if index is None:

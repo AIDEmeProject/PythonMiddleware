@@ -17,13 +17,14 @@
 from __future__ import annotations
 
 import enum
-from typing import Optional, TYPE_CHECKING, Sequence
+from typing import Optional, TYPE_CHECKING
 
 from ..utils import assert_positive_integer, process_callback, metric_logger
 from ..utils.convergence import all_points_are_labeled
 
 if TYPE_CHECKING:
     from . import LabeledSet, PartitionedDataset
+    from .partitioned import IndexedDataset
     from ..active_learning import ActiveLearner
     from ..utils import InitialSampler, FunctionList, Callback, Convergence, Metrics
 
@@ -38,7 +39,7 @@ class ExplorationManager:
     Class for managing all aspects of the data exploration loop: initial sampling, model update, partition updates,
     callback computation, convergence detection, etc.
     """
-    def __init__(self, data: PartitionedDataset, active_learner: ActiveLearner, subsampling: Optional[int],
+    def __init__(self, data: PartitionedDataset, active_learner: ActiveLearner, subsampling: Optional[int] = None,
                  initial_sampler: Optional[InitialSampler] = None,
                  callback: FunctionList[Callback] = None, callback_skip: int = 1,
                  convergence_criteria: FunctionList[Convergence] = None):
@@ -118,17 +119,17 @@ class ExplorationManager:
         self.__iters += 1
 
     @metric_logger.log_execution_time('get_next_time')
-    def get_next_to_label(self) -> Sequence:
+    def get_next_to_label(self) -> Optional[IndexedDataset]:
         """
-        :return: the index of the next points to be labeled
+        :return: the next data points to be labeled
         """
         if self.data.unlabeled_size == 0:
-            return []
+            return None
 
         if self.is_initial_sampling_phase:
-            return self.initial_sampler(self.data)
+            return self.data.from_index(self.initial_sampler(self.data))
 
-        return self.active_learner.next_points_to_label(self.data, self.subsampling).index
+        return self.active_learner.next_points_to_label(self.data, self.subsampling)
 
     def converged(self) -> bool:
         """
@@ -156,3 +157,10 @@ class ExplorationManager:
                 metrics.update(callback_metrics)
 
         return metrics
+
+    def compute_user_labels_prediction(self) -> LabeledSet:
+        """
+        :return: a LabeledSet instance containing the predicted user labels for all data points. In particular, data points
+        already labeled by the user are guaranteed to have the true user labels.
+        """
+        return self.data.predict_user_labels(self.active_learner)

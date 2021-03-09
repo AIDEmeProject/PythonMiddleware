@@ -14,22 +14,57 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
+import os
 from time import perf_counter
 from typing import Optional, Union
 
 import numpy as np
-import pandas as pd
-from scipy.special import gamma
-from sklearn.metrics import f1_score
-from sklearn.svm import SVC
 
 from aideme.active_learning.aluma import aluma_preprocessing
 from aideme.active_learning.kernel import IncrementedDiagonalKernel, GaussianKernel
 from aideme.utils import assert_positive_integer, assert_in_range
+from aideme.io.utils import get_config_from_resources, write_config_to_resources
 from aideme.utils.random import get_random_state
 
 
+def get_path_to_data_folder():
+    return get_config_from_resources('sources', 'filesystem')['path']
+
+
+def update_config(filename):
+    config_name = filename.rsplit('.', 1)[0]
+
+    write_config_to_resources(
+        'datasets',
+        config_name,
+        {
+            'source': 'filesystem',
+            'filename': filename,
+        }
+    )
+
+    write_config_to_resources(
+        'tasks',
+        config_name,
+        {
+            'dataset': {
+                'tag': config_name
+            }
+        }
+    )
+
+
+def save_data(X, y, path):
+    import pandas as pd
+
+    df = pd.DataFrame(X)
+    df['labels'] = y
+    df.to_csv(path, sep='\t', index=False)
+
+
 def generate_data(size: int, dim: int, selectivity: float, seed: Optional[Union[int, np.random.RandomState]] = None):
+    from scipy.special import gamma
+
     assert_positive_integer(size, 'size')
     assert_positive_integer(dim, 'dim')
     assert_in_range(selectivity, 'selectivity', 0, 1)
@@ -47,12 +82,17 @@ def generate_data(size: int, dim: int, selectivity: float, seed: Optional[Union[
 
     return X, y
 
+
 def assert_linear_separable(X: np.ndarray, y: np.ndarray) -> None:
+    from sklearn.svm import SVC
+    from sklearn.metrics import f1_score
+
     clf = SVC(C=1e5, kernel='linear')
     clf.fit(X, y)
     y_pred = clf.predict(X)
 
     assert f1_score(y, y_pred) == 1, "Data is not linearly separable"
+
 
 # Global params
 SEED = 0
@@ -77,7 +117,7 @@ Dataset: size = {}, dim = {}, selec = {}
 ALuMa: margin = {}, delta = {}, H = {}
 """.format(SIZE, DIM, SELECTIVITY, MARGIN, DELTA, H))
 
-rng = np.random.RandomState(SEED)
+rng = get_random_state(SEED)
 
 # Data generation
 X, y = generate_data(SIZE, DIM, SELECTIVITY, rng)
@@ -93,12 +133,16 @@ if ASSERT_SEPARABLE:
     print('Data is linearly separable.')
 
 # Saving results to disk
-df = pd.DataFrame(X)
-df['labels'] = y
-df.to_csv('./data/original_size={}_dim={}.tsv'.format(SIZE, DIM), sep='\t', index=False)
+path_to_data_folder = get_path_to_data_folder()
 
-df = pd.DataFrame(X_aluma)
-df['labels'] = y
-df.to_csv('./data/aluma_size={}_dim={}.tsv'.format(SIZE, DIM), sep='\t', index=False)
+filename = 'aluma_size={}_dim={}_original.tsv'.format(SIZE, DIM)
+path = os.path.join(path_to_data_folder, filename)
+save_data(X, y, path)
+update_config(filename)
+
+filename = 'aluma_size={}_dim={}_preprocessed.tsv'.format(SIZE, DIM)
+path = os.path.join(path_to_data_folder, filename)
+save_data(X_aluma, y, path)
+update_config(filename)
 
 print("----------------------------------------")

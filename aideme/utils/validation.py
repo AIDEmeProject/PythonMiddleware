@@ -36,7 +36,7 @@ def assert_non_negative_integer(value, name, allow_inf=False, allow_none=False):
 def __assert_positive(type, value, name, allow_inf=False, allow_none=False):
     __assert_non_negative(type, value, name, allow_inf, allow_none)
     if value == 0:
-        raise ValueError("Expected positive integer for {}, got 0".format(name))
+        raise ValueError("Expected positive '{}', got 0".format(name))
 
 def __assert_non_negative(type, value, name, allow_inf=False, allow_none=False):
     if value is None:
@@ -50,7 +50,7 @@ def __assert_non_negative(type, value, name, allow_inf=False, allow_none=False):
         return
 
     if not isinstance(value, type) or value < 0:
-        raise ValueError("{} must be a positive integer, got {}".format(name, value))
+        raise ValueError("'{}' must be a positive, got {}".format(name, value))
 
 def process_callback(callback):
     if not callback:
