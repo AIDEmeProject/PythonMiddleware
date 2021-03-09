@@ -25,7 +25,6 @@ from aideme.active_learning.version_space.subspace import SubspatialVersionSpace
 from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
 from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels
 from .linear import LinearFactorizationLearner
-from .optimization import FISTA
 
 if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
@@ -267,18 +266,14 @@ class SimplifiedSwapLearner(SwapLearner):
             active_learner = SimpleMargin(C=1e6)
 
         params = self.SWAP_CARS if cars else self.SWAP_EXP_DECAY if use_exp_decay else self.SWAP_DEFAULT_PARAMS
-        swap_model_optimizer = self.get_optimizer(N=train_sample_size, **params)
+        swap_model_optimizer = self.get_optimizer(use_fista=False, N=train_sample_size, **params)
         swap_model = LinearFactorizationLearner(optimizer=swap_model_optimizer)
 
         params = self.FISTA_CARS if cars else self.FISTA_DEFAULT_PARAMS if use_fista else self.REFINE_DEFAULT_PARAMS
-        if use_fista:
-            refined_model_optimizer = FISTA(max_iter=refine_max_iter, **params)
-        else:
-            refined_model_optimizer = self.get_optimizer(max_iter=refine_max_iter, **params)
-
+        refined_model_optimizer = self.get_optimizer(use_fista=use_fista, max_iter=refine_max_iter, **params)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
-        fact_model = SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(**self.FACT_SM_PARAMS)
+        fact_model = None if cars else SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(**self.FACT_SM_PARAMS)
 
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
@@ -288,8 +283,8 @@ class SimplifiedSwapLearner(SwapLearner):
 
     @staticmethod
     def get_optimizer(step_size: float, max_iter: int, batch_size: Optional[int] = None, adapt_step_size: bool = False,
-                      adapt_every: int = 1, exp_decay: float = 0, N: Optional[int] = None):
-        from .optimization import Adam
+                      adapt_every: int = 1, exp_decay: float = 0, use_fista: bool = False, N: Optional[int] = None):
+        from .optimization import Adam, FISTA
         options = {
             'step_size': step_size, 'max_iter': max_iter, 'exp_decay': exp_decay,
             'batch_size': batch_size, 'adapt_step_size': adapt_step_size,  'adapt_every': adapt_every,
@@ -302,4 +297,4 @@ class SimplifiedSwapLearner(SwapLearner):
             options['adapt_every'] *= iters_per_epoch
             options['max_iter'] *= iters_per_epoch
 
-        return Adam(**options)
+        return FISTA(**options) if use_fista else Adam(**options)
