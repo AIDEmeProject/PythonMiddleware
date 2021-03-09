@@ -53,12 +53,12 @@ def compute_relevant_attributes(X: np.ndarray, learner: LinearFactorizationLearn
 
 
 def compute_factorization_and_partial_labels(dataset: PartitionedDataset, linear_model: LinearFactorizationLearner,
-                                             l1_penalty: float = 1e-4, l2_sqrt_penalty: float = 1e-4):
-    global_opt_params = {'batch_size': None, 'adapt_step_size': False, 'max_iter': 2500}
+                                             fista_step_size: float = 5, max_iter: int = 2500, l1_penalty: float = 1e-4, l2_sqrt_penalty: float = 1e-4):
+    global_opt_params = {'batch_size': None, 'adapt_step_size': False, 'max_iter': max_iter}
     X, y = dataset.training_set()
 
     # Step 1: refine the current FLM into a sparse model
-    optimizer = FISTA(step_size=5, **global_opt_params)
+    optimizer = FISTA(step_size=fista_step_size, **global_opt_params)
     refining_model = LinearFactorizationLearner(optimizer=optimizer, l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty)
     refining_model.fit(X, y, linear_model.num_subspaces, x0=linear_model.weight_matrix)
 
