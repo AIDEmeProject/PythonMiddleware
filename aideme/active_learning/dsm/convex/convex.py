@@ -27,8 +27,28 @@ class ConvexHull:
     """
     def __init__(self, points, tol=1e-12):
         assert_positive(tol, 'tol')
+        points = np.atleast_2d(points)
+        self.__set_params(points, tol)
 
-        self.hull = scipy.spatial.ConvexHull(np.atleast_2d(points), incremental=True)
+    def __getstate__(self):
+        """
+        Since scipy.spatial.ConvexHull objects are not picklable, we choose to serialize the minimum amount of data
+        necessary for properly reconstructing the object. More precisely, we pickle both the "tol" parameter and the set
+        of "vertices" composing the convex hull.
+        """
+        return {
+            'vertices': self.vertices,
+            'tol': self.tol
+        }
+
+    def __setstate__(self, state):
+        """
+        When unpickling, the convex hull must be rebuilt from scratch since self.hull is not pickable.
+        """
+        self.__set_params(state['vertices'], state['tol'])
+
+    def __set_params(self, points: np.ndarray, tol: float):
+        self.hull = scipy.spatial.ConvexHull(points, incremental=True)
         self.tol = tol
 
     @property
@@ -57,7 +77,7 @@ class ConvexHull:
         Computes whether each data point is inside the convex hull or not
         """
         points = np.atleast_2d(points)
-        return (np.max(points.dot(self.hull.equations[:, :-1].T) + self.hull.equations[:, -1], axis=1) <= self.tol)
+        return np.max(points.dot(self.hull.equations[:, :-1].T) + self.hull.equations[:, -1], axis=1) <= self.tol
 
 
 class ConvexCone:
@@ -70,9 +90,8 @@ class ConvexCone:
         points = np.atleast_2d(points)
 
         self.vertex = np.asarray(vertex)
-        self.convex_hull = ConvexHull(np.vstack([points, self.vertex]), tol)
+        self.convex_hull = ConvexHull(np.vstack([self.vertex, points]), tol)
 
-        self.vertex_id = len(points)
         self.__update_cone_equations()
 
         self.tol = -tol
@@ -85,7 +104,7 @@ class ConvexCone:
         self.__update_cone_equations()
 
     def __update_cone_equations(self):
-        self.equations = self.convex_hull.equations_defining_vertex(self.vertex_id)
+        self.equations = self.convex_hull.equations_defining_vertex(0)
 
         if len(self.equations) == 0:
             raise ConvexError
@@ -95,7 +114,7 @@ class ConvexCone:
         Computes whether a point is inside the negative cone or not
         """
         points = np.atleast_2d(points)
-        return (np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol)
+        return np.min(points.dot(self.equations[:, :-1].T) + self.equations[:, -1], axis=1) >= self.tol
 
 
 class ConvexError(Exception):

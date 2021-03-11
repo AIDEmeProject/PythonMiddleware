@@ -15,6 +15,7 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 
+import pickle
 import pytest
 
 from scipy.spatial.qhull import QhullError
@@ -133,6 +134,14 @@ class TestConvexHull:
         assert_arrays_have_same_rows(hull.equations_defining_vertex(2), [[-1, 0, 0], [0, 1, -1]])  # -x <= 0,  y <= 1
         assert_arrays_have_same_rows(hull.equations_defining_vertex(3), [[1, 0, -1], [0, 1, -1]])  #  x <= 1,  y <= 1
 
+    def test_pickle_loads_identical_convex_hull(self):
+        vertices = [[0, 0], [1, 0], [0, 1], [1, 1]]
+
+        hull = ConvexHull(vertices)
+        pickled_hull = pickle.dumps(hull)
+        restored_hull = pickle.loads(pickled_hull)
+        assert hull.tol == restored_hull.tol and np.allclose(hull.vertices, restored_hull.vertices)
+
 
 class TestConvexCone:
     def test_vertex_and_points_have_incompatible_dimensions(self):
@@ -222,3 +231,15 @@ class TestConvexCone:
         with pytest.raises(ValueError):
             assert cone.add_points_to_hull([1, 2, 3])
             assert cone.add_points_to_hull([[1, 2, 3], [4, 5, 6]])
+
+    def test_is_inside_after_adding_points(self):
+        vertex = [0, 1]
+        points = [[0, 0], [1, 0]]
+        check_point = [0.5, 2]
+
+        cone = ConvexCone(points, vertex)
+
+        assert not cone.is_inside(check_point)  # external point
+        cone.add_points_to_hull([-1, 0])
+        assert cone.is_inside(check_point)  # interior point after update
+
