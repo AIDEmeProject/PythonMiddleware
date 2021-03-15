@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, List
+from typing import Optional, Callable, TYPE_CHECKING, List
 
 import numpy as np
 
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 class SwapLearner(ActiveLearner):
     def __init__(self, active_learner: ActiveLearner,
                  swap_model: LinearFactorizationLearner, refining_model: Optional[LinearFactorizationLearner] = None, num_subspaces: int = 10, retries: int = 1,
+                 max_iter_adapter: Optional[Callable[[int], int]] = None,
                  swap_iter: int = 100, train_on_prediction: bool = True, train_sample_size: Optional[int] = None,
                  prune: bool = True, prune_threshold: float = 0.99,
                  fact_model: Optional[FactorizedActiveLearner] = None,  user_fact: List[List[int]] = None, compute_fact_every: int = 5, fact_repeat: int = 2,
@@ -51,6 +52,7 @@ class SwapLearner(ActiveLearner):
         self._swap_iter = swap_iter
         self._num_subspaces = num_subspaces
         self._retries = retries
+        self._max_iter_adapter = max_iter_adapter
         self._train_on_prediction = train_on_prediction
         self._train_sample_size = train_sample_size
         self._prune = prune
@@ -149,6 +151,8 @@ class SwapLearner(ActiveLearner):
 
     def __fit_refining_model(self, data: PartitionedDataset) -> None:
         X, y = data.training_set()
+        if self._max_iter_adapter is not None:
+            self._refining_model._optimizer._max_iter = self._max_iter_adapter(self.__it - self._swap_iter - 1)
         self._refining_model.fit(X, y, self._refining_model.num_subspaces, x0=self._refining_model.weight_matrix)
 
         if self._prune:
@@ -272,7 +276,8 @@ class SimplifiedSwapLearner(SwapLearner):
     FACT_VS_PARAMS = {'loss': 'PRODUCT', 'n_samples': 16, 'warmup': 100, 'thin': 100, 'rounding': True, 'rounding_cache': False}
 
     def __init__(self, swap_iter: int = 50, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
-                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99, refine_max_iter: int = 100,
+                 num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99,
+                 adapt_max_iter: bool = False, refine_min_iter: int = 10, refine_max_iter: int = 100, refine_every: int = 5, refine_increment: int = 10,
                  use_vs: bool = True, use_fact_vs: bool = False, fact_C: float = 1e3, use_exp_decay: float = True, use_fista: bool = False,
                  full_fact: bool = False, fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
                  cars: bool = False):
@@ -295,7 +300,12 @@ class SimplifiedSwapLearner(SwapLearner):
 
         fact_model = None if not full_fact else SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(C=fact_C)
 
+        max_iter_adapter = None
+        if adapt_max_iter:
+            max_iter_adapter = lambda it: min(refine_min_iter + refine_increment * (it // refine_every), refine_max_iter)
+
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
+                         max_iter_adapter=max_iter_adapter,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
                          prune=prune, prune_threshold=prune_threshold,
                          fact_model=fact_model,
