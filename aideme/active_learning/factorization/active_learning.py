@@ -278,6 +278,7 @@ class SimplifiedSwapLearner(SwapLearner):
     def __init__(self, swap_iter: int = 50, penalty: float = 1e-4, train_sample_size: Optional[int] = 500000,
                  num_subspaces: int = 10, retries: int = 1, prune: bool = True, prune_threshold: float = 0.99,
                  adapt_max_iter: bool = False, refine_min_iter: int = 10, refine_max_iter: int = 100, refine_every: int = 5, refine_increment: int = 10,
+                 refine_step_size: Optional[float] = None,
                  use_vs: bool = True, use_fact_vs: bool = False, fact_C: float = 1e3, use_exp_decay: float = True, use_fista: bool = False,
                  full_fact: bool = False, fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
                  cars: bool = False):
@@ -295,6 +296,9 @@ class SimplifiedSwapLearner(SwapLearner):
             params = self.FISTA_CARS if cars else self.FISTA_DEFAULT_PARAMS
         else:
             params = self.REFINE_CARS if cars else self.REFINE_DEFAULT_PARAMS
+        if refine_step_size:
+            params['step_size'] = refine_step_size
+
         refined_model_optimizer = self.get_optimizer(use_fista=use_fista, max_iter=refine_max_iter, **params)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer, l2_sqrt_penalty=penalty, l1_penalty=penalty)
 
