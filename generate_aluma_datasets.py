@@ -23,6 +23,7 @@ import numpy as np
 from aideme.active_learning.aluma import aluma_preprocessing
 from aideme.active_learning.kernel import IncrementedDiagonalKernel, GaussianKernel
 from aideme.utils import assert_positive_integer, assert_in_range
+from aideme.io import read_task
 from aideme.io.utils import get_config_from_resources, write_config_to_resources
 from aideme.utils.random import get_random_state
 
@@ -83,6 +84,11 @@ def generate_data(size: int, dim: int, selectivity: float, seed: Optional[Union[
     return X, y
 
 
+def read_cars_query(query_number):
+    data = read_task('user_study_' + query_number)
+    return data['data'].values, data['labels'].values
+
+
 def assert_linear_separable(X: np.ndarray, y: np.ndarray) -> None:
     from sklearn.svm import SVC
     from sklearn.metrics import f1_score
@@ -104,6 +110,10 @@ SIZE = int(1e4)
 DIM = 2
 SELECTIVITY = 0.01
 
+CAR_QUERY = 2
+IS_CARS = CAR_QUERY is not None
+CAR_TASK = str(CAR_QUERY) if CAR_QUERY >= 10 else '0' + str(CAR_QUERY) if IS_CARS else None
+
 # Aluma params
 MARGIN = 1.3
 DELTA = 1.0
@@ -112,15 +122,17 @@ H = 0
 #######################
 # BEGIN ALGORITHM
 #######################
+
+dataset_desc = 'cars {}'.format(CAR_TASK) if IS_CARS else 'size = {}, dim = {}, selec = {}'.format(SIZE, DIM, SELECTIVITY)
 print("""--------ALuMa Dataset Generator---------
-Dataset: size = {}, dim = {}, selec = {}
+Dataset: {}
 ALuMa: margin = {}, delta = {}, H = {}
-""".format(SIZE, DIM, SELECTIVITY, MARGIN, DELTA, H))
+""".format(dataset_desc, MARGIN, DELTA, H))
 
 rng = get_random_state(SEED)
 
 # Data generation
-X, y = generate_data(SIZE, DIM, SELECTIVITY, rng)
+X, y = read_cars_query(CAR_TASK) if IS_CARS else generate_data(SIZE, DIM, SELECTIVITY, rng)
 print('Generated data. # positive points =', y.sum())
 
 # ALuMa preprocessing
@@ -135,12 +147,13 @@ if ASSERT_SEPARABLE:
 # Saving results to disk
 path_to_data_folder = get_path_to_data_folder()
 
-filename = 'aluma_size={}_dim={}_original.tsv'.format(SIZE, DIM)
-path = os.path.join(path_to_data_folder, filename)
-save_data(X, y, path)
-update_config(filename)
+if not IS_CARS:
+    filename = 'aluma_size={}_dim={}_original.tsv'.format(SIZE, DIM)
+    path = os.path.join(path_to_data_folder, filename)
+    save_data(X, y, path)
+    update_config(filename)
 
-filename = 'aluma_size={}_dim={}_preprocessed.tsv'.format(SIZE, DIM)
+filename = 'aluma_user_study_{}_preprocessed.tsv'.format(CAR_TASK) if IS_CARS else 'aluma_size={}_dim={}_preprocessed.tsv'.format(SIZE, DIM)
 path = os.path.join(path_to_data_folder, filename)
 save_data(X_aluma, y, path)
 update_config(filename)

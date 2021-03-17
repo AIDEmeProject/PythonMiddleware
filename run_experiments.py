@@ -32,10 +32,13 @@ def get_aluma(sizes, dims, original=True):
             tasks.append('aluma_size={}_dim={}_{}'.format(size, dim, suffix))
     return tasks
 
-def get_user_study(ls):
+def get_user_study(ls, aluma=False):
     assert set(ls).issubset(range(1, 19))
     process = lambda x: str(x) if x >= 10 else '0' + str(x)
-    return ['user_study_' + num for num in map(process, ls)]
+    tasks = ['user_study_' + num for num in map(process, ls)]
+    if aluma:
+        tasks = ['aluma_' + t + '_preprocessed' for t in tasks]
+    return tasks
 
 
 def get_sdss(queries):
