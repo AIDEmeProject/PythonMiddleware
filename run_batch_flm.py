@@ -129,6 +129,9 @@ for TASK in TASK_LIST:
         pruned_learner = prune_irrelevant_subspaces(X_train, learner_w_penalty)
         relevant_attrs = compute_relevant_attributes(X_train, pruned_learner)
         factorization = compute_factorization(relevant_attrs)
+        subspaces = [list(np.where(s)[0]) for s in relevant_attrs]
+        print('# relevant subspaces:', len(relevant_attrs), file=fres)
+        print('Relevant attrs:', subspaces, file=fres)
         print('Factorization:', factorization, file=fres)
 
         # refine pruned learner
@@ -137,7 +140,7 @@ for TASK in TASK_LIST:
             refining_learner = LinearFactorizationLearner(optimizer)
             dt = train_model_and_measure_time(
                 refining_learner, X_train, y_train,
-                factorization=[list(np.where(s)[0]) for s in relevant_attrs],
+                factorization=subspaces,
                 retries=RETRIES,
                 x0=pruned_learner.weight_matrix
             )
