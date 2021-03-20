@@ -23,7 +23,7 @@ import numpy as np
 from aideme.active_learning import ActiveLearner
 from aideme.active_learning.version_space.subspace import SubspatialVersionSpace, SubspatialSimpleMargin
 from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
-from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels
+from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels, compute_relevant_attributes, compute_factorization
 from .linear import LinearFactorizationLearner
 
 if TYPE_CHECKING:
@@ -121,6 +121,10 @@ class SwapLearner(ActiveLearner):
     def __update_factorization(self, data: PartitionedDataset) -> None:
         if not self.__is_fact_update_iter():
             return
+
+        relevant_attrs = compute_relevant_attributes(data.data, self._refining_model)
+        metric_logger.log_metric('subspaces_refine', [list(np.where(s)[0]) for s in relevant_attrs])
+        metric_logger.log_metric('factorization_refine', compute_factorization(relevant_attrs))
 
         factorization, y_partial = self._fact_manager.compute_factorization(data, self.linear_model)
         self._fact_manager.update(factorization)
