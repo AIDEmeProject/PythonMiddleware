@@ -279,7 +279,7 @@ class PartitionedDataset:  # TODO: how can we add partition information? (factor
         :param active_learner: an ActiveLearner for computing predictions
         :return: a labeled set of containing the predicted user labels
         """
-        if self.unknown_size == 0:
+        if self.unlabeled_size == 0:
             return self.__labeled_set
 
         labels = np.empty(len(self.__dataset.data))
