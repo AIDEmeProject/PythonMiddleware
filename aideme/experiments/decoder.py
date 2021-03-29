@@ -72,6 +72,7 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
 
     if isinstance(active_learner, SwapLearner):
         active_learner.set_user_factorization(factorization_info.get('partition', None))
+        active_learner.set_groups(factorization_info.get('one_hot_groups', None))
 
     return active_learner
 

@@ -84,6 +84,7 @@ def read_factorization_information(factorization_config: Config, dataset_tag: st
     # partition
     if data.columns.nlevels == 1:
         output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
+        output['one_hot_groups'] = [[i] for i in range(len(data.columns))]
     else:
         encoded_position = defaultdict(list)
         for i, col in enumerate(data.columns.get_level_values(0)):
@@ -97,6 +98,7 @@ def read_factorization_information(factorization_config: Config, dataset_tag: st
             partition.append(encoded_gr)
 
         output['partition'] = partition
+        output['one_hot_groups'] = sorted(encoded_position.values())
 
     # mode
     if 'mode' in factorization_config:
