@@ -46,10 +46,17 @@ def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearne
     return pruned_learner
 
 
-def compute_relevant_attributes(X: np.ndarray, learner: LinearFactorizationLearner) -> np.ndarray:
-    importance_weights = np.abs(learner.weights)
+def compute_relevant_attributes(learner, groups=None):
+    importance_weights = np.abs(learner._weights)
     importance_weights /= importance_weights.sum(axis=1).reshape(-1, 1)
-    return importance_weights > 1 / X.shape[1]
+    threshold = 1 / importance_weights.shape[1]
+
+    if groups is not None:
+        threshold = 1 / len(groups)
+        for g in groups:
+            importance_weights[:, g] = importance_weights[:, g].sum(axis=1).reshape(-1, 1)
+
+    return importance_weights > threshold
 
 
 def compute_factorization_and_partial_labels(dataset: PartitionedDataset, linear_model: LinearFactorizationLearner,
@@ -64,7 +71,7 @@ def compute_factorization_and_partial_labels(dataset: PartitionedDataset, linear
 
     # Step 2: prune irrelevant subspaces and attributes
     pruned = prune_irrelevant_subspaces(dataset.data, refining_model)
-    relevant_attrs = compute_relevant_attributes(dataset.data, pruned)
+    relevant_attrs = compute_relevant_attributes(pruned)
 
     # Step 3: train a model with fixed irrelevant attributes removed (set irrelevant weights to zero)
     subspaces = [list(np.where(s)[0]) for s in relevant_attrs]

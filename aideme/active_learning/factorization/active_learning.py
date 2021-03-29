@@ -36,7 +36,7 @@ class SwapLearner(ActiveLearner):
                  swap_model: LinearFactorizationLearner, refining_model: Optional[LinearFactorizationLearner] = None, num_subspaces: int = 10, retries: int = 1,
                  max_iter_adapter: Optional[Callable[[int], int]] = None,
                  swap_iter: int = 100, train_on_prediction: bool = True, train_sample_size: Optional[int] = None,
-                 prune: bool = True, prune_threshold: float = 0.99,
+                 prune: bool = True, prune_threshold: float = 0.99, use_groups: bool = False,
                  fact_model: Optional[FactorizedActiveLearner] = None,  user_fact: List[List[int]] = None, compute_fact_every: int = 5, fact_repeat: int = 2,
                  fact_max_iter: int = 2500, fact_step_size: float = 5, fact_l1_penalty: float = 1e-4, fact_l2_sqrt_penalty: float = 1e-4):
         assert_positive_integer(swap_iter, 'swap_iter')
@@ -57,6 +57,8 @@ class SwapLearner(ActiveLearner):
         self._train_sample_size = train_sample_size
         self._prune = prune
         self._prune_threshold = prune_threshold
+        self._use_groups = use_groups
+        self._one_hot_groups = None
 
         self._fact_model = fact_model
         self._fact_manager = FactorizationManager(
@@ -77,6 +79,10 @@ class SwapLearner(ActiveLearner):
             self._fact_manager.clear()
         self.__is_full_fact_phase = False
         self.__it = 0
+
+    def set_groups(self, groups):
+        if self._use_groups:
+            self._one_hot_groups = groups
 
     def set_user_factorization(self, user_factorization):
         if self._fact_manager is not None:
@@ -111,7 +117,6 @@ class SwapLearner(ActiveLearner):
             self.__update_factorization(data)
 
         elif self.__is_full_fact_phase:
-            # TODO: retrain linear factorization? Pro: possibly more accurate partial labels, Con: retraining from scratch can be slow
             self._fact_model.fit_data(data)
 
         else:
@@ -122,7 +127,7 @@ class SwapLearner(ActiveLearner):
         if not self.__is_fact_update_iter():
             return
 
-        relevant_attrs = compute_relevant_attributes(data.data, self._refining_model)
+        relevant_attrs = compute_relevant_attributes(self._refining_model, groups=self._one_hot_groups)
         metric_logger.log_metric('subspaces_refine', [list(np.where(s)[0]) for s in relevant_attrs])
         metric_logger.log_metric('factorization_refine', compute_factorization(relevant_attrs))
 
@@ -285,7 +290,7 @@ class SimplifiedSwapLearner(SwapLearner):
                  refine_step_size: Optional[float] = None, refine_exp: bool = False,
                  use_vs: bool = True, use_fact_vs: bool = False, fact_C: float = 1e3, use_exp_decay: float = True, use_fista: bool = False,
                  full_fact: bool = False, fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
-                 cars: bool = False):
+                 cars: bool = False, use_groups: bool = False):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
@@ -319,7 +324,7 @@ class SimplifiedSwapLearner(SwapLearner):
         super().__init__(active_learner=active_learner, swap_model=swap_model, refining_model=refined_model, num_subspaces=num_subspaces, retries=retries,
                          max_iter_adapter=max_iter_adapter,
                          swap_iter=swap_iter, train_sample_size=train_sample_size,
-                         prune=prune, prune_threshold=prune_threshold,
+                         prune=prune, prune_threshold=prune_threshold, use_groups=use_groups,
                          fact_model=fact_model,
                          compute_fact_every=5, fact_repeat=2, fact_max_iter=fact_max_iter, fact_step_size=fact_step_size,
                          fact_l1_penalty=fact_penalty, fact_l2_sqrt_penalty=fact_penalty)

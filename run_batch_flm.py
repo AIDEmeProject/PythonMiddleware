@@ -127,7 +127,7 @@ for TASK in TASK_LIST:
 
         # compute factorization
         pruned_learner = prune_irrelevant_subspaces(X_train, learner_w_penalty)
-        relevant_attrs = compute_relevant_attributes(X_train, pruned_learner)
+        relevant_attrs = compute_relevant_attributes(pruned_learner)
         factorization = compute_factorization(relevant_attrs)
         subspaces = [list(np.where(s)[0]) for s in relevant_attrs]
         print('# relevant subspaces:', len(relevant_attrs), file=fres)
