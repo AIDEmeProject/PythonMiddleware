@@ -21,19 +21,38 @@ import pandas as pd
 
 def one_hot_encoding(df: pd.DataFrame) -> pd.DataFrame:
     """ Find the one-hot-encoding of a pandas dataframe """
-    return pd.get_dummies(df, drop_first=False)
+    types_to_encode = ('object', 'category')
+
+    # skip encoding of numerical columns
+    df_num = df.select_dtypes(exclude=types_to_encode)
+    df_num.columns = pd.MultiIndex.from_tuples((c, c) for c in df_num.columns)
+    with_dummies = [df_num]
+
+    # encode categorical columns
+    df_cat = df.select_dtypes(include=types_to_encode)
+    for col in df_cat:
+        encoded_series = pd.get_dummies(df[col], drop_first=False)
+        encoded_series.columns = pd.MultiIndex.from_product([[col], encoded_series.columns])
+        with_dummies.append(encoded_series)
+
+    return pd.concat(with_dummies, axis=1)
 
 
 def standardize(df: pd.DataFrame) -> pd.DataFrame:
     """ Standardize a pandas dataframe. """
-    mean = df.mean()
-    std = df.std()
+    df_num = df.select_dtypes(include='number')
 
+    mean = df_num.mean()
+    std = df_num.std()
     if any(std == 0):
-        cte_columns = df.columns()[std == 0]
+        cte_columns = df_num.columns[std == 0]
         raise ValueError("Found zero standard deviation at columns: " + ','.join(cte_columns))
 
-    return (df - mean) / std
+    df_num -= mean
+    df_num /= std
+
+    df[df_num.columns] = df_num
+    return df
 
 
 def preprocess_data(data: pd.DataFrame, preprocess_list: Sequence[str]) -> pd.DataFrame:

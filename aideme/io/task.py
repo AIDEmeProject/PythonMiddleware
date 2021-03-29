@@ -16,6 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import TYPE_CHECKING, Sequence
 
 import pandas as pd
@@ -81,7 +82,21 @@ def read_factorization_information(factorization_config: Config, dataset_tag: st
             raise ValueError('Found disjoint feature group and subpredicate in partition #{}.'.format(i))
 
     # partition
-    output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
+    if data.columns.nlevels == 1:
+        output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
+    else:
+        encoded_position = defaultdict(list)
+        for i, col in enumerate(data.columns.get_level_values(0)):
+            encoded_position[col].append(i)
+
+        partition = []
+        for gr in feature_groups:
+            encoded_gr = []
+            for attr in gr:
+                encoded_gr.extend(encoded_position[attr])
+            partition.append(encoded_gr)
+
+        output['partition'] = partition
 
     # mode
     if 'mode' in factorization_config:
