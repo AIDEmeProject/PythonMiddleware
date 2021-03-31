@@ -65,6 +65,10 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
         if isinstance(v, dict) and 'name' in v:
             params[k] = decode_active_learner(v, factorization_info)
 
+    if config['name'] in ['SwapLearner', 'SimplifiedSwapLearner']:
+        if params.pop('use_groups', False):
+            params['one_hot_groups'] = factorization_info.get('one_hot_groups', None)
+
     active_learner = active_learner_class(**params)
 
     if isinstance(active_learner, FactorizedActiveLearner):
@@ -72,7 +76,6 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
 
     if isinstance(active_learner, SwapLearner):
         active_learner.set_user_factorization(factorization_info.get('partition', None))
-        active_learner.set_groups(factorization_info.get('one_hot_groups', None))
 
     return active_learner
 
