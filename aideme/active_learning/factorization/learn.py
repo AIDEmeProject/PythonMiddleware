@@ -46,7 +46,8 @@ def prune_irrelevant_subspaces(X: np.ndarray, learner: LinearFactorizationLearne
     return pruned_learner
 
 
-def compute_relevant_attributes(learner, groups=None):
+def compute_relevant_attributes(learner: LinearFactorizationLearner) -> np.ndarray:
+    groups = learner.feature_groups
     importance_weights = np.abs(learner._weights)
     importance_weights /= importance_weights.sum(axis=1).reshape(-1, 1)
     threshold = 1 / importance_weights.shape[1]

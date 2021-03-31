@@ -63,22 +63,25 @@ class L1Penalty(PenaltyTerm):
 
 
 class L2SqrtPenalty(PenaltyTerm):
-    def __init__(self, penalty: float, weights: Optional[np.ndarray] = None):
+    def __init__(self, penalty: float, groups = None):
         super().__init__(penalty)
-        self.weights = weights
+        if groups is None:
+            groups = [slice(None)]
+        self._groups = groups
 
     def loss(self, x: np.ndarray) -> float:
-        norms = np.linalg.norm(x, axis=1)
-        if self.weights is not None:
-            norms *= self.weights
-        return self._penalty * norms.sum()
+        s = 0
+        for g in self._groups:
+            s += np.linalg.norm(x[:, g], axis=1).sum()
+        return self._penalty * s
 
     def grad(self, x: np.ndarray) -> np.ndarray:
-        norm = np.linalg.norm(x, axis=1)
-        factor = np.true_divide(self._penalty, norm, where=norm>0)
-        if self.weights is not None:
-            factor *= self.weights
-        return x * factor.reshape(-1, 1)
+        res = np.zeros_like(x)
+        for g in self._groups:
+            norm = np.linalg.norm(x[:, g], axis=1)
+            factor = np.true_divide(self._penalty, norm, where=norm > 0)
+            res[:, g] = x[:, g] * factor.reshape(-1, 1)
+        return res
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         norm = np.linalg.norm(x, axis=1)
@@ -96,8 +99,8 @@ class L2SqrtPenalty(PenaltyTerm):
 
 
 class SparseGroupLassoPenalty(PenaltyTerm):
-    def __init__(self, l1_penalty: float, l2_sqrt_penalty: float):
-        self._l1_penalty = L1Penalty(l1_penalty)
+    def __init__(self, l1_penalty: float, l2_sqrt_penalty: float, cat_groups = None):
+        self._l1_penalty = L1Penalty(l1_penalty) if cat_groups is None else L2SqrtPenalty(l1_penalty, cat_groups)
         self._l2_sqrt_penalty = L2SqrtPenalty(l2_sqrt_penalty)
 
     def loss(self, x: np.ndarray) -> float:

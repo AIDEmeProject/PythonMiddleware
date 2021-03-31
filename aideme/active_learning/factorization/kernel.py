@@ -27,12 +27,12 @@ from ..kernel import KernelTransformer, FactorizedKernelTransform
 
 class KernelFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_weights: Optional[np.ndarray] = None,
+                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_groups: Optional[List[List[int]]] = None,
                  huber_penalty: float = 0, huber_delta: float = 1e-3,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12, nystroem_components: Optional[int] = None):
         self.fact_linear = LinearFactorizationLearner(
             optimizer=optimizer, add_bias=add_bias, interaction_penalty=interaction_penalty,
-            l1_penalty=l1_penalty,  l2_penalty=l2_penalty, l2_sqrt_penalty=l2_sqrt_penalty, l2_sqrt_weights=l2_sqrt_weights,
+            l1_penalty=l1_penalty,  l2_penalty=l2_penalty, l2_sqrt_penalty=l2_sqrt_penalty, l2_sqrt_groups=l2_sqrt_groups,
             huber_penalty=huber_penalty, huber_delta=huber_delta
         )
         self._base_kernel_transform = KernelTransformer.get(kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter, nystroem_components=nystroem_components)

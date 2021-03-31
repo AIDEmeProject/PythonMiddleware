@@ -30,18 +30,18 @@ if TYPE_CHECKING:
 
 class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_weights: Optional[np.ndarray] = None,
+                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_groups: Optional[List[List[int]]] = None,
                  huber_penalty: float = 0, huber_delta: float = 1e-3):
         self._optimizer = optimizer
         self.add_bias = add_bias
 
         self.penalty_terms = []
         if l1_penalty > 0 and l2_sqrt_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(SparseGroupLassoPenalty(l1_penalty, l2_sqrt_penalty), optimizer))
+            self.penalty_terms.append(self.__process_proximal_penalty(SparseGroupLassoPenalty(l1_penalty, l2_sqrt_penalty, l2_sqrt_groups), optimizer))
         elif l1_penalty > 0:
             self.penalty_terms.append(self.__process_proximal_penalty(L1Penalty(l1_penalty), optimizer))
         elif l2_sqrt_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty, l2_sqrt_weights), optimizer))
+            self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty, l2_sqrt_groups), optimizer))
 
         if l2_penalty > 0:
             self.penalty_terms.append(self.__process_proximal_penalty(L2Penalty(l2_penalty), optimizer))
@@ -52,6 +52,7 @@ class LinearFactorizationLearner:
 
         self._weights = None
         self._bias = None
+        self._feature_groups = l2_sqrt_groups
 
     def __process_proximal_penalty(self, penalty_term: PenaltyTerm, optimizer: OptimizationAlgorithm) -> PenaltyTerm:
         if isinstance(optimizer, ProximalGradientDescent):
@@ -67,6 +68,10 @@ class LinearFactorizationLearner:
     def clear(self) -> None:
         self._weights = None
         self._bias = None
+
+    @property
+    def feature_groups(self) -> Optional[List[List[int]]]:
+        return self._feature_groups
 
     @property
     def bias(self) -> Optional[np.ndarray]:
@@ -93,6 +98,7 @@ class LinearFactorizationLearner:
     def copy(self) -> LinearFactorizationLearner:
         learner = LinearFactorizationLearner(optimizer=self._optimizer, add_bias=self.add_bias)
         learner.penalty_terms = self.penalty_terms
+        learner._feature_groups = self._feature_groups
 
         learner._weights = self.weights
         if self.add_bias:
