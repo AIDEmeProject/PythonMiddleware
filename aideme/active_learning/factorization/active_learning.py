@@ -284,7 +284,7 @@ class SimplifiedSwapLearner(SwapLearner):
                  refine_step_size: Optional[float] = None, refine_exp: bool = False,
                  use_vs: bool = True, use_fact_vs: bool = False, fact_C: float = 1e3, use_exp_decay: float = True, use_fista: bool = False,
                  full_fact: bool = False, fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
-                 cars: bool = False, one_hot_groups: Optional[List[List[int]]] = None):
+                 cars: bool = False, use_groups: bool = False, one_hot_groups: Optional[List[List[int]]] = None):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
@@ -303,6 +303,8 @@ class SimplifiedSwapLearner(SwapLearner):
             params['step_size'] = refine_step_size
 
         refined_model_optimizer = self.get_optimizer(use_fista=use_fista, max_iter=refine_max_iter, **params)
+        if not use_groups:
+            one_hot_groups = None
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer,  l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty, l2_sqrt_groups=one_hot_groups)
 
         fact_model = None if not full_fact else SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(C=fact_C)

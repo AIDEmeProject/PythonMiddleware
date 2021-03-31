@@ -66,7 +66,7 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
             params[k] = decode_active_learner(v, factorization_info)
 
     if config['name'] in ['SwapLearner', 'SimplifiedSwapLearner']:
-        if params.pop('use_groups', False):
+        if params.get('use_groups', False):
             params['one_hot_groups'] = factorization_info.get('one_hot_groups', None)
 
     active_learner = active_learner_class(**params)
