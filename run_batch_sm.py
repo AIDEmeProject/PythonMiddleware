@@ -15,23 +15,14 @@
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 import sys
-from time import perf_counter
 from typing import Union
 
-from sklearn.svm import SVC
-from sklearn.metrics import f1_score
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedKFold, KFold
-
 import numpy as np
+from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold, ShuffleSplit, StratifiedShuffleSplit, cross_validate
+from sklearn.svm import SVC
+
 from aideme.io import read_task
 from aideme.utils.random import set_random_state
-
-
-def train_model_and_measure_time(linear_model, X, y):
-    t0 = perf_counter()
-    linear_model.fit(X, y)
-    return perf_counter() - t0
 
 
 def read_data(task: str):
@@ -40,19 +31,14 @@ def read_data(task: str):
     return data.values, labels.values
 
 
-def build_train_test_random(X, y, train_size: Union[int, float], test_over_all_points: bool = False, stratify: bool = False):
-    stratify_array = y if stratify else None
-    X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=True, train_size=train_size, stratify=stratify_array)
-    if test_over_all_points:
-        X_test, y_test = X, y
-    yield X_train, X_test, y_train, y_test
+def build_train_test_shuffle(train_size: Union[int, float], repeat: int = 1, stratify: bool = False):
+    shuffle_class = StratifiedShuffleSplit if stratify else ShuffleSplit
+    return shuffle_class(n_splits=repeat, train_size=train_size)
 
 
-def build_train_test_kfolds(X, y, k: int, stratify: bool = False):
-    kfold_class = StratifiedKFold if stratify else KFold
-    kfold = kfold_class(n_splits=k, shuffle=True)
-    for train_idx, test_idx in kfold.split(X, y):
-        yield X[train_idx], X[test_idx], y[train_idx], y[test_idx]
+def build_train_test_kfolds(k: int, repeats: int = 1, stratify: bool = False):
+    kfold_class = RepeatedStratifiedKFold if stratify else RepeatedKFold
+    return kfold_class(n_splits=k, n_repeats=repeats)
 
 
 def print_results(train_scores, test_scores, dts, prefix: str = '', file=None):
@@ -60,31 +46,35 @@ def print_results(train_scores, test_scores, dts, prefix: str = '', file=None):
     avg_test_score = np.mean(test_scores)
     avg_dt = np.mean(dts)
 
-    print('{} +- {}\t{} +- {}'.format(avg_train_score, np.std(train_scores) / np.sqrt(len(train_scores)), avg_test_score, np.std(test_scores)/ np.sqrt(len(test_scores))))
+    factor = np.sqrt(len(train_scores))
+    print('{:.2f} +- {:.2f}\t{:.2f} +- {:.2f}'.format(avg_train_score, np.std(train_scores) / factor, avg_test_score, np.std(test_scores) / factor))
     print('{}train = {}, test = {}, fit time = {}'.format(prefix, avg_train_score, avg_test_score, avg_dt), file=file)
 
 
 # EXPERIMENT CONFIGS
 TASK_LIST = [
+    #'sdss_q5', 'sdss_q6', 'sdss_q7', 'sdss_q8', 'sdss_q9', 'sdss_q10', 'sdss_q11',
     'user_study_01', 'user_study_02', 'user_study_03', 'user_study_04', 'user_study_05', 'user_study_06',
     'user_study_07', 'user_study_08', 'user_study_09', 'user_study_10', 'user_study_11', 'user_study_12',
     'user_study_13', 'user_study_14', 'user_study_15', 'user_study_16', 'user_study_17', 'user_study_18',
 ]
-SUBSAMPLE = 0.5
-TEST_OVER_ALL = False
+TRAIN_SIZE = 0.7
 STRATIFY = True
 K_FOLD = 5  # set to 0 or None to turn off
-C = 1e5
+REPEATS = 100
+C = 1e3
 SEED = None
+
+learner = SVC(C=C, gamma='auto')
 
 # print
 print("""TASK_LIST = {}
-SUBSAMPLE = {}
-TEST_OVER_ALL = {}
+TRAIN_SIZE = {}
 STRATIFY = {}
+REPEAT = {}
 K_FOLD = {}
 C = {}
-""".format(TASK_LIST, SUBSAMPLE, TEST_OVER_ALL, STRATIFY, K_FOLD, C))
+""".format(TASK_LIST, TRAIN_SIZE, STRATIFY, REPEATS, K_FOLD, C))
 
 for TASK in TASK_LIST:
     fres = open('./batch_experiments/sm/{}.res'.format(TASK), mode='w')
@@ -97,22 +87,16 @@ for TASK in TASK_LIST:
 
         # read data
         X, y = read_data(TASK)
-        learner = SVC(C=C, gamma=1 / X.shape[1])
-
-        dts = []
-        train_scores = []
-        test_scores = []
 
         if K_FOLD is not None and K_FOLD >= 2:
-            train_test_generator = build_train_test_kfolds(X, y, k=K_FOLD, stratify=STRATIFY)
+            cv = build_train_test_kfolds(k=K_FOLD, repeats=REPEATS, stratify=STRATIFY)
         else:
-            train_test_generator = build_train_test_random(X, y, train_size=SUBSAMPLE, test_over_all_points=TEST_OVER_ALL, stratify=STRATIFY)
+            cv = build_train_test_shuffle(train_size=TRAIN_SIZE, repeat=REPEATS, stratify=STRATIFY)
+        scores = cross_validate(learner, X, y, scoring='f1', cv=cv, return_train_score=True)
 
-        for X_train, X_test, y_train, y_test in train_test_generator:
-            dts.append(train_model_and_measure_time(learner, X_train, y_train))
-            train_scores.append(f1_score(y_train, learner.predict(X_train)))
-            test_scores.append(f1_score(y_test, learner.predict(X_test)))
-
+        train_scores = scores['train_score']
+        test_scores = scores['test_score']
+        dts = scores['fit_time']
         print_results(train_scores, test_scores, dts, prefix='SVM: ', file=fres)
 
         print('------ END TASK {} ------'.format(TASK), file=fres)
