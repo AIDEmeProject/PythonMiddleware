@@ -23,6 +23,7 @@ import numpy as np
 from aideme.utils import assert_in_range, assert_positive
 from .linear import LinearFactorizationLearner
 from .optimization import Adam, FISTA
+from .penalty import SparseGroupLassoPenalty
 
 if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
@@ -67,7 +68,8 @@ def compute_factorization_and_partial_labels(dataset: PartitionedDataset, linear
 
     # Step 1: refine the current FLM into a sparse model
     optimizer = FISTA(step_size=fista_step_size, **global_opt_params)
-    refining_model = LinearFactorizationLearner(optimizer=optimizer, l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty)
+    penalty = SparseGroupLassoPenalty(l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty)
+    refining_model = LinearFactorizationLearner(optimizer, penalty)
     refining_model.fit(X, y, linear_model.num_subspaces, x0=linear_model.weight_matrix)
 
     # Step 2: prune irrelevant subspaces and attributes

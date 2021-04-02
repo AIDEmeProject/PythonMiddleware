@@ -16,9 +16,10 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import List, Union, TYPE_CHECKING, Tuple
+from typing import List, Union, TYPE_CHECKING, Tuple, Optional
 
 from scipy.special import expit
+from sklearn.base import BaseEstimator
 
 from aideme.utils import assert_positive_integer
 from .optimization import ProximalGradientDescent
@@ -28,31 +29,13 @@ if TYPE_CHECKING:
     from .optimization import OptimizationAlgorithm
 
 
-class LinearFactorizationLearner:
-    def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_groups: Optional[List[List[int]]] = None,
-                 huber_penalty: float = 0, huber_delta: float = 1e-3):
-        self._optimizer = optimizer
+class LinearFactorizationLearner(BaseEstimator):
+    def __init__(self, optimizer: OptimizationAlgorithm, penalty_term: Optional[PenaltyTerm] = None, add_bias: bool = True):
+        self.optimizer = optimizer
+        self.penalty_term = self.__process_proximal_penalty(penalty_term, optimizer)
         self.add_bias = add_bias
-
-        self.penalty_terms = []
-        if l1_penalty > 0 and l2_sqrt_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(SparseGroupLassoPenalty(l1_penalty, l2_sqrt_penalty, l2_sqrt_groups), optimizer))
-        elif l1_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(L1Penalty(l1_penalty), optimizer))
-        elif l2_sqrt_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(L2SqrtPenalty(l2_sqrt_penalty, l2_sqrt_groups), optimizer))
-
-        if l2_penalty > 0:
-            self.penalty_terms.append(self.__process_proximal_penalty(L2Penalty(l2_penalty), optimizer))
-        if interaction_penalty > 0:
-            self.penalty_terms.append(InteractionPenalty(interaction_penalty))
-        if huber_penalty > 0:
-            self.penalty_terms.append(HuberPenalty(huber_penalty, huber_delta))
-
         self._weights = None
         self._bias = None
-        self._feature_groups = l2_sqrt_groups
 
     def __process_proximal_penalty(self, penalty_term: PenaltyTerm, optimizer: OptimizationAlgorithm) -> PenaltyTerm:
         if isinstance(optimizer, ProximalGradientDescent):
@@ -71,7 +54,7 @@ class LinearFactorizationLearner:
 
     @property
     def feature_groups(self) -> Optional[List[List[int]]]:
-        return self._feature_groups
+        return getattr(self.penalty_term, 'groups', None)
 
     @property
     def bias(self) -> Optional[np.ndarray]:
@@ -96,9 +79,8 @@ class LinearFactorizationLearner:
         return 0 if self._weights is None else self._weights.shape[0]
 
     def copy(self) -> LinearFactorizationLearner:
-        learner = LinearFactorizationLearner(optimizer=self._optimizer, add_bias=self.add_bias)
-        learner.penalty_terms = self.penalty_terms
-        learner._feature_groups = self._feature_groups
+        learner = LinearFactorizationLearner(optimizer=self.optimizer, add_bias=self.add_bias)
+        learner.penalty_term = self.penalty_term
 
         learner._weights = self.weights
         if self.add_bias:
@@ -117,8 +99,8 @@ class LinearFactorizationLearner:
             num_subspaces = len(factorization)
 
         loss = self._get_loss(X, y, factorization)
-        if hasattr(self._optimizer, 'batch_size'):
-            loss.set_batch_size(self._optimizer.batch_size)
+        if hasattr(self.optimizer, 'batch_size'):
+            loss.set_batch_size(self.optimizer.batch_size)
 
         if x0 is None:
             x0 = np.random.normal(size=(retries, num_subspaces, loss.dim))
@@ -137,7 +119,7 @@ class LinearFactorizationLearner:
         opt_result, min_val = None, np.inf
 
         for starting_point in x0:
-            result = self._optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
+            result = self.optimizer.minimize(starting_point, loss.compute_loss, loss.compute_grad)
             if result.fun < min_val or min_val == np.inf:
                 opt_result, min_val = result, result.fun
 
@@ -147,7 +129,7 @@ class LinearFactorizationLearner:
         return opt_result
 
     def _get_loss(self, X: np.ndarray, y: np.ndarray, factorization: Optional[List[List[int]]] = None) -> LinearFactorizationLoss:
-        return LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias, penalty_terms=self.penalty_terms, factorization=factorization)
+        return LinearFactorizationLoss(X=X, y=y, add_bias=self.add_bias, penalty_term=self.penalty_term, factorization=factorization)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         log_probas = utils.compute_log_probas(self._margin(X))
@@ -176,11 +158,11 @@ class LinearFactorizationLearner:
 
 class LinearFactorizationLoss:
     def __init__(self, X: np.ndarray, y: np.ndarray, add_bias: bool = True,
-                 penalty_terms: List[PenaltyTerm] = None, factorization: Optional[List[List[int]]] = None):
+                 penalty_term: PenaltyTerm = None, factorization: Optional[List[List[int]]] = None):
         self.X = X
         self.y = y
         self.add_bias = add_bias
-        self.penalty_terms = penalty_terms if penalty_terms is not None else []
+        self.penalty_term = penalty_term
         self.factorization = self.__compute_factorization_matrix(factorization)
         self._batch_size = None
         self._offsets = None
@@ -231,8 +213,8 @@ class LinearFactorizationLoss:
         loss = utils.compute_loss(margins, self.y)
 
         # add penalty terms
-        for penalty in self.penalty_terms:
-            loss += penalty.loss(weights)
+        if self.penalty_term is not None:
+            loss += self.penalty_term.loss(weights)
 
         return loss
 
@@ -249,8 +231,8 @@ class LinearFactorizationLoss:
         grad_b, grad_w = self.__compute_grad(X, grad_weights)
 
         # add penalty terms
-        for penalty in self.penalty_terms:
-            grad_w += penalty.grad(weights)
+        if self.penalty_term is not None:
+            grad_w += self.penalty_term.grad(weights)
 
         # restrict weights to factorization selection
         grads = np.hstack([grad_w, grad_b.reshape(-1, 1)]) if self.add_bias else grad_w

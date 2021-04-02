@@ -16,8 +16,6 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 import aideme.active_learning.factorization.utils as utils
@@ -65,19 +63,27 @@ class L1Penalty(PenaltyTerm):
 class L2SqrtPenalty(PenaltyTerm):
     def __init__(self, penalty: float, groups = None):
         super().__init__(penalty)
-        if groups is None:
-            groups = [slice(None)]
-        self._groups = groups
+        self.groups = groups
+
+    @property
+    def groups(self):
+        return self._groups
+
+    @groups.setter
+    def groups(self, value) -> None:
+        if value is None:
+            value = [slice(None)]
+        self._groups = value
 
     def loss(self, x: np.ndarray) -> float:
         s = 0
-        for g in self._groups:
+        for g in self.groups:
             s += np.linalg.norm(x[:, g], axis=1).sum()
         return self._penalty * s
 
     def grad(self, x: np.ndarray) -> np.ndarray:
         res = np.zeros_like(x)
-        for g in self._groups:
+        for g in self.groups:
             norm = np.linalg.norm(x[:, g], axis=1)
             factor = np.true_divide(self._penalty, norm, where=norm > 0)
             res[:, g] = x[:, g] * factor.reshape(-1, 1)
@@ -99,25 +105,45 @@ class L2SqrtPenalty(PenaltyTerm):
 
 
 class SparseGroupLassoPenalty(PenaltyTerm):
-    def __init__(self, l1_penalty: float, l2_sqrt_penalty: float, cat_groups = None):
-        self._l1_penalty = L1Penalty(l1_penalty) if cat_groups is None else L2SqrtPenalty(l1_penalty, cat_groups)
-        self._l2_sqrt_penalty = L2SqrtPenalty(l2_sqrt_penalty)
+    def __init__(self, l1_penalty: float, l2_sqrt_penalty: float, groups = None):
+        self.l2_sqrt_penalty = L2SqrtPenalty(l2_sqrt_penalty)
+        self.l1_penalty = L1Penalty(l1_penalty)
+        self.groups = groups
+
+    @property
+    def groups(self):
+        return self.l1_penalty.groups if self._has_group else None
+
+    @groups.setter
+    def groups(self, value) -> None:
+        penalty = self.l1_penalty._penalty
+
+        if value is None:
+            self._has_group = False
+            self.l1_penalty = L1Penalty(penalty)
+
+        elif self._has_group:
+            self.l1_penalty.groups = value
+
+        else:
+            self._has_group = True
+            self.l1_penalty = L2SqrtPenalty(penalty, value)
 
     def loss(self, x: np.ndarray) -> float:
-        return self._l1_penalty.loss(x) + self._l2_sqrt_penalty.loss(x)
+        return self.l1_penalty.loss(x) + self.l2_sqrt_penalty.loss(x)
 
     def grad(self, x: np.ndarray) -> np.ndarray:
-        return self._l1_penalty.grad(x) + self._l2_sqrt_penalty.grad(x)
+        return self.l1_penalty.grad(x) + self.l2_sqrt_penalty.grad(x)
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
-        return self._l2_sqrt_penalty.proximal(self._l1_penalty.proximal(x, eta), eta)
+        return self.l2_sqrt_penalty.proximal(self.l1_penalty.proximal(x, eta), eta)
 
     def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
-        lamb1, lamb2 = self._l1_penalty._penalty, self._l2_sqrt_penalty._penalty
+        lamb1, lamb2 = self.l1_penalty._penalty, self.l2_sqrt_penalty._penalty
         norm = np.linalg.norm(x, axis=1)
         not_zero = (norm > 0)
         n = v - lamb2 * np.true_divide(x, norm.reshape(-1, 1), where=not_zero.reshape(-1, 1))  # avoid dividing by zero
-        if not self._l1_penalty.is_subgradient(n[not_zero], x[not_zero], tol):
+        if not self.l1_penalty.is_subgradient(n[not_zero], x[not_zero], tol):
             return False
 
         v = v[~not_zero]
@@ -136,6 +162,7 @@ class L2Penalty(PenaltyTerm):
 
     def is_subgradient(self, v: np.ndarray, x: np.ndarray, tol: float) -> bool:
         return np.linalg.norm(self.grad(x) - v) <= tol
+
 
 class InteractionPenalty(PenaltyTerm):
     def loss(self, x: np.ndarray) -> float:

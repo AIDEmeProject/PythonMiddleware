@@ -16,7 +16,7 @@
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
 from __future__ import annotations
 
-from typing import Optional, Union, List
+from typing import Optional, Union, List, TYPE_CHECKING
 
 import numpy as np
 
@@ -24,17 +24,14 @@ from .linear import LinearFactorizationLearner
 from .optimization import OptimizationAlgorithm
 from ..kernel import KernelTransformer, FactorizedKernelTransform
 
+if TYPE_CHECKING:
+    from .penalty import PenaltyTerm
+
 
 class KernelFactorizationLearner:
-    def __init__(self, optimizer: OptimizationAlgorithm, add_bias: bool = True, interaction_penalty: float = 0,
-                 l1_penalty: float = 0,  l2_penalty: float = 0, l2_sqrt_penalty: float = 0, l2_sqrt_groups: Optional[List[List[int]]] = None,
-                 huber_penalty: float = 0, huber_delta: float = 1e-3,
+    def __init__(self, optimizer: OptimizationAlgorithm, penalty_term: PenaltyTerm, add_bias: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12, nystroem_components: Optional[int] = None):
-        self.fact_linear = LinearFactorizationLearner(
-            optimizer=optimizer, add_bias=add_bias, interaction_penalty=interaction_penalty,
-            l1_penalty=l1_penalty,  l2_penalty=l2_penalty, l2_sqrt_penalty=l2_sqrt_penalty, l2_sqrt_groups=l2_sqrt_groups,
-            huber_penalty=huber_penalty, huber_delta=huber_delta
-        )
+        self.fact_linear = LinearFactorizationLearner(optimizer=optimizer, penalty_term=penalty_term, add_bias=add_bias)
         self._base_kernel_transform = KernelTransformer.get(kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter, nystroem_components=nystroem_components)
         self._kernel_transformer = None
         self._factorization = None

@@ -25,6 +25,7 @@ from aideme.active_learning.version_space.subspace import SubspatialVersionSpace
 from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
 from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels, compute_relevant_attributes, compute_factorization
 from .linear import LinearFactorizationLearner
+from .penalty import SparseGroupLassoPenalty
 
 if TYPE_CHECKING:
     from aideme.explore import PartitionedDataset
@@ -155,7 +156,7 @@ class SwapLearner(ActiveLearner):
     def __fit_refining_model(self, data: PartitionedDataset) -> None:
         X, y = data.training_set()
         if self._max_iter_adapter is not None:
-            self._refining_model._optimizer._max_iter = self._max_iter_adapter(self.__it - self._swap_iter - 1)
+            self._refining_model.optimizer._max_iter = self._max_iter_adapter(self.__it - self._swap_iter - 1)
         self._refining_model.fit(X, y, self._refining_model.num_subspaces, x0=self._refining_model.weight_matrix)
 
         if self._prune:
@@ -305,7 +306,9 @@ class SimplifiedSwapLearner(SwapLearner):
         refined_model_optimizer = self.get_optimizer(use_fista=use_fista, max_iter=refine_max_iter, **params)
         if not use_groups:
             one_hot_groups = None
-        refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer,  l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty, l2_sqrt_groups=one_hot_groups)
+
+        penalty_term = SparseGroupLassoPenalty(l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty, groups=one_hot_groups)
+        refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer,  penalty_term=penalty_term)
 
         fact_model = None if not full_fact else SubspatialVersionSpace(**self.FACT_VS_PARAMS) if use_fact_vs else SubspatialSimpleMargin(C=fact_C)
 
