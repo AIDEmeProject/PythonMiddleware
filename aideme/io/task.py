@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Sequence, List, Optional
 
 import pandas as pd
 
@@ -51,7 +51,7 @@ def read_task(tag: str, distinct: bool = True, sort_index: bool = True, preproce
         data = preprocess_data(data, preprocess_list)
 
     # factorization
-    output = {'data': data, 'labels': labels}
+    output = {'data': data, 'labels': labels, 'one_hot_groups': compute_groups(data)}
 
     if read_factorization and 'factorization' in task_config:
         output['factorization_info'] = read_factorization_information(task_config['factorization'], dataset_config['tag'], data)
@@ -84,7 +84,6 @@ def read_factorization_information(factorization_config: Config, dataset_tag: st
     # partition
     if data.columns.nlevels == 1:
         output['partition'] = [[data.columns.get_loc(col) for col in gr] for gr in feature_groups]
-        output['one_hot_groups'] = [[i] for i in range(len(data.columns))]
     else:
         encoded_position = defaultdict(list)
         for i, col in enumerate(data.columns.get_level_values(0)):
@@ -98,7 +97,6 @@ def read_factorization_information(factorization_config: Config, dataset_tag: st
             partition.append(encoded_gr)
 
         output['partition'] = partition
-        output['one_hot_groups'] = sorted(encoded_position.values())
 
     # mode
     if 'mode' in factorization_config:
@@ -132,3 +130,12 @@ def indexes_to_labels(positive_indexes: Sequence, all_indexes: Sequence) -> pd.S
     labels = pd.Series(data=0., index=all_indexes)
     labels[labels.index.isin(positive_indexes)] = 1
     return labels
+
+
+def compute_groups(data: pd.DataFrame) -> Optional[List[List[int]]]:
+    columns = data.columns
+
+    if columns.nlevels != 2:
+        return None
+
+    return [columns.get_locs((col,)).tolist() for col in columns.unique(0)]
