@@ -51,10 +51,17 @@ def read_task(tag: str, distinct: bool = True, sort_index: bool = True, preproce
         data = preprocess_data(data, preprocess_list)
 
     # factorization
-    output = {'data': data, 'labels': labels, 'one_hot_groups': compute_groups(data)}
+    output = {
+        'data': data,
+        'labels': labels,
+        'factorization_info': {
+            'one_hot_groups': compute_groups(data)
+        }
+    }
 
     if read_factorization and 'factorization' in task_config:
-        output['factorization_info'] = read_factorization_information(task_config['factorization'], dataset_config['tag'], data)
+        fact_info = read_factorization_information(task_config['factorization'], dataset_config['tag'], data)
+        output['factorization_info'].update(fact_info)
 
     return output
 

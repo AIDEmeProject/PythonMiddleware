@@ -29,9 +29,9 @@ if TYPE_CHECKING:
 def read_training_set(task: str) -> Tuple[np.ndarray, LabeledSet, Config]:
     config = read_task(task, read_factorization=True)
 
-    df, final_labels, fact_info = config['data'], config['labels'], config.get('factorization_info', {})
-    partial_labels = fact_info.pop('partial_labels', None)
+    df, final_labels, fact_info = config['data'], config['labels'], config['factorization_info']
 
+    partial_labels = fact_info.pop('partial_labels', None)
     labeled_set = LabeledSet(final_labels.values, partial_labels, final_labels.index)
 
     return df.values, labeled_set, fact_info
