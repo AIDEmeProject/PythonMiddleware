@@ -108,6 +108,7 @@ class SparseGroupLassoPenalty(PenaltyTerm):
     def __init__(self, l1_penalty: float, l2_sqrt_penalty: float, groups = None):
         self.l2_sqrt_penalty = L2SqrtPenalty(l2_sqrt_penalty)
         self.l1_penalty = L1Penalty(l1_penalty)
+        self._has_group = False
         self.groups = groups
 
     @property
