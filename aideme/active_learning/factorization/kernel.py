@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class KernelFactorizationLearner:
-    def __init__(self, optimizer: OptimizationAlgorithm, penalty_term: PenaltyTerm, add_bias: bool = True,
+    def __init__(self, optimizer: OptimizationAlgorithm, penalty_term: Optional[PenaltyTerm] = None, add_bias: bool = True,
                  kernel: str = 'rbf', gamma: float = None, degree: int = 3, coef0: float = 0., jitter: float = 1e-12, nystroem_components: Optional[int] = None):
         self.fact_linear = LinearFactorizationLearner(optimizer=optimizer, penalty_term=penalty_term, add_bias=add_bias)
         self._base_kernel_transform = KernelTransformer.get(kernel, gamma=gamma, degree=degree, coef0=coef0, jitter=jitter, nystroem_components=nystroem_components)

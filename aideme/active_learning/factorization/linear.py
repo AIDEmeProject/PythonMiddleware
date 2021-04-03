@@ -19,7 +19,6 @@ from __future__ import annotations
 from typing import List, Union, TYPE_CHECKING, Tuple, Optional
 
 from scipy.special import expit
-from sklearn.base import BaseEstimator
 
 from aideme.utils import assert_positive_integer
 from .optimization import ProximalGradientDescent
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
     from .optimization import OptimizationAlgorithm
 
 
-class LinearFactorizationLearner(BaseEstimator):
+class LinearFactorizationLearner:
     def __init__(self, optimizer: OptimizationAlgorithm, penalty_term: Optional[PenaltyTerm] = None, add_bias: bool = True):
         self.optimizer = optimizer
         self.penalty_term = self.__process_proximal_penalty(penalty_term, optimizer)
@@ -55,6 +54,11 @@ class LinearFactorizationLearner(BaseEstimator):
     @property
     def feature_groups(self) -> Optional[List[List[int]]]:
         return getattr(self.penalty_term, 'groups', None)
+
+    @feature_groups.setter
+    def feature_groups(self, value) -> None:
+        if hasattr(self.penalty_term, 'groups'):
+            self.penalty_term.groups = value
 
     @property
     def bias(self) -> Optional[np.ndarray]:
