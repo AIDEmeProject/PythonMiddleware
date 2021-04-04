@@ -65,7 +65,7 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
         if isinstance(v, dict) and 'name' in v:
             params[k] = decode_active_learner(v, factorization_info)
 
-    if config['name'] in ['SwapLearner', 'SimplifiedSwapLearner']:
+    if config['name'] in ['SwapLearner', 'SimplifiedSwapLearner', 'FLMUncertaintySampler']:
         if params.get('use_groups', False):
             params['one_hot_groups'] = factorization_info.get('one_hot_groups', None)
 
