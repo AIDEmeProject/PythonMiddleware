@@ -25,9 +25,34 @@ from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold, Shuf
 from sklearn.svm import SVC
 
 from aideme.active_learning.factorization import LinearFactorizationLearner, KernelFactorizationLearner
+from aideme.active_learning.factorization.learn import prune_irrelevant_subspaces, compute_relevant_attributes, compute_factorization
 from aideme.active_learning.factorization.optimization import Adam
 from aideme.active_learning.factorization.penalty import SparseGroupLassoPenalty
 from aideme.io import read_task
+
+
+class RefinedLearner:
+    def __init__(self, learner_w_penalty: LinearFactorizationLearner, refining_learner: Union[LinearFactorizationLearner, KernelFactorizationLearner], num_subspaces: int = 10):
+        self.learner_w_penalty = learner_w_penalty
+        self.refining_learner = refining_learner
+        self.num_subspaces = num_subspaces
+
+    def fit(self, X, y):
+        # fit penalized learner
+        self.learner_w_penalty.fit(X, y, factorization=self.num_subspaces)
+
+        # compute factorization
+        pruned_learner = prune_irrelevant_subspaces(X, self.learner_w_penalty)
+        relevant_attrs = compute_relevant_attributes(pruned_learner)
+        self.subspaces = [list(np.where(s)[0]) for s in relevant_attrs]
+        self.factorization = compute_factorization(relevant_attrs)
+
+        # refine pruned learner
+        fact = self.factorization if isinstance(self.refining_learner, KernelFactorizationLearner) else self.subspaces
+        self.refining_learner.fit(X, y, factorization=fact)
+
+    def predict(self, X):
+        return self.refining_learner.predict(X)
 
 
 def read_data(task: str):
@@ -91,10 +116,10 @@ TASK_LIST = [
     #'user_study_07', 'user_study_08', 'user_study_09', 'user_study_10', 'user_study_11', 'user_study_12',
     #'user_study_13', 'user_study_14', 'user_study_15', 'user_study_16', 'user_study_17', 'user_study_18',
 ]
-TRAIN_SIZE = 0.7
+TRAIN_SIZE = 0.5
 STRATIFY = True
 K_FOLD = 5  # set to 0 or None to turn off
-REPEATS = 1
+REPEATS = 100
 SEED = None
 
 # print
@@ -109,18 +134,21 @@ K_FOLD = {}
 linear_optimizer = get_optimizer(step_size=0.5, max_iter=2000, batch_size=None, adapt_step_size=False)
 penalty = SparseGroupLassoPenalty(l1_penalty=1e-5, l2_sqrt_penalty=1e-5)
 linear_fit_params = {'factorization': 10}
+linear_model_wo_penalty = LinearFactorizationLearner(linear_optimizer)
+linear_model_w_penalty = LinearFactorizationLearner(linear_optimizer, penalty_term=penalty)
 
 # FKM
 kernel_optimizer = get_optimizer(step_size=0.5, max_iter=4000, batch_size=None, adapt_step_size=False)
-kernel_fit_params = {'factorization': 2}
+kernel_fit_params = {'factorization': 3}
+kernel_model = KernelFactorizationLearner(kernel_optimizer, nystroem_components=100)
 
 LEARNERS = [
     #('svm', SVC(C=1e3, gamma='auto'), None),
-    #('unpen-flm', LinearFactorizationLearner(optimizer), linear_fit_params),
-    #('pen-flm', LinearFactorizationLearner(optimizer, penalty_term=penalty), linear_fit_params),
-    #('fkm', KernelFactorizationLearner(kernel_optimizer, nystroem_components=100), kernel_fit_params),
-    #('fact-flm', LinearFactorizationLearner(optimizer), linear_fit_params),
-    #('fact-fkm', KernelFactorizationLearner(optimizer, nystroem_components=100), kernel_fit_params),
+    #('unpen-flm', linear_model_wo_penalty, linear_fit_params),
+    #('pen-flm', linear_model_w_penalty, linear_fit_params),
+    #('fact-flm', RefinedLearner(linear_model_w_penalty, linear_model_wo_penalty, 10), None),
+    #('fkm', kernel_model, kernel_fit_params),
+    #('fact-fkm', RefinedLearner(linear_model_w_penalty, kernel_model, 10), None),
 ]
 
 for tag, learner, fit_params in LEARNERS:
@@ -148,7 +176,7 @@ for tag, learner, fit_params in LEARNERS:
             np.std(scores['fit_time']),
         ]
 
-        print(tag, TASK, np.mean(scores['train_score']), np.mean(scores['test_score']),)
+        print(tag, TASK, np.mean(scores['train_score']), np.mean(scores['test_score']))
 
     columns = ['train_score_avg', 'train_score_std', 'test_score_avg', 'test_score_std', 'fit_time_avg', 'fit_time_std']
     df = pd.DataFrame.from_dict(learner_result, orient='index', columns=columns)
