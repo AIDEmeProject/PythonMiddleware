@@ -17,7 +17,7 @@
 from .active_learner import ActiveLearner, FactorizedActiveLearner
 from .dsm import DualSpaceModel, FactorizedDualSpaceModel
 from .entropy import EntropyReductionLearner
-from .factorization.active_learning import SwapLearner, SimplifiedSwapLearner
+from .factorization.active_learning import SwapLearner, SimplifiedSwapLearner, FLMUncertaintySampler
 from .margin import *
 from .nlp import TwoStepsLearner
 from .query_by_disagreement import QueryByDisagreement
@@ -30,5 +30,5 @@ __all__ = [
     'DualSpaceModel', 'FactorizedDualSpaceModel',
     'LinearVersionSpace', 'KernelVersionSpace',
     'SubspatialVersionSpace', 'SubspatialSimpleMargin', 'TwoStepsLearner',
-    'QueryByDisagreement', 'EntropyReductionLearner', 'SwapLearner', 'SimplifiedSwapLearner'
+    'QueryByDisagreement', 'EntropyReductionLearner', 'SwapLearner', 'SimplifiedSwapLearner', 'FLMUncertaintySampler',
 ]
