@@ -21,6 +21,7 @@ from typing import Optional, Callable, TYPE_CHECKING, List
 import numpy as np
 
 from aideme.active_learning import ActiveLearner
+from aideme.active_learning.uncertainty import UncertaintySampler
 from aideme.active_learning.version_space.subspace import SubspatialVersionSpace, SubspatialSimpleMargin
 from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
 from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels, compute_relevant_attributes, compute_factorization
@@ -345,3 +346,34 @@ class SimplifiedSwapLearner(SwapLearner):
             options['max_iter'] *= iters_per_epoch
 
         return FISTA(**options) if use_fista else Adam(**options)
+
+
+class FLMUncertaintySampler(UncertaintySampler):
+    def __init__(
+            self, step_size: float = 0.1, max_iter: int = 1000,  penalty: float = 1e-4, num_subspaces: int = 10,
+            one_hot_groups: Optional[List[List[int]]] = None,
+    ):
+        clf = LinearFactorizationLearner(
+            optimizer=self.get_optimizer(step_size=step_size, max_iter=max_iter),
+            penalty_term=SparseGroupLassoPenalty(l1_penalty=penalty, l2_sqrt_penalty=penalty, groups=one_hot_groups)
+        )
+
+        super().__init__(clf)
+        self.num_subspaces = num_subspaces
+
+    def clear(self) -> None:
+        self.clf.clear()
+
+    def fit(self, X, y):
+        self.clf.fit(X, y, factorization=self.num_subspaces, x0=self.clf.weight_matrix)
+
+    @staticmethod
+    def get_optimizer(step_size: float, max_iter: int):
+        from .optimization import Adam
+        options = {
+            'step_size': step_size, 'max_iter': max_iter, 'exp_decay': 0,
+            'batch_size': None, 'adapt_step_size': False, 'adapt_every': 1,
+            'gtol': 0, 'rel_tol': 0, 'verbose': False
+        }
+
+        return Adam(**options)
