@@ -61,7 +61,7 @@ class Tag:
         signature = inspect.signature(obj)
 
         for param in params:
-            if param not in signature.parameters:
+            if param not in signature.parameters and param != 'use_groups':
                 raise TypeError("Unexpected parameter '{}' in object '{}'".format(param, obj.__name__))
 
         return params
