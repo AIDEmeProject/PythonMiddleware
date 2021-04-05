@@ -37,6 +37,14 @@ class RefinedLearner:
         self.refining_learner = refining_learner
         self.num_subspaces = num_subspaces
 
+    @property
+    def feature_groups(self):
+        return self.learner_w_penalty.feature_groups
+
+    @feature_groups.setter
+    def feature_groups(self, value):
+        self.learner_w_penalty.feature_groups = value
+
     def fit(self, X, y):
         # fit penalized learner
         self.learner_w_penalty.fit(X, y, factorization=self.num_subspaces)
@@ -48,8 +56,10 @@ class RefinedLearner:
         self.factorization = compute_factorization(relevant_attrs)
 
         # refine pruned learner
-        fact = self.factorization if isinstance(self.refining_learner, KernelFactorizationLearner) else self.subspaces
-        self.refining_learner.fit(X, y, factorization=fact)
+        is_kernel = isinstance(self.refining_learner, KernelFactorizationLearner)
+        fact = self.factorization if is_kernel else self.subspaces
+        x0 = None if is_kernel else pruned_learner.weight_matrix
+        self.refining_learner.fit(X, y, factorization=fact, x0=x0)
 
     def predict(self, X):
         return self.refining_learner.predict(X)
@@ -157,7 +167,7 @@ for tag, learner, fit_params in LEARNERS:
     for TASK in TASK_LIST:
         # read data
         X, y, groups = read_data(TASK)
-        if isinstance(learner, LinearFactorizationLearner):
+        if hasattr(learner, 'feature_groups'):
             learner.feature_groups = groups
 
         if K_FOLD is not None and K_FOLD >= 2:
