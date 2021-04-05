@@ -23,7 +23,7 @@ import numpy as np
 from aideme.active_learning import ActiveLearner
 from aideme.active_learning.uncertainty import UncertaintySampler
 from aideme.active_learning.version_space.subspace import SubspatialVersionSpace, SubspatialSimpleMargin
-from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive
+from aideme.utils import assert_positive_integer, assert_in_range, metric_logger, assert_positive, assert_non_negative
 from .learn import prune_irrelevant_subspaces, compute_factorization_and_partial_labels, compute_relevant_attributes, compute_factorization
 from .linear import LinearFactorizationLearner
 from .penalty import SparseGroupLassoPenalty
@@ -286,7 +286,7 @@ class SimplifiedSwapLearner(SwapLearner):
                  refine_step_size: Optional[float] = None, refine_exp: bool = False,
                  use_vs: bool = True, use_fact_vs: bool = False, fact_C: float = 1e3, use_exp_decay: float = True, use_fista: bool = False,
                  full_fact: bool = False, fact_max_iter: int = 2500, fact_step_size: float = 5, fact_penalty: float = 5e-4,
-                 cars: bool = False, use_groups: bool = False, one_hot_groups: Optional[List[List[int]]] = None):
+                 cars: bool = False, one_hot_groups: Optional[List[List[int]]] = None):
         from ...active_learning import SimpleMargin, KernelVersionSpace
         if use_vs:
             active_learner = KernelVersionSpace(**self.VS_DEFAULT_PARAMS)
@@ -305,9 +305,6 @@ class SimplifiedSwapLearner(SwapLearner):
             params['step_size'] = refine_step_size
 
         refined_model_optimizer = self.get_optimizer(use_fista=use_fista, max_iter=refine_max_iter, **params)
-        if not use_groups:
-            one_hot_groups = None
-
         penalty_term = SparseGroupLassoPenalty(l1_penalty=l1_penalty, l2_sqrt_penalty=l2_sqrt_penalty, groups=one_hot_groups)
         refined_model = LinearFactorizationLearner(optimizer=refined_model_optimizer,  penalty_term=penalty_term)
 
@@ -351,21 +348,36 @@ class SimplifiedSwapLearner(SwapLearner):
 class FLMUncertaintySampler(UncertaintySampler):
     def __init__(
             self, step_size: float = 0.1, max_iter: int = 1000,  penalty: float = 1e-4, num_subspaces: int = 10,
-            one_hot_groups: Optional[List[List[int]]] = None,
+            prune: bool = False, one_hot_groups: Optional[List[List[int]]] = None,
     ):
+        assert_non_negative(penalty, 'penalty')
+
+        penalty_term = None
+        if penalty > 0:
+            penalty_term = SparseGroupLassoPenalty(l1_penalty=penalty, l2_sqrt_penalty=penalty, groups=one_hot_groups)
+
         clf = LinearFactorizationLearner(
             optimizer=self.get_optimizer(step_size=step_size, max_iter=max_iter),
-            penalty_term=SparseGroupLassoPenalty(l1_penalty=penalty, l2_sqrt_penalty=penalty, groups=one_hot_groups)
+            penalty_term=penalty_term
         )
 
         super().__init__(clf)
         self.num_subspaces = num_subspaces
+        self.prune = prune
 
     def clear(self) -> None:
         self.clf.clear()
 
-    def fit(self, X, y):
-        self.clf.fit(X, y, factorization=self.num_subspaces, x0=self.clf.weight_matrix)
+    def fit_data(self, data):
+        X, y = data.training_set()
+        x0 = self.clf.weight_matrix
+        fact = self.num_subspaces if x0 is None else self.clf.num_subspaces
+        self.clf.fit(X, y, factorization=fact, x0=x0)
+
+        if self.prune:
+            self.clf = prune_irrelevant_subspaces(data.data, self.clf, threshold=0.99)
+
+
 
     @staticmethod
     def get_optimizer(step_size: float, max_iter: int):
