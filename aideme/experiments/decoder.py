@@ -67,7 +67,7 @@ def decode_active_learner(config: Config, factorization_info: Config) -> ActiveL
 
     if config['name'] in ['SwapLearner', 'SimplifiedSwapLearner', 'FLMUncertaintySampler']:
         one_hot_groups = None
-        if params.pop('use_groups', False):
+        if params.pop('use_groups', True):
             one_hot_groups = factorization_info['one_hot_groups']
 
         params['one_hot_groups'] = one_hot_groups
