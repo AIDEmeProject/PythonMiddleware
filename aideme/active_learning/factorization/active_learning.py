@@ -348,7 +348,8 @@ class SimplifiedSwapLearner(SwapLearner):
 class FLMUncertaintySampler(UncertaintySampler):
     def __init__(
             self, step_size: float = 0.1, max_iter: int = 1000,  penalty: float = 1e-4, num_subspaces: int = 10,
-            prune: bool = False, one_hot_groups: Optional[List[List[int]]] = None,
+            prune: bool = False, one_hot_groups: Optional[List[List[int]]] = None, penalty_iter: int = 0,
+            log: bool = False
     ):
         assert_non_negative(penalty, 'penalty')
 
@@ -364,20 +365,32 @@ class FLMUncertaintySampler(UncertaintySampler):
         super().__init__(clf)
         self.num_subspaces = num_subspaces
         self.prune = prune
+        self.penalty_iter = penalty_iter
+        self.max_penalty = penalty
+        self.__it = 0
+        self.log = log
 
     def clear(self) -> None:
+        self.__it = 0
         self.clf.clear()
 
     def fit_data(self, data):
+        self.__it += 1
+
         X, y = data.training_set()
         x0 = self.clf.weight_matrix
         fact = self.num_subspaces if x0 is None else self.clf.num_subspaces
+
+        if self.max_penalty > 0 and self.__it <= self.penalty_iter:
+            penalty = self.max_penalty * (self.__it / self.penalty_iter)
+            if self.log:
+                penalty = self.max_penalty * np.log(1 + (np.e - 1) * self.__it / self.penalty_iter)
+            self.clf.penalty_term.penalty = penalty
+
         self.clf.fit(X, y, factorization=fact, x0=x0)
 
         if self.prune:
             self.clf = prune_irrelevant_subspaces(data.data, self.clf, threshold=0.99)
-
-
 
     @staticmethod
     def get_optimizer(step_size: float, max_iter: int):

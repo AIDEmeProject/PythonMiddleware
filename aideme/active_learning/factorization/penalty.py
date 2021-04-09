@@ -24,8 +24,16 @@ from aideme.utils import assert_positive
 
 class PenaltyTerm:
     def __init__(self, penalty: float):
-        assert_positive(penalty, 'penalty')
-        self._penalty = penalty
+        self.penalty = penalty
+
+    @property
+    def penalty(self) -> float:
+        return self._penalty
+
+    @penalty.setter
+    def penalty(self, value) -> None:
+        assert_positive(value, 'penalty')
+        self._penalty = value
 
     def loss(self, x: np.ndarray) -> float:
         raise NotImplementedError
@@ -91,7 +99,7 @@ class L2SqrtPenalty(PenaltyTerm):
 
     def proximal(self, x: np.ndarray, eta: float) -> np.ndarray:
         norm = np.linalg.norm(x, axis=1)
-        factor = np.true_divide(self._penalty * eta, norm, where=norm>0)  # avoid dividing by zero
+        factor = np.true_divide(self._penalty * eta, norm, where=norm > 0)  # avoid dividing by zero
         factor = np.maximum(0, 1 - factor)
         return x * factor.reshape(-1, 1)
 
@@ -110,6 +118,15 @@ class SparseGroupLassoPenalty(PenaltyTerm):
         self.l1_penalty = L1Penalty(l1_penalty)
         self._has_group = False
         self.groups = groups
+
+    @property
+    def penalty(self):
+        return (self.l1_penalty._penalty, self.l2_sqrt_penalty._penalty)
+
+    @penalty.setter
+    def penalty(self, value):
+        self.l2_sqrt_penalty.penalty = value
+        self.l1_penalty.penalty = value
 
     @property
     def groups(self):
