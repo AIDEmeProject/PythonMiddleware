@@ -6,10 +6,7 @@
 /tests/.pytest_cache/
 
 # configuration files
-/resources/sources.yaml
-/resources/datasets.yaml
-/resources/tasks.yaml
-/resources/*.bak
+/resources/
 
 # experiments result folder
 /experiments/

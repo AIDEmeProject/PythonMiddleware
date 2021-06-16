@@ -14,11 +14,6 @@
 #  so that it can construct an increasingly-more-accurate model of the user interest. Active learning techniques are employed to select
 #  a new record from the unlabeled data source in each iteration for the user to label next in order to improve the model accuracy.
 #  Upon convergence, the model is run through the entire data source to retrieve all relevant records.
-import numpy as np
-
-from aideme.explore.labeledset import LabeledSet
-from .types import NoiseInjector
-from .validation import assert_non_negative_integer
 
 """
 This module possesses a few helper functions for simulating user noisy labeling. In general, a "noise injector" method
@@ -28,6 +23,12 @@ can be any function with the following signature:
 
 Which receives a noise-free LabeledSet object and returns its noisy version.
 """
+
+import numpy as np
+
+from aideme.explore.labeledset import LabeledSet
+from .types import NoiseInjector
+from .validation import assert_non_negative_integer
 
 
 def gaussian_noise() -> NoiseInjector:
