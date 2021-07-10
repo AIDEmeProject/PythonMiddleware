@@ -1,9 +1,6 @@
-# AIDEme - JMLR 2020
+# AIDEme
+This branch contains the most current version of our system, which is continuously evolving. Below, you can find a short description of the project, installation instructions, and some useful links.   
 
-This version of our project was used in when running all experiments detailed in our JMLR 2020 submission. 
-Below, you can find a short description of the project, installation instructions, and some useful links.   
-
-This branch contains the most current version of our system, which is continuously evolving.
 If you are interested in reproducing our result for JMLR 2020, please refer to the corresponding branch. 
 
 # Introduction
