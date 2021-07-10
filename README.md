@@ -1,10 +1,7 @@
-# AIDEme - JMLR 2020
+# AIDEme - PhD Thesis (Luciano)
 
-This version of our project was used in when running all experiments detailed in our JMLR 2020 submission. 
+This version of our project was used in when running all experiments detailed in Luciano's PhD Thesis.
 Below, you can find a short description of the project, installation instructions, and some useful links.   
-
-This branch contains the most current version of our system, which is continuously evolving.
-If you are interested in reproducing our result for JMLR 2020, please refer to the corresponding branch. 
 
 # Introduction
 AIDEme is a scalable interactive data exploration system for efficiently learning a user interest pattern over a large dataset. 
