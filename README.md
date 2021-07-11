@@ -30,8 +30,10 @@ AIDEme has the following dependencies:
 
 After downloading this project, simply open a terminal and run:
 
-`python setup.py install`
-
+```
+python setup.py install
+python setup.py build_ext --inplace
+```
 This should take care of installing all the above dependencies. 
 
 # Using our system
