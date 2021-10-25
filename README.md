@@ -1,10 +1,14 @@
-# AIDEme
-This branch contains the most current version of our system, which is continuously evolving. Below, you can find a short description of the project, installation instructions, and some useful links.   
+# AIDEme Middleware
+This project contains the middleware code for the [AIDEme](https://github.com/AIDEmeProject/AIDEme) data exploration system software. More precisely, this
+codebase implements the main Active Learning algorithms and optimizations used by AIDEme, including Version Space techniques
+and the Dual-Space factorized model.  
 
-If you are interested in reproducing our result for JMLR 2020, please refer to the corresponding branch. 
+Below, you can find a short description of the project, installation instructions, and some useful links.
+
+This software in under the **BSD 3-Clause license**.
 
 # Introduction
-AIDEme is a scalable interactive data exploration system for efficiently learning a user interest pattern over a large dataset. 
+[AIDEme](https://github.com/AIDEmeProject/AIDEme) is a scalable interactive data exploration system for efficiently learning a user interest pattern over a large dataset. 
 The system is cast in a principled active learning (AL) framework, which iteratively presents strategically selected records for user labeling, 
 thereby building an increasingly-more-accurate model of the user interest. However, a challenge in building such a system 
 is that existing active learning techniques experience slow convergence when learning the user interest on large datasets. 
@@ -19,10 +23,9 @@ With AIDEme, you can:
   * Easily run your custom Active Learning algorithms or implement new data exploration routines
 
 
-# Instructions
+# Dependencies and Installation
 
-## Dependencies
-AIDEme has the following dependencies:
+The AIDEme Middleware has the following dependencies:
   * Python (>= 3.7)
   * NumPy
   * SciPy
@@ -36,8 +39,8 @@ python setup.py build_ext --inplace
 ```
 This should take care of installing all the above dependencies. 
 
-# Using our system
-In order learn how to use our system, you can refer to an example jupyter notebook called [example.ipynb](./example.ipynb). There
+## Using our system
+If you are interested in running our AL algorithms or comparing them with our own, you can refer to the example jupyter notebook called [example.ipynb](./example.ipynb). There
 you can find detailed examples of how to run our active learning algorithms over any dataset (including factorization).
 
 # Websites
