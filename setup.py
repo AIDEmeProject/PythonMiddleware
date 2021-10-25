@@ -66,7 +66,7 @@ setup(
     },
 
     # REQUIREMENTS
-    python_requires=">=3.6, <4",  # python required version
+    python_requires=">=3.7, <4",  # python required version
     install_requires=get_install_requirements(USE_CYTHON),  # minimum required packages - these packages will be installed when running 'pip install'
 
     # easily run our test suite using pytest
@@ -76,12 +76,12 @@ setup(
     # TAGGING OUR PROJECT
     keywords='machine-learning data-exploration artificial-intelligence active-learning',
     classifiers=[  # tags used to index our project
-        'Development Status :: 3 - Alpha',  # How mature is this project?
-        'Intended Audience :: Science/Research',  # Indicate who your project is intended for
-        'License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)',  # our project license
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: BSD License',
 
         # Specify the Python versions you support here
-        'Programming Language :: Python :: 3',  #  Python 3 only
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
